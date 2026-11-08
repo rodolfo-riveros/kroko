@@ -111,6 +111,18 @@ public static class ToolCatalog
         },
         new()
         {
+            Name = "abrir_ventana",
+            Description = "Abre en la PC una de tus propias ventanas para que tu dueño siga configurándote o revise algo. " +
+                          "configuracion = Ajustes (\"abre tu configuración\"; con seccion: general, voz, cerebro, personalidad, " +
+                          "herramientas o cuentas); asistente = \"Configurar Kroko\" (sus datos, claves de IA, Gmail, Telegram y " +
+                          "vincular apps: Google, Trello, Notion, Todoist); conectores = conectar o desconectar Notion, Todoist y el " +
+                          "navegador; memoria = \"Lo que sabe de ti\" (recuerdos, rutinas, buzón de mejoras); registro = acciones " +
+                          "que hiciste; galeria = tus caras; mi_dia = agenda, tareas y clima de hoy.",
+            Parameters = """{"type":"object","properties":{"ventana":{"type":"string","enum":["configuracion","asistente","conectores","memoria","registro","galeria","mi_dia"]},"seccion":{"type":"string","enum":["general","voz","cerebro","personalidad","herramientas","cuentas"],"description":"Solo con configuracion: la pestaña que se abre"}},"required":["ventana"]}""",
+            Risk = ToolRisk.Read,
+        },
+        new()
+        {
             Name = "mostrar_mi_dia",
             Description = "Abre en la PC la ventana \"Mi día\" (agenda, tareas, recordatorios, hábitos y clima) para que tu dueño lo vea de un vistazo.",
             Parameters = """{"type":"object","properties":{}}""",

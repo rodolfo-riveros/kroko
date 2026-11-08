@@ -171,6 +171,7 @@ public sealed class LiveConversation : IDisposable
 
             case LiveEventMessage { Kind: "you", Text: { } heard }:
                 _lastHeard = heard;
+                _panel.NoteOwnerOrder();
                 _lastActivity = DateTime.Now;
                 _panel.ShowLiveListening();
                 _panel.ShowCaption(heard);

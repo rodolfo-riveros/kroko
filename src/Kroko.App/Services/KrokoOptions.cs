@@ -36,6 +36,25 @@ public sealed class KrokoOptions
     /// <summary>Aceptar acciones peligrosas que Pol aprobó desde Telegram (Fase 5).</summary>
     public bool AllowRemoteApprovals { get; set; } = true;
 
+    /// <summary>
+    /// Acciones peligrosas que se hacen sin tarjeta cuando las pidió el dueño hace poco (decidido por Pol, 08/11/2026:
+    /// «por algo dije apágalo»). Si la orden no vino de él (automatización, aviso), la tarjeta sigue saliendo.
+    /// </summary>
+    public List<string>? AutoApproveTools { get; set; }
+
+    /// <summary>Minutos desde la última orden del dueño en los que vale la aprobación automática.</summary>
+    public double AutoApproveMinutes { get; set; } = 3;
+
+    public static readonly string[] DefaultAutoApproveTools =
+        ["apagar", "reiniciar", "cerrar_sesion", "ordenar_carpeta", "mover_archivos", "copiar_archivos"];
+
+    public IReadOnlyList<string> EffectiveAutoApproveTools => AutoApproveTools ?? [.. DefaultAutoApproveTools];
+
+    /// <summary>¿Esta acción se hace sin preguntar, sabiendo cuándo dio el dueño su última orden?</summary>
+    public bool CanAutoApprove(string tool, DateTime? lastOwnerOrder, DateTime now) =>
+        lastOwnerOrder is { } at && (now - at).TotalMinutes <= AutoApproveMinutes && now >= at
+        && EffectiveAutoApproveTools.Contains(tool, StringComparer.OrdinalIgnoreCase);
+
     /// <summary>Esconderse cuando hay un juego/presentación a pantalla completa.</summary>
     public bool HideOnFullscreen { get; set; } = true;
 

@@ -94,6 +94,11 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
         _loading = false;
     }
 
+    /// <summary>Pestaña abierta: 0 General, 1 Voz, 2 Cerebro, 3 Personalidad, 4 Herramientas, 5 Cuentas y apps.</summary>
+    [ObservableProperty] public partial int SelectedSection { get; set; } = 1;
+
+    public static readonly string[] Sections = ["general", "voz", "cerebro", "personalidad", "herramientas", "cuentas"];
+
     // ---- General
     [ObservableProperty] public partial bool StartWithWindowsEnabled { get; set; }
     [ObservableProperty] public partial double BubbleScale { get; set; }

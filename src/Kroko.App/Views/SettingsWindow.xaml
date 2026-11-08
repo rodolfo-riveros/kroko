@@ -107,7 +107,8 @@
             </DockPanel>
         </Border>
 
-        <TabControl TabStripPlacement="Left" Background="Transparent" BorderThickness="0" Padding="28,22,8,0" Margin="14,18,0,0">
+        <TabControl TabStripPlacement="Left" Background="Transparent" BorderThickness="0" Padding="28,22,8,0" Margin="14,18,0,0"
+                    SelectedIndex="{Binding SelectedSection}">
             <TabControl.Template>
                 <ControlTemplate TargetType="TabControl">
                     <DockPanel>
@@ -196,7 +197,7 @@
             </TabItem>
 
             <!-- ======================= Voz y conversación ======================= -->
-            <TabItem IsSelected="True">
+            <TabItem>
                 <TabItem.Header>
                     <StackPanel Orientation="Horizontal"><TextBlock Text="&#xE720;" Style="{StaticResource NavIcon}" /><TextBlock Text="Voz y conversación" /></StackPanel>
                 </TabItem.Header>

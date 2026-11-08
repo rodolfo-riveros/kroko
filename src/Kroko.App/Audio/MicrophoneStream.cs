@@ -17,14 +17,43 @@ public sealed class MicrophoneStream : IDisposable
     private readonly ILogger<MicrophoneStream> _log;
     private readonly HashSet<string> _users = [];
     private readonly DispatcherTimer _retry;
+    private readonly DispatcherTimer _watch;
     private WaveIn? _wave;
     private int _device = -1;
+    private int _knownDevices;
 
     public MicrophoneStream(ILogger<MicrophoneStream> log)
     {
         _log = log;
         _retry = new DispatcherTimer { Interval = TimeSpan.FromSeconds(5) };
         _retry.Tick += (_, _) => TryOpen();
+
+        // Conectar o quitar un micrófono con Kroko abierto: se nota en 2 s (antes solo se miraba al arrancar)
+        _knownDevices = WaveIn.DeviceCount;
+        _watch = new DispatcherTimer { Interval = TimeSpan.FromSeconds(2) };
+        _watch.Tick += (_, _) => CheckDevices();
+        _watch.Start();
+        _log.LogInformation("Micrófonos al arrancar: {Count}", _knownDevices);
+    }
+
+    /// <summary>Se conectó o se quitó un micrófono (true = hay al menos uno). En el hilo de la interfaz.</summary>
+    public event Action<bool>? DevicesChanged;
+
+    private void CheckDevices()
+    {
+        var count = WaveIn.DeviceCount;
+        if (count == _knownDevices) return;
+        _log.LogInformation("Cambiaron los micrófonos: {Before} → {After}", _knownDevices, count);
+        _knownDevices = count;
+
+        // Con el micrófono abierto, se reabre para seguir al predeterminado de Windows (o soltar el que se quitó)
+        if (_users.Count > 0)
+        {
+            Close();
+            TryOpen();
+            if (_wave is null && count > 0) _retry.Start();
+        }
+        DevicesChanged?.Invoke(count > 0);
     }
 
     /// <summary>Audio PCM recién capturado (bloques de 50 ms). Se dispara en el hilo de la interfaz.</summary>
@@ -77,14 +106,16 @@ public sealed class MicrophoneStream : IDisposable
         {
             WaveFormat = Format,
             BufferMilliseconds = 50,
-            DeviceNumber = _device >= 0 && _device < WaveIn.DeviceCount ? _device : 0,
+            // -1 = el micrófono predeterminado de Windows (WAVE_MAPPER), no "el primero de la lista"
+            DeviceNumber = _device >= 0 && _device < WaveIn.DeviceCount ? _device : -1,
         };
         wave.DataAvailable += OnData;
         wave.RecordingStopped += OnStopped;
         wave.StartRecording();
         _wave = wave;
         _retry.Stop();
-        _log.LogInformation("Micrófono {Device} abierto ({Users})", wave.DeviceNumber, string.Join(", ", _users));
+        _log.LogInformation("Micrófono {Device} abierto ({Users})",
+            wave.DeviceNumber < 0 ? "predeterminado de Windows" : WaveIn.GetCapabilities(wave.DeviceNumber).ProductName, string.Join(", ", _users));
     }
 
     private void TryOpen()
@@ -152,6 +183,7 @@ public sealed class MicrophoneStream : IDisposable
 
     public void Dispose()
     {
+        _watch.Stop();
         _retry.Stop();
         _users.Clear();
         Close();

@@ -45,14 +45,18 @@ public sealed class WindowService(IServiceProvider services)
         _onboarding.Activate();
     }
 
-    public void ShowSettings()
+    /// <param name="section">Pestaña a mostrar (0 General … 5 Cuentas y apps); null = la de siempre.</param>
+    public void ShowSettings(int? section = null)
     {
         if (_settings is { IsLoaded: true })
         {
+            if (section is { } open) ((ViewModels.SettingsViewModel)_settings.DataContext).SelectedSection = open;
+            if (_settings.WindowState == WindowState.Minimized) _settings.WindowState = WindowState.Normal;
             _settings.Activate();
             return;
         }
         _settings = services.GetRequiredService<SettingsWindow>();
+        if (section is { } s) ((ViewModels.SettingsViewModel)_settings.DataContext).SelectedSection = s;
         _settings.Closed += (_, _) => _settings = null;
         _settings.Show();
         _settings.Activate();

@@ -172,6 +172,7 @@ public partial class PanelViewModel : ObservableObject
     {
         var text = InputText.Trim();
         if (text.Length == 0) return;
+        NoteOwnerOrder();
 
         InputText = "";
         StopTyping(applyPending: false);
@@ -292,6 +293,17 @@ public partial class PanelViewModel : ObservableObject
             return;
         }
 
+        // Lo pidió el dueño hace un momento y es de las acciones que eligió hacer sin preguntar (apagar, ordenar…):
+        // se aprueba sola, por el mismo camino que el botón «Sí, hazlo» (el ejecutor la sigue verificando).
+        if (_opt.CanAutoApprove(request.Tool, _lastOwnerOrder, DateTime.Now))
+        {
+            _log.LogInformation("Aprobada sin tarjeta (la pidió el dueño): {Tool}", request.Tool);
+            _tools.RecordDecision(request.CallId, request.Tool, request.Text, approved: true);
+            _ = _brain.SendAsync(new ConfirmResponseMessage { CallId = request.CallId, Approved = true });
+            return;
+        }
+
+
         _pendingConfirm = request;
         ConfirmText = request.Text;
         IsConfirming = true;
@@ -303,6 +315,11 @@ public partial class PanelViewModel : ObservableObject
         ConfirmShown?.Invoke();
         RestartAutoHide();
     }
+
+    private DateTime? _lastOwnerOrder;
+
+    /// <summary>El dueño acaba de dar una orden (escrita, por voz o en la conversación en tiempo real).</summary>
+    public void NoteOwnerOrder() => _lastOwnerOrder = DateTime.Now;
 
     /// <summary>Herramienta y id de la tarjeta pendiente (para aprobar por voz solo lo permitido).</summary>
     public string? PendingConfirmTool => _pendingConfirm?.Tool;
@@ -458,6 +475,7 @@ public partial class PanelViewModel : ObservableObject
     /// <summary>Terminó de escuchar y mandó el audio: ahora piensa.</summary>
     public void OnVoiceSent()
     {
+        NoteOwnerOrder();
         IsListening = false;
         ListeningHint = "";
         if (UserText.Length == 0) UserText = "…";

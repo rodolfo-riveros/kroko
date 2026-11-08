@@ -5,6 +5,18 @@ controla tu PC, tus tareas, tu correo, tu calendario y tus apps. El cerebro vive
 
 ![Panel](docs/panel.png)
 
+## Descargar Kroko (Windows 10/11)
+
+**[⬇ Descargar el instalador (KrokoApp-win-Setup.exe)](https://github.com/rodolfo-riveros/kroko/releases/latest/download/KrokoApp-win-Setup.exe)**
+· [todas las versiones](https://github.com/rodolfo-riveros/kroko/releases)
+
+Se instala sin permisos de administrador y se actualiza sola. Si Windows dice "Windows protegió su PC", pulsa
+**Más información → Ejecutar de todas formas** (el instalador aún no tiene firma digital). Al abrirla te pide la
+dirección de tu cerebro (servidor) y su token.
+
+**¿Qué va al servidor?** Nada compilado: el servidor descarga solo la imagen del cerebro (`ghcr.io/rodolfo-riveros/kroko-brain`).
+Solo necesitas la carpeta `deploy/` (con tu `.env`). Guías: [VPS propio](docs/VPS-PROPIO.md) · [Oracle gratis](docs/SERVIDOR-GRATIS.md).
+
 ## Qué hay en este repositorio
 
 | Carpeta | Qué es | Dónde corre |

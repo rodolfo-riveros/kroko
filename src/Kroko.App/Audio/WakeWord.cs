@@ -246,6 +246,8 @@ public sealed class WakeWordService : IDisposable
         ILogger<WakeWordService> log)
     {
         _mic = mic;
+        // Conectaste (o quitaste) un micrófono con Kroko abierto: empieza (o deja) de escuchar sin reiniciar
+        _mic.DevicesChanged += _ => Refresh();
         _recorder = recorder;
         _models = models;
         _options = options.Value;

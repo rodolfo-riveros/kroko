@@ -62,3 +62,54 @@ public class ReplyModeTests
         Assert.True(v.WantsVoice(spoken: true));
     }
 }
+
+public class OpenWindowTests
+{
+    [Fact]
+    public void Las_secciones_de_Ajustes_coinciden_con_las_del_catalogo()
+    {
+        var tool = Assert.Single(Kroko.Shared.Tools.ToolCatalog.All, t => t.Name == "abrir_ventana");
+        foreach (var s in Kroko.App.ViewModels.SettingsViewModel.Sections)
+            Assert.Contains($"\"{s}\"", tool.Parameters);
+        Assert.Equal(6, Kroko.App.ViewModels.SettingsViewModel.Sections.Length);
+    }
+}
+
+public class AutoApproveTests
+{
+    private static readonly DateTime Now = new(2026, 11, 8, 18, 0, 0);
+
+    [Theory]
+    [InlineData("apagar", true)]
+    [InlineData("reiniciar", true)]
+    [InlineData("cerrar_sesion", true)]
+    [InlineData("ordenar_carpeta", true)]
+    [InlineData("mover_archivos", true)]
+    [InlineData("copiar_archivos", true)]
+    [InlineData("cerrar_programa", false)]   // Pol eligió que siga preguntando
+    [InlineData("enviar_a_papelera", false)] // Pol eligió que siga preguntando
+    [InlineData("correo_enviar", false)]
+    [InlineData("ejecutar_script", false)]
+    public void Solo_las_acciones_elegidas_se_hacen_sin_tarjeta(string tool, bool expected)
+    {
+        var o = new KrokoOptions();
+        Assert.Equal(expected, o.CanAutoApprove(tool, Now.AddSeconds(-20), Now));
+    }
+
+    [Fact]
+    public void Sin_una_orden_reciente_del_dueno_sale_la_tarjeta()
+    {
+        var o = new KrokoOptions();
+        Assert.False(o.CanAutoApprove("apagar", null, Now));                  // automatización, sin orden suya
+        Assert.False(o.CanAutoApprove("apagar", Now.AddMinutes(-10), Now));   // la orden fue hace rato
+        Assert.True(o.CanAutoApprove("apagar", Now.AddMinutes(-2), Now));
+    }
+
+    [Fact]
+    public void La_lista_se_puede_cambiar_en_los_ajustes()
+    {
+        var o = new KrokoOptions { AutoApproveTools = ["cerrar_programa"] };
+        Assert.True(o.CanAutoApprove("cerrar_programa", Now, Now));
+        Assert.False(o.CanAutoApprove("apagar", Now, Now));
+    }
+}
