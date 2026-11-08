@@ -29,7 +29,7 @@ jobs:
           dotnet test tests/Kroko.Tests -c Release
           dotnet test tests/Kroko.App.Tests -c Release
 
-      - name: Publicar la App (sin el cerebro: vive en el servidor)
+      - name: "Publicar la App (sin el cerebro, que vive en el servidor)"
         run: dotnet publish src/Kroko.App/Kroko.App.csproj -c Release -r win-x64 --self-contained true -p:Version=${{ steps.v.outputs.version }} -o publish/app
 
       - name: Instalar vpk (misma versión que la librería Velopack)
