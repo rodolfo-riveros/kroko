@@ -156,16 +156,10 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
     [RelayCommand]
     public async Task CheckBrainAsync()
     {
+        // Prueba lo que está escrito ahora (aunque no se haya guardado): dirección y token
         BrainStatus = "Comprobando…";
-        try
-        {
-            var status = await _api.GetLlmStatusAsync();
-            BrainStatus = status;
-        }
-        catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException or System.Text.Json.JsonException)
-        {
-            BrainStatus = "Sin conexión con el cerebro en " + BrainUrl;
-        }
+        var (_, message) = await BrainAddress.ProbeAsync(BrainUrl, BrainToken);
+        BrainStatus = message;
     }
 
     [RelayCommand]
@@ -176,6 +170,13 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
             SaveStatus = $"El atajo \"{Hotkey}\" no es válido (ejemplos: Ctrl+Space, Ctrl+Alt+J).";
             return;
         }
+        var address = BrainAddress.Normalize(BrainUrl);
+        if (!address.Ok)
+        {
+            SaveStatus = address.Error!;
+            return;
+        }
+        BrainUrl = address.Url; // se ve tal como se guarda
 
         var k = UserSettings.LoadKrokoSection();
         k["BubbleScale"] = Math.Round(Math.Clamp(BubbleScale, 0.75, 1.5), 2);

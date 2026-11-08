@@ -14,6 +14,14 @@ public static class PasswordBoxAssist
         // Valor inicial null: así el primer enlace ("") dispara el cambio y se engancha el evento
         new FrameworkPropertyMetadata(null, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault, OnBoundPasswordChanged));
 
+    /// <summary>Permite que el ViewModel rellene la caja (oculta) con un valor ya guardado, p. ej. el token del cerebro.</summary>
+    public static readonly DependencyProperty AllowFillProperty = DependencyProperty.RegisterAttached(
+        "AllowFill", typeof(bool), typeof(PasswordBoxAssist), new PropertyMetadata(false));
+
+    public static bool GetAllowFill(DependencyObject d) => (bool)d.GetValue(AllowFillProperty);
+
+    public static void SetAllowFill(DependencyObject d, bool value) => d.SetValue(AllowFillProperty, value);
+
     private static readonly DependencyProperty IsHookedProperty =
         DependencyProperty.RegisterAttached("IsHooked", typeof(bool), typeof(PasswordBoxAssist));
 
@@ -31,5 +39,6 @@ public static class PasswordBoxAssist
         }
         // Solo se escribe en la caja para vaciarla (el ViewModel nunca rellena contraseñas)
         if (e.NewValue is "" && box.Password.Length > 0) box.Password = "";
+        else if (GetAllowFill(box) && e.NewValue is string value && value.Length > 0 && box.Password != value) box.Password = value;
     }
 }

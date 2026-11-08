@@ -7,6 +7,7 @@ using Kroko.App.Services;
 using Kroko.App.Tools;
 using Kroko.App.ViewModels;
 using Kroko.App.Views;
+using Kroko.Shared;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -58,6 +59,12 @@ public partial class App : Application
             .ConfigureServices((ctx, services) =>
             {
                 services.Configure<KrokoOptions>(ctx.Configuration.GetSection(KrokoOptions.Section));
+                // La dirección del cerebro se escribe a mano (Ajustes → Cerebro): siempre se usa en su forma canónica
+                services.PostConfigure<KrokoOptions>(o =>
+                {
+                    var address = BrainAddress.Normalize(o.BrainUrl);
+                    o.BrainUrl = address.Ok ? address.Url : KrokoDefaults.BrainUrl;
+                });
                 services.AddSingleton<ExpressionLibrary>();
                 services.AddSingleton<ISoundService, SoundService>();
                 services.AddSingleton<WindowPlacementStore>();

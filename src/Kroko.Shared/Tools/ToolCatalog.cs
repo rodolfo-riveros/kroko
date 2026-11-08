@@ -114,7 +114,7 @@ public static class ToolCatalog
             Name = "abrir_ventana",
             Description = "Abre en la PC una de tus propias ventanas para que tu dueño siga configurándote o revise algo. " +
                           "configuracion = Ajustes (\"abre tu configuración\"; con seccion: general, voz, cerebro, personalidad, " +
-                          "herramientas o cuentas); asistente = \"Configurar Kroko\" (sus datos, claves de IA, Gmail, Telegram y " +
+                          "herramientas o cuentas); asistente = \"Configurar Kroko\" (sus datos y TODAS sus claves y cuentas: IA, Tavily, Gmail, Telegram y " +
                           "vincular apps: Google, Trello, Notion, Todoist); conectores = conectar o desconectar Notion, Todoist y el " +
                           "navegador; memoria = \"Lo que sabe de ti\" (recuerdos, rutinas, buzón de mejoras); registro = acciones " +
                           "que hiciste; galeria = tus caras; mi_dia = agenda, tareas y clima de hoy.",

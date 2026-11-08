@@ -376,7 +376,7 @@
                         <Border Style="{StaticResource Row}">
                             <StackPanel>
                                 <TextBlock Text="Dirección del cerebro" Style="{StaticResource RowTitle}" />
-                                <TextBlock Text="Local: http://localhost:5080 · En servidor: https://tu-dominio" Style="{StaticResource Hint}" Margin="0,0,0,8" />
+                                <TextBlock Text="Basta con tu dominio (ej. kroko.midominio.com): Kroko pone https:// solo. En esta PC: localhost:5080. Pulsa Comprobar para probarlo antes de guardar." Style="{StaticResource Hint}" Margin="0,0,0,8" />
                                 <TextBox Text="{Binding BrainUrl, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource Field}" />
                             </StackPanel>
                         </Border>
@@ -384,7 +384,7 @@
                             <StackPanel>
                                 <TextBlock Text="Token" Style="{StaticResource RowTitle}" />
                                 <TextBlock Text="Obligatorio con el cerebro en un servidor (el mismo Agent__Token de allí)." Style="{StaticResource Hint}" Margin="0,0,0,8" />
-                                <TextBox Text="{Binding BrainToken, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource Field}" FontFamily="Consolas" />
+                                <PasswordBox Style="{StaticResource Kroko.Secret}" v:PasswordBoxAssist.AllowFill="True" v:PasswordBoxAssist.BoundPassword="{Binding BrainToken}" />
                             </StackPanel>
                         </Border>
                         <Border Style="{StaticResource Row}">
@@ -557,7 +557,7 @@
                                 <TextBlock DockPanel.Dock="Left" Text="&#xE77B;" Style="{StaticResource RowIcon}" />
                                 <StackPanel VerticalAlignment="Center">
                                     <TextBlock Text="Configurar Kroko" Style="{StaticResource RowTitle}" />
-                                    <TextBlock Text="Tu nombre, claves de IA, Gmail y Telegram." Style="{StaticResource Hint}" />
+                                    <TextBlock Text="Tu nombre y todas tus claves y cuentas: IA (Gemini, DeepSeek), búsqueda Tavily, Gmail, Telegram, Google y Trello." Style="{StaticResource Hint}" />
                                 </StackPanel>
                             </DockPanel>
                         </Border>

@@ -514,6 +514,8 @@ Telegram, autenticación por token, despliegue del Brain en servidor (Docker), l
 
 - [x] Extra — Sin preguntar lo que Pol pidió (08/11/2026): `Kroko:AutoApproveTools` (por defecto apagar, reiniciar, cerrar sesión, ordenar carpeta, mover y copiar archivos) se aprueban solas en la App (`PanelViewModel.ShowConfirm` → mismo camino que «Sí, hazlo», el ejecutor sigue verificando) si el dueño dio una orden en los últimos `AutoApproveMinutes` (3); automatizaciones y avisos siguen con tarjeta. Pruebas: 141 (cerebro) + 69 (App). Publicada la **v1.0.1**.
 
+- [x] Extra — Dirección del cerebro desde Ajustes (08/11/2026, v1.0.2): `Services/BrainAddress.cs` acepta el dominio como se escriba ("kroko.midominio.com", con barra, `/ws`, `wss://`, "localhost:5080") y lo deja canónico (https en internet, http en esta PC); se aplica al cargar las opciones (`PostConfigure`), en Guardar de Ajustes → Cerebro y en el asistente, así una dirección mal escrita nunca rompe el arranque. **Comprobar** prueba lo escrito sin guardarlo y distingue "no encuentro el cerebro", "falta el token" y "token incorrecto" (`/health/llm` abierto + `/api/perfil` protegido). El token se muestra oculto. Todas las claves y cuentas (Gemini, DeepSeek, Tavily, Gmail, Telegram, Trello, Google) se ponen en Configurar Kroko y se guardan cifradas; en el código solo quedan las direcciones públicas de cada servicio (configurables). Pruebas: 141 (cerebro) + 84 (App).
+
 ### Qué falta para dar todo por terminado (07/11/2026)
 
 1. **Pruebas en vivo de Pol:** asistente "Configurar Kroko" (se abre solo al arrancar si no hay perfil), voz con micrófono (1C, «Oye Kroko» y conversación), acciones con confirmación (1D), control visual (4), Notion y navegador (Conectar), Gmail (contraseña de aplicación).

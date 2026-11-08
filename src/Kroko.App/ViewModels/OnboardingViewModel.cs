@@ -212,18 +212,14 @@ public sealed partial class OnboardingViewModel : ObservableObject, IDisposable
     [RelayCommand]
     private void SaveServer()
     {
-        var url = ServerUrl.Trim().TrimEnd('/');
-        if (!Uri.TryCreate(url, UriKind.Absolute, out var uri) || uri.Scheme is not ("https" or "http"))
+        var address = BrainAddress.Normalize(ServerUrl);
+        if (!address.Ok)
         {
-            Fail("Escribe la dirección completa, por ejemplo https://kroko-tunombre.duckdns.org");
+            Fail(address.Error!);
             return;
         }
-        if (!uri.IsLoopback && uri.Scheme != "https")
-        {
-            Fail("Un cerebro en internet tiene que usar https (con candado).");
-            return;
-        }
-        if (!uri.IsLoopback && ServerToken.Trim().Length < 16)
+        var url = address.Url;
+        if (!address.IsLocal && ServerToken.Trim().Length < 16)
         {
             Fail("Falta el token del servidor (el valor de Agent__Token en su .env).");
             return;
@@ -231,7 +227,7 @@ public sealed partial class OnboardingViewModel : ObservableObject, IDisposable
         var k = UserSettings.LoadKrokoSection();
         k["BrainUrl"] = url;
         k["BrainToken"] = ServerToken.Trim();
-        k["LaunchLocalBrain"] = uri.IsLoopback;
+        k["LaunchLocalBrain"] = address.IsLocal;
         UserSettings.SaveKrokoSection(k);
         AppRestart.Now();
     }
