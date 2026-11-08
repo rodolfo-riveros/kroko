@@ -18,8 +18,8 @@ Tiempo: ~1 hora la primera vez. Costo: S/ 0. Necesitarás una tarjeta solo para 
 ## 1. Oracle Cloud: crear la cuenta
 
 1. Entra a https://www.oracle.com/cloud/free/ → **Start for free**.
-2. Llena tus datos. **Región de inicio (Home Region):** elige una cercana y con capacidad, por ejemplo
-   **Brazil East (São Paulo)** o **Chile Central (Santiago)**. No se puede cambiar después.
+2. Llena tus datos. **Región de inicio (Home Region):** desde Perú se recomienda **US Midwest (Chicago)** o
+   **Canada Southeast (Toronto)**: cercanas (~120 ms medidos) y menos saturadas que Ashburn o Phoenix. No se puede cambiar después.
 3. Verifica tu tarjeta (hacen un cargo temporal de prueba que devuelven).
 4. Te dan 30 días de prueba con 300 USD. No te preocupes: lo que crearemos es **"Always Free"** y sigue gratis
    después de los 30 días.
