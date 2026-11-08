@@ -4,6 +4,12 @@
     <ProjectReference Include="..\Kroko.Shared\Kroko.Shared.csproj" />
   </ItemGroup>
 
+  <!-- Solo en desarrollo: compilar la App también compila el cerebro local, para que nunca queden desfasados
+       (la App de desarrollo lo arranca desde src/Kroko.Brain/bin). El instalador (Release) no lleva el cerebro. -->
+  <ItemGroup Condition="'$(Configuration)' == 'Debug'">
+    <ProjectReference Include="..\Kroko.Brain\Kroko.Brain.csproj" ReferenceOutputAssembly="false" Private="false" SkipGetTargetFrameworkProperties="true" />
+  </ItemGroup>
+
   <ItemGroup>
     <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.2" />
     <PackageReference Include="FlaUI.UIA3" Version="5.0.0" />

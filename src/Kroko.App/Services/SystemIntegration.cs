@@ -105,7 +105,7 @@ public sealed class TrayService(ExpressionLibrary library, Audio.WakeWordService
         _icon = new TaskbarIcon
         {
             ToolTipText = "Kroko",
-            IconSource = RenderIcon(),
+            Icon = TrayIconImage.ToIcon(RenderIcon()),
             ContextMenu = menu,
             MenuActivation = H.NotifyIcon.Core.PopupActivationMode.RightClick,
             NoLeftClickDelay = true,
@@ -127,7 +127,7 @@ public sealed class TrayService(ExpressionLibrary library, Audio.WakeWordService
     }
 
     /// <summary>La cara de Kroko en reposo, 64×64.</summary>
-    private ImageSource RenderIcon()
+    private BitmapSource RenderIcon()
     {
         var anim = new FaceAnimator(library, () => 1.0) { EnableBlink = false, FollowCursor = false, EnableBreath = false };
         anim.SetBase("idle");
@@ -230,5 +230,40 @@ public sealed class UpdateService(IOptions<KrokoOptions> options, CompanionBehav
         {
             log.LogWarning("No se pudo buscar actualizaciones: {Message}", ex.Message);
         }
+    }
+}
+
+/// <summary>
+/// Convierte una imagen dibujada en WPF en un icono de Windows. H.NotifyIcon solo convierte imágenes cargadas desde
+/// un archivo (con URI), así que se le da directamente un icono: un .ico con la imagen PNG dentro (Windows Vista+).
+/// </summary>
+public static class TrayIconImage
+{
+    public static System.Drawing.Icon ToIcon(BitmapSource image)
+    {
+        using var png = new MemoryStream();
+        var encoder = new PngBitmapEncoder();
+        encoder.Frames.Add(BitmapFrame.Create(image));
+        encoder.Save(png);
+        var bytes = png.ToArray();
+
+        using var ico = new MemoryStream();
+        using (var w = new BinaryWriter(ico, System.Text.Encoding.UTF8, leaveOpen: true))
+        {
+            w.Write((short)0);  // reservado
+            w.Write((short)1);  // tipo: icono
+            w.Write((short)1);  // una imagen
+            w.Write((byte)(image.PixelWidth >= 256 ? 0 : image.PixelWidth));
+            w.Write((byte)(image.PixelHeight >= 256 ? 0 : image.PixelHeight));
+            w.Write((byte)0);   // sin paleta
+            w.Write((byte)0);
+            w.Write((short)1);  // planos
+            w.Write((short)32); // bits por píxel
+            w.Write(bytes.Length);
+            w.Write(6 + 16);    // la imagen empieza tras la cabecera y la entrada
+            w.Write(bytes);
+        }
+        ico.Position = 0;
+        return new System.Drawing.Icon(ico);
     }
 }

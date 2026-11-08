@@ -581,8 +581,9 @@ public partial class PanelViewModel : ObservableObject
             try { wav = Convert.FromBase64String(r.AudioBase64); }
             catch (FormatException) { wav = null; }
         }
-        // Respaldo: la voz de Windows si el Brain no mandó audio
-        if (wav is null && wantsVoice && _opt.Voice.LocalTtsFallback)
+        // Respaldo: la voz de Windows si el Brain no mandó audio. Solo cuando le hablaste o es un aviso: a lo que
+        // escribes, sin la voz de Gemini (cerebro antiguo, cuota agotada…) se responde solo por escrito.
+        if (wav is null && wantsVoice && (spoken || notification) && _opt.Voice.LocalTtsFallback)
             wav = await Task.Run(() => _localTts.Synthesize(r.Text));
 
         var duration = wav is null ? null : _player.Play(wav);
