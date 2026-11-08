@@ -1,0 +1,28 @@
+# Cerebro de Kroko en un VPS que YA usa los puertos 80/443 (Nginx, Apache, un panel…).
+# No trae Caddy: el cerebro escucha solo dentro del servidor (127.0.0.1:KROKO_PORT) y tu servidor web
+# actual le pasa el tráfico con HTTPS. Guía: docs/VPS-PROPIO.md
+#   cd deploy && cp .env.example .env   (y rellénalo, incluido KROKO_PORT si 8090 está ocupado)
+#   docker compose -f docker-compose.vps.yml up -d
+services:
+  brain:
+    image: ghcr.io/rodolfo-riveros/kroko-brain:latest
+    restart: unless-stopped
+    env_file: .env
+    volumes:
+      - kroko-data:/data
+    ports:
+      # Solo 127.0.0.1: desde internet nadie llega directo, únicamente a través de tu Nginx/Apache con HTTPS
+      - "127.0.0.1:${KROKO_PORT:-8090}:8080"
+    labels:
+      - com.centurylinklabs.watchtower.enable=true
+
+  # Actualiza solo el cerebro (fork mantenido de Watchtower). Si ya tienes un Watchtower en el VPS, puedes quitar esto.
+  watchtower:
+    image: nickfedor/watchtower:latest
+    restart: unless-stopped
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    command: --label-enable --interval 3600 --cleanup
+
+volumes:
+  kroko-data:

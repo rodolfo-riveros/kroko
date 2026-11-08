@@ -1,5 +1,7 @@
 # El cerebro de Kroko en un servidor gratis (paso a paso)
 
+> ¿Ya tienes un VPS con una web en los puertos 80/443? Usa [VPS-PROPIO.md](VPS-PROPIO.md).
+
 Tiempo: ~1 hora la primera vez. Costo: S/ 0. Necesitarás una tarjeta solo para verificar tu identidad en Oracle
 (no cobra mientras uses lo gratuito).
 
