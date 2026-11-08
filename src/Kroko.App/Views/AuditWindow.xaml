@@ -1,0 +1,54 @@
+<Window x:Class="Kroko.App.Views.AuditWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Kroko — Registro de acciones"
+        Width="900" Height="560" MinWidth="640" MinHeight="360"
+        WindowStartupLocation="CenterScreen"
+        Background="{StaticResource Kroko.Window}"
+        Foreground="{StaticResource Kroko.Text}"
+        FontFamily="{StaticResource Kroko.Font}"
+        FontSize="12.5">
+
+    <DockPanel Margin="20">
+        <DockPanel DockPanel.Dock="Top" Margin="0,0,0,14">
+            <Button DockPanel.Dock="Right" Content="Abrir carpeta del registro" Click="OpenFolder_Click"
+                    Style="{StaticResource Kroko.Button}" VerticalAlignment="Center" Margin="0" />
+            <StackPanel>
+                <TextBlock Text="SEGURIDAD" FontFamily="Consolas" FontSize="11" Foreground="{StaticResource Kroko.Accent}" />
+                <TextBlock Text="Registro de acciones" FontSize="24" FontWeight="Bold" Margin="0,4,0,0" />
+                <TextBlock Text="Todo lo que Kroko hizo (o intentó hacer) en tu PC, lo más reciente arriba."
+                           Foreground="{StaticResource Kroko.TextMuted}" Margin="0,2,0,0" />
+            </StackPanel>
+        </DockPanel>
+
+        <Border Style="{StaticResource Kroko.Card}" Padding="0">
+            <ListView ItemsSource="{Binding Recent}" Background="Transparent" BorderThickness="0"
+                      Foreground="{StaticResource Kroko.Text}">
+                <ListView.Resources>
+                    <Style TargetType="GridViewColumnHeader">
+                        <Setter Property="Background" Value="{StaticResource Kroko.Surface}" />
+                        <Setter Property="Foreground" Value="{StaticResource Kroko.TextMuted}" />
+                        <Setter Property="BorderThickness" Value="0" />
+                        <Setter Property="Padding" Value="8,8" />
+                        <Setter Property="HorizontalContentAlignment" Value="Left" />
+                    </Style>
+                    <Style TargetType="ListViewItem">
+                        <Setter Property="Padding" Value="4,6" />
+                        <Setter Property="ToolTip" Value="{Binding Result}" />
+                    </Style>
+                </ListView.Resources>
+                <ListView.View>
+                    <GridView>
+                        <GridViewColumn Header="" Width="28" DisplayMemberBinding="{Binding Status}" />
+                        <GridViewColumn Header="Fecha" Width="110" DisplayMemberBinding="{Binding TimeText}" />
+                        <GridViewColumn Header="Herramienta" Width="150" DisplayMemberBinding="{Binding Tool}" />
+                        <GridViewColumn Header="Riesgo" Width="80" DisplayMemberBinding="{Binding Risk}" />
+                        <GridViewColumn Header="Decisión" Width="110" DisplayMemberBinding="{Binding Decision}" />
+                        <GridViewColumn Header="Argumentos" Width="200" DisplayMemberBinding="{Binding Args}" />
+                        <GridViewColumn Header="Resultado" Width="260" DisplayMemberBinding="{Binding Result}" />
+                    </GridView>
+                </ListView.View>
+            </ListView>
+        </Border>
+    </DockPanel>
+</Window>

@@ -1,0 +1,46 @@
+# Cerebro de Kroko en un servidor, con HTTPS automático (Caddy + Let's Encrypt) y actualización sola.
+#   cd deploy && cp .env.example .env   (y rellénalo)
+#   docker compose up -d
+#
+# La imagen la publica GitHub (ghcr.io) cada vez que cambias el cerebro; Watchtower la revisa cada hora
+# y reinicia el cerebro con la versión nueva. Tus datos (memoria, claves) viven en el volumen kroko-data.
+# ¿Prefieres compilarla en el servidor? Cambia "image:" por "build: { context: .., dockerfile: deploy/Dockerfile }".
+services:
+  brain:
+    image: ghcr.io/rodolfo-riveros/kroko-brain:latest
+    restart: unless-stopped
+    env_file: .env
+    volumes:
+      - kroko-data:/data
+    expose:
+      - "8080"
+    labels:
+      - com.centurylinklabs.watchtower.enable=true
+
+  caddy:
+    image: caddy:2
+    restart: unless-stopped
+    depends_on:
+      - brain
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      KROKO_DOMAIN: ${KROKO_DOMAIN}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+
+  # Actualiza solo el cerebro (fork mantenido de Watchtower; el original se archivó en 2025)
+  watchtower:
+    image: nickfedor/watchtower:latest
+    restart: unless-stopped
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    command: --label-enable --interval 3600 --cleanup
+
+volumes:
+  kroko-data:
+  caddy-data:
+  caddy-config:

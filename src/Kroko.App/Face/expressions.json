@@ -1,0 +1,273 @@
+// Catálogo de expresiones de Kroko.
+// - Unidades: el cuerpo mide 84 de diámetro. Ojo base: w 20, h 24, r 9.
+// - Lo que no se indica se hereda (de la cara neutra, y cada keyframe hereda del anterior).
+// - Formas de ojo: Normal, Arc, Line, Heart, Star, Spiral, X.  Bocas: None, Smile, Open, O, Wave, Flat.
+// - Extras: sparkles, sparkle, rays, dots, sweat, tear, tears, zzz, question, exclamation,
+//           anger, hearts, glasses, notes, bulb.
+// - Sonidos: listen, listenEnd, success, error, confirm.
+// Guarda el archivo y Kroko se actualiza solo (no hace falta recompilar).
+{
+  "expressions": [
+    {
+      "key": "idle", "name": "Reposo", "mode": "loop", "transitionMs": 260,
+      "description": "Ojos relajados, parpadeo aleatorio, respiración lenta.",
+      "face": { "eyes": { "upper": 0.08 } }
+    },
+    {
+      "key": "listening", "name": "Escucha", "mode": "loop", "transitionMs": 200, "easing": "back",
+      "description": "Ojos grandes y atentos; el anillo pulsa con el micrófono.",
+      "sound": "listen", "exitSound": "listenEnd",
+      "face": { "eyes": { "w": 21, "h": 27, "r": 10 }, "ring": 1, "antennaGlow": 1, "antennaSync": true, "gazeFollow": 0.4 }
+    },
+    {
+      "key": "thinking", "name": "Pensando", "mode": "loop", "transitionMs": 280,
+      "description": "Ojos entrecerrados mirando arriba a la derecha, puntos orbitando.",
+      "face": { "eyes": { "upper": 0.35, "x": 4, "y": -4 }, "gazeFollow": 0, "extras": ["dots"], "antennaPulse": 0.7 }
+    },
+    {
+      "key": "speaking", "name": "Hablando", "mode": "loop", "transitionMs": 180,
+      "description": "Boca pequeña que se abre con el volumen de la voz.",
+      "face": { "mouth": "Open", "mouthSync": true, "antennaSync": true }
+    },
+    {
+      "key": "success", "name": "Éxito", "mode": "oneShot", "durationMs": 1500, "transitionMs": 200, "easing": "back",
+      "description": "Ojos en arco ^ ^, destellos y un saltito.",
+      "sound": "success",
+      "face": { "eyes": { "shape": "Arc", "h": 14 }, "extras": ["sparkles"], "blink": false },
+      "keyframes": [
+        { "atMs": 120, "face": { "bodySquash": -0.08 } },
+        { "atMs": 320, "face": { "bodyY": -9, "bodySquash": 0.07 } },
+        { "atMs": 540, "face": { "bodyY": 0, "bodySquash": -0.05 } },
+        { "atMs": 720, "face": { "bodySquash": 0 } }
+      ]
+    },
+    {
+      "key": "happy", "name": "Feliz", "mode": "oneShot", "durationMs": 1800, "transitionMs": 220, "easing": "back",
+      "description": "Ojos en arco suaves y mejillas.",
+      "face": { "eyes": { "shape": "Arc", "h": 13 }, "blush": 0.6, "blink": false },
+      "keyframes": [
+        { "atMs": 250, "face": { "bodyY": -3 } },
+        { "atMs": 500, "face": { "bodyY": 0 } }
+      ]
+    },
+    {
+      "key": "laugh", "name": "Risa", "mode": "oneShot", "durationMs": 1800, "transitionMs": 160, "easing": "back",
+      "description": "Ojos en arco y rebote rápido repetido.",
+      "face": { "eyes": { "shape": "Arc", "h": 14 }, "mouth": "Open", "mouthOpen": 0.8, "blink": false },
+      "cycleMs": 320,
+      "keyframes": [
+        { "atMs": 160, "face": { "bodyY": -4, "bodySquash": 0.04 } }
+      ]
+    },
+    {
+      "key": "laugh_closed", "name": "Risa de ojos", "mode": "oneShot", "durationMs": 2000, "transitionMs": 160,
+      "description": "Ojos cerrados en curva, rayitas y temblor.",
+      "face": { "eyes": { "shape": "Arc", "h": 8, "w": 21 }, "mouth": "Open", "mouthOpen": 0.6, "extras": ["rays"], "bodyShake": 1.1, "blink": false }
+    },
+    {
+      "key": "wink", "name": "Complicidad", "mode": "oneShot", "durationMs": 1700, "transitionMs": 200, "easing": "back",
+      "description": "Un ojo normal y el otro en arco: guiño.",
+      "face": { "rightEye": { "shape": "Arc", "h": 12 }, "leftEye": { "upper": 0.15 }, "extras": ["sparkle"], "bodyTilt": 4, "mouth": "Smile", "blink": false }
+    },
+    {
+      "key": "confident", "name": "Seguro", "mode": "oneShot", "durationMs": 2000, "transitionMs": 240,
+      "description": "Párpados a media altura y leve inclinación.",
+      "face": { "eyes": { "upper": 0.45 }, "bodyTilt": -3, "mouth": "Smile", "mouthWidth": 0.8, "extras": ["rays"] }
+    },
+    {
+      "key": "cool", "name": "Cool", "mode": "oneShot", "durationMs": 2800, "transitionMs": 260,
+      "description": "Gafas de sol pixeladas que bajan desde arriba.",
+      "face": { "extras": ["glasses"], "mouth": "Smile", "bodyTilt": 3, "blink": false, "gazeFollow": 0.3 }
+    },
+    {
+      "key": "love", "name": "Cariño", "mode": "oneShot", "durationMs": 2600, "transitionMs": 240, "easing": "back",
+      "description": "Ojos de corazón, mejillas y corazoncitos flotando.",
+      "face": { "eyes": { "shape": "Heart", "w": 22, "h": 20, "color": "#FF7EB6" }, "blush": 1, "extras": ["hearts"], "antennaColor": "#FF7EB6", "blink": false },
+      "cycleMs": 1600,
+      "keyframes": [
+        { "atMs": 800, "face": { "bodyTilt": 4 } },
+        { "atMs": 1599, "face": { "bodyTilt": -4 } }
+      ]
+    },
+    {
+      "key": "oops", "name": "Oops", "mode": "oneShot", "durationMs": 1800, "transitionMs": 200, "easing": "back",
+      "description": "Un ojo más grande que el otro y gota de sudor.",
+      "face": { "leftEye": { "w": 17, "h": 19, "y": 2 }, "rightEye": { "w": 23, "h": 28, "y": -2 }, "extras": ["sweat"], "mouth": "Wave", "mouthWidth": 0.9 }
+    },
+    {
+      "key": "embarrassed", "name": "Vergüenza", "mode": "oneShot", "durationMs": 2200, "transitionMs": 260,
+      "description": "Mira hacia abajo con las mejillas encendidas.",
+      "face": { "eyes": { "y": 5, "h": 20, "upper": 0.15 }, "gazeFollow": 0, "blush": 1, "bodyTilt": -2 }
+    },
+    {
+      "key": "nervous_laugh", "name": "Risa apenada", "mode": "oneShot", "durationMs": 2000, "transitionMs": 200,
+      "description": "Ojos en arco con gota de sudor.",
+      "face": { "eyes": { "shape": "Arc", "h": 12 }, "extras": ["sweat"], "blush": 0.5, "mouth": "Smile", "blink": false },
+      "cycleMs": 500,
+      "keyframes": [ { "atMs": 250, "face": { "bodyY": -1.5 } } ]
+    },
+    {
+      "key": "surprised", "name": "Sorpresa", "mode": "oneShot", "durationMs": 1500, "transitionMs": 140, "easing": "back",
+      "description": "Ojos redondos grandes y signo !.",
+      "face": { "eyes": { "w": 24, "h": 30, "r": 12 }, "extras": ["exclamation"], "mouth": "O", "mouthOpen": 0.3 },
+      "keyframes": [
+        { "atMs": 100, "face": { "bodyY": -6 } },
+        { "atMs": 300, "face": { "bodyY": 0 } }
+      ]
+    },
+    {
+      "key": "shocked", "name": "Shock", "mode": "oneShot", "durationMs": 2200, "transitionMs": 120,
+      "description": "Ojos pequeños y redondos; el cuerpo tiembla.",
+      "face": { "eyes": { "w": 13, "h": 15, "r": 6.5 }, "bodyShake": 1.8, "extras": ["exclamation"], "extraColor": "#FFB547", "mouth": "O", "mouthOpen": 0.6, "blink": false, "gazeFollow": 0.2 }
+    },
+    {
+      "key": "angry", "name": "Enfado", "mode": "oneShot", "durationMs": 2500, "transitionMs": 180,
+      "description": "Ojos inclinados hacia dentro y marca de enfado.",
+      "face": {
+        "leftEye": { "rot": 16, "upper": 0.42 }, "rightEye": { "rot": -16, "upper": 0.42 },
+        "extras": ["anger"], "extraColor": "#FF5C6C", "antennaColor": "#FF5C6C", "bodyShake": 0.5, "mouth": "Flat", "mouthWidth": 0.7
+      }
+    },
+    {
+      "key": "sad", "name": "Tristeza", "mode": "oneShot", "durationMs": 3200, "transitionMs": 320,
+      "description": "Ojos caídos y una lágrima.",
+      "face": {
+        "leftEye": { "rot": -12, "upper": 0.35 }, "rightEye": { "rot": 12, "upper": 0.35 }, "eyeY": 4,
+        "extras": ["tear"], "antennaGlow": 0.2, "gazeFollow": 0.3, "breathPeriod": 5200
+      }
+    },
+    {
+      "key": "crying", "name": "Llorando", "mode": "oneShot", "durationMs": 3500, "transitionMs": 260,
+      "description": "Ojos cerrados y lágrimas en cascada.",
+      "face": {
+        "leftEye": { "shape": "Line", "rot": -10, "w": 18 }, "rightEye": { "shape": "Line", "rot": 10, "w": 18 },
+        "extras": ["tears"], "mouth": "Wave", "bodyShake": 0.6, "blink": false, "gazeFollow": 0, "antennaGlow": 0.2
+      }
+    },
+    {
+      "key": "confused", "name": "Confundido", "mode": "oneShot", "durationMs": 2200, "transitionMs": 220, "easing": "back",
+      "description": "Un ojo más alto que el otro y signo ?.",
+      "face": { "leftEye": { "h": 19, "y": 3 }, "rightEye": { "h": 26, "y": -4 }, "extras": ["question"], "bodyTilt": -7, "mouth": "Flat", "mouthWidth": 0.6 }
+    },
+    {
+      "key": "sleepy", "name": "Sueño", "mode": "loop", "transitionMs": 900,
+      "description": "Los párpados bajan poco a poco.",
+      "face": { "eyes": { "upper": 0.55 }, "gazeFollow": 0.3, "antennaGlow": 0.3, "breathPeriod": 5000 },
+      "cycleMs": 4200,
+      "keyframes": [
+        { "atMs": 2400, "face": { "eyes": { "upper": 0.78 } } },
+        { "atMs": 3000, "face": { "eyes": { "upper": 0.78 } } },
+        { "atMs": 3500, "face": { "eyes": { "upper": 0.5 } } }
+      ]
+    },
+    {
+      "key": "sleeping", "name": "Dormido", "mode": "loop", "transitionMs": 700,
+      "description": "Ojos en línea, Zzz flotando, antena apagada.",
+      "face": {
+        "eyes": { "shape": "Line", "w": 17, "y": 3 }, "extras": ["zzz"], "gazeFollow": 0, "blink": false,
+        "antennaColor": "#3A3A3A", "antennaGlow": 0, "breathPeriod": 6500
+      }
+    },
+    {
+      "key": "waking", "name": "Despertando", "mode": "oneShot", "durationMs": 1500, "transitionMs": 120,
+      "description": "Línea, parpadeo rápido, ojos abiertos y estiramiento.",
+      "face": { "eyes": { "shape": "Line", "w": 17 }, "antennaColor": "#3A3A3A", "antennaGlow": 0, "blink": false, "gazeFollow": 0 },
+      "keyframes": [
+        { "atMs": 220, "face": { "eyes": { "shape": "Normal", "w": 20, "h": 12, "upper": 0.3 } } },
+        { "atMs": 330, "face": { "eyes": { "shape": "Line" } } },
+        { "atMs": 440, "face": { "eyes": { "shape": "Normal", "h": 24, "upper": 0 }, "antennaColor": "#A3FF6A", "antennaGlow": 0.8 } },
+        { "atMs": 540, "face": { "eyes": { "shape": "Line" } } },
+        { "atMs": 640, "face": { "eyes": { "shape": "Normal" }, "gazeFollow": 0.6 } },
+        { "atMs": 900, "face": { "bodySquash": 0.1, "bodyScale": 1.04, "bodyY": -2 } },
+        { "atMs": 1250, "face": { "bodySquash": 0, "bodyScale": 1, "bodyY": 0, "gazeFollow": 1 } }
+      ]
+    },
+    {
+      "key": "alert", "name": "Confirmar", "mode": "loop", "transitionMs": 180, "easing": "back",
+      "description": "Ojos ámbar, signo ! y antena ámbar pulsando.",
+      "sound": "confirm",
+      "face": {
+        "eyes": { "color": "#FFB547" }, "extras": ["exclamation"], "extraColor": "#FFB547",
+        "antennaColor": "#FFB547", "antennaPulse": 1, "antennaGlow": 1, "gazeFollow": 0.5
+      }
+    },
+    {
+      "key": "error", "name": "Error", "mode": "oneShot", "durationMs": 2000, "transitionMs": 140,
+      "description": "Ojos en X rojos y breve parpadeo.",
+      "sound": "error",
+      "face": { "eyes": { "shape": "X", "w": 16, "h": 16, "color": "#FF5C6C" }, "antennaColor": "#FF5C6C", "antennaGlow": 1, "blink": false, "gazeFollow": 0 },
+      "cycleMs": 500,
+      "keyframes": [
+        { "atMs": 120, "ease": "step", "face": { "antennaGlow": 0.1, "eyes": { "color": "#99FF5C6C" } } },
+        { "atMs": 250, "ease": "step", "face": { "antennaGlow": 1, "eyes": { "color": "#FF5C6C" } } }
+      ]
+    },
+    {
+      "key": "dizzy", "name": "Mareado", "mode": "oneShot", "durationMs": 2600, "transitionMs": 160,
+      "description": "Ojos en espiral girando.",
+      "face": { "eyes": { "shape": "Spiral", "w": 20, "h": 20 }, "mouth": "Wave", "blink": false, "gazeFollow": 0 },
+      "cycleMs": 900,
+      "keyframes": [
+        { "atMs": 450, "face": { "bodyTilt": 7 } },
+        { "atMs": 899, "face": { "bodyTilt": -7 } }
+      ]
+    },
+    {
+      "key": "focus", "name": "Concentración", "mode": "loop", "transitionMs": 400,
+      "description": "Ojos estrechos y fijos, antena azul tenue.",
+      "face": { "eyes": { "upper": 0.4, "lower": 0.15 }, "antennaColor": "#4DA3FF", "antennaGlow": 0.3, "gazeFollow": 0.15 }
+    },
+    {
+      "key": "bored", "name": "Aburrido", "mode": "oneShot", "durationMs": 3000, "transitionMs": 500,
+      "description": "Ojos medio cerrados mirando a un lado.",
+      "face": { "eyes": { "upper": 0.5, "x": -5, "y": 2 }, "gazeFollow": 0, "mouth": "Flat", "mouthWidth": 0.6 }
+    },
+    {
+      "key": "music", "name": "Música", "mode": "loop", "transitionMs": 240,
+      "description": "Ojos en arco, notas musicales y balanceo.",
+      "face": { "eyes": { "shape": "Arc", "h": 12 }, "extras": ["notes"], "blink": false, "mouth": "Smile" },
+      "cycleMs": 1000,
+      "keyframes": [
+        { "atMs": 500, "face": { "bodyTilt": 6, "bodyY": -1 } },
+        { "atMs": 999, "face": { "bodyTilt": -6, "bodyY": 0 } }
+      ]
+    },
+    {
+      "key": "idea", "name": "Idea", "mode": "oneShot", "durationMs": 2200, "transitionMs": 160, "easing": "back",
+      "description": "Ojos grandes y bombilla encima.",
+      "face": { "eyes": { "w": 23, "h": 29, "r": 11 }, "extras": ["bulb"], "extraColor": "#FFE066", "mouth": "O", "mouthOpen": 0.15 },
+      "keyframes": [
+        { "atMs": 120, "face": { "bodyY": -5 } },
+        { "atMs": 320, "face": { "bodyY": 0 } }
+      ]
+    },
+
+    {
+      "key": "paused", "name": "En pausa", "mode": "loop", "transitionMs": 300, "internal": true,
+      "description": "Interruptor de emergencia (Ctrl+Alt+K): no hace ninguna acción.",
+      "face": {
+        "eyes": { "upper": 0.55, "lower": 0.1 }, "gazeFollow": 0.2, "mouth": "Flat", "mouthWidth": 0.6,
+        "antennaColor": "#FF5C6C", "antennaGlow": 0.5, "antennaPulse": 0.4
+      }
+    },
+    {
+      "key": "yawn", "name": "Bostezo", "mode": "oneShot", "durationMs": 2300, "transitionMs": 250, "internal": true,
+      "description": "Distracción: bostezo.",
+      "face": { "gazeFollow": 0.3 },
+      "keyframes": [
+        { "atMs": 400, "face": { "eyes": { "upper": 0.55, "lower": 0.1 }, "mouth": "O", "mouthOpen": 0.2 } },
+        { "atMs": 900, "face": { "eyes": { "shape": "Line" }, "mouthOpen": 1, "bodySquash": 0.07, "blink": false } },
+        { "atMs": 1500, "face": { "mouthOpen": 0.9 } },
+        { "atMs": 1950, "face": { "eyes": { "shape": "Normal", "upper": 0.1, "lower": 0 }, "mouth": "None", "mouthOpen": 0, "bodySquash": 0, "blink": true } }
+      ]
+    },
+    {
+      "key": "offline", "name": "Sin internet", "mode": "loop", "transitionMs": 500, "internal": true,
+      "description": "Triste y con la antena gris (sin conexión).",
+      "face": {
+        "leftEye": { "rot": -10, "upper": 0.3 }, "rightEye": { "rot": 10, "upper": 0.3 }, "eyeY": 3,
+        "antennaColor": "#555555", "antennaGlow": 0, "gazeFollow": 0.5
+      }
+    }
+  ]
+}

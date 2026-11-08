@@ -1,0 +1,25 @@
+#!/usr/bin/env bash
+# Protección local: impide hacer commit de archivos de secretos o de claves pegadas en el código.
+# Se activa una vez con:  git config core.hooksPath .githooks
+set -u
+fail=0
+
+# 1) Archivos que nunca deben subirse
+blocked=$(git diff --cached --name-only --diff-filter=ACMR | grep -E '(^|/)\.env$|(^|/)\.env\.|secretos\.dat|secrets\.json|(^|/)settings\.json$|\.db$|\.db-(wal|shm)$|\.pfx$|\.pem$|id_rsa' | grep -v '\.env\.example$')
+if [ -n "$blocked" ]; then
+  echo "✋ Kroko: estos archivos tienen secretos o datos personales y no se suben:"
+  echo "$blocked" | sed 's/^/   - /'
+  fail=1
+fi
+
+# 2) Claves pegadas en lo que se va a subir (las pruebas usan claves falsas y se ignoran)
+leaks=$(git diff --cached -U0 --diff-filter=ACMR -- . ':(exclude)tests/*' ':(exclude)*.png' | grep -E '^\+' | grep -nE \
+  'AIza[0-9A-Za-z_-]{30,}|AQ\.[0-9A-Za-z_-]{30,}|tvly-[0-9A-Za-z]{20,}|sk-[0-9A-Za-z]{20,}|[0-9]{8,10}:AA[0-9A-Za-z_-]{30,}|ghp_[0-9A-Za-z]{30,}|GOCSPX-[0-9A-Za-z_-]{20,}|-----BEGIN (RSA |EC )?PRIVATE KEY')
+if [ -n "$leaks" ]; then
+  echo "✋ Kroko: parece que hay una clave o token en el código:"
+  echo "$leaks" | cut -c1-60 | sed 's/^/   /'
+  echo "   Ponla en Configurar Kroko, user-secrets o el .env (que no se sube)."
+  fail=1
+fi
+
+[ $fail -eq 0 ] || { echo "Commit cancelado. (Si de verdad es seguro: git commit --no-verify)"; exit 1; }

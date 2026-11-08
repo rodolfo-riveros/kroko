@@ -1,0 +1,49 @@
+<Window x:Class="Kroko.App.Views.BubbleWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:face="clr-namespace:Kroko.App.Face"
+        Title="Kroko"
+        WindowStyle="None"
+        AllowsTransparency="True"
+        Background="Transparent"
+        ResizeMode="NoResize"
+        Topmost="True"
+        ShowInTaskbar="False"
+        ShowActivated="False"
+        UseLayoutRounding="True"
+        Opacity="0">
+
+    <!--
+        Todo el lienzo es transparente salvo el cuerpo de Kroko: los clics fuera de él
+        pasan a las ventanas de abajo (click-through).
+    -->
+    <face:FaceView x:Name="Face"
+                   Animator="{Binding Face}"
+                   Cursor="Hand"
+                   MouseLeftButtonDown="Face_MouseLeftButtonDown"
+                   MouseMove="Face_MouseMove"
+                   MouseLeftButtonUp="Face_MouseLeftButtonUp"
+                   LostMouseCapture="Face_LostMouseCapture"
+                   MouseEnter="Face_MouseEnter"
+                   MouseLeave="Face_MouseLeave">
+        <face:FaceView.ContextMenu>
+            <ContextMenu>
+                <MenuItem Header="Hablar" InputGestureText="Ctrl+Espacio" Command="{Binding TalkCommand}" />
+                <MenuItem Header="Escribir a Kroko" Command="{Binding WriteCommand}" />
+                <MenuItem Header="Mi día" Command="{Binding OpenMyDayCommand}" />
+                <MenuItem Header="Configurar Kroko (tú y tus cuentas)" Command="{Binding OpenOnboardingCommand}" />
+                <MenuItem Header="Conectores (Notion, navegador…)" Command="{Binding OpenConnectorsCommand}" />
+                <MenuItem Header="Lo que sabe de ti" Command="{Binding OpenMemoryCommand}" />
+                <MenuItem Header="Registro de acciones" Command="{Binding OpenAuditCommand}" />
+                <MenuItem Header="Pausar / reanudar" InputGestureText="Ctrl+Alt+K" Command="{Binding TogglePauseCommand}" />
+                <Separator />
+                <MenuItem Header="Galería de expresiones" Command="{Binding OpenGalleryCommand}" />
+                <MenuItem Header="Dormir" Command="{Binding SleepCommand}" />
+                <MenuItem Header="Despertar" Command="{Binding WakeCommand}" />
+                <Separator />
+                <MenuItem Header="Ajustes" Command="{Binding OpenSettingsCommand}" />
+                <MenuItem Header="Salir" Command="{Binding ExitCommand}" />
+            </ContextMenu>
+        </face:FaceView.ContextMenu>
+    </face:FaceView>
+</Window>

@@ -1,0 +1,600 @@
+<Window x:Class="Kroko.App.Views.SettingsWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:v="clr-namespace:Kroko.App.Views"
+        Title="Kroko — Ajustes"
+        Width="920" Height="680" MinWidth="760" MinHeight="520"
+        WindowStartupLocation="CenterScreen"
+        Background="{StaticResource Kroko.Window}"
+        Foreground="{StaticResource Kroko.Text}"
+        FontFamily="{StaticResource Kroko.Font}"
+        FontSize="13">
+
+    <Window.Resources>
+        <v:BoolToVisibleConverter x:Key="BoolToVisible" />
+        <v:EmptyToCollapsedConverter x:Key="EmptyToCollapsed" />
+
+        <Style x:Key="Field" TargetType="TextBox" BasedOn="{StaticResource Kroko.Field}" />
+
+        <!-- Título de sección dentro de una página -->
+        <Style x:Key="Group" TargetType="TextBlock">
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="FontSize" Value="13.5" />
+            <Setter Property="Margin" Value="2,18,0,8" />
+        </Style>
+        <Style x:Key="PageTitle" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="26" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="Margin" Value="0,0,0,4" />
+        </Style>
+        <Style x:Key="Hint" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="{StaticResource Kroko.TextMuted}" />
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="TextWrapping" Value="Wrap" />
+        </Style>
+
+        <!-- Fila estilo Windows 11: tarjeta con título, explicación y el control a la derecha -->
+        <Style x:Key="Row" TargetType="Border">
+            <Setter Property="Background" Value="{StaticResource Kroko.Surface}" />
+            <Setter Property="BorderBrush" Value="{StaticResource Kroko.Line}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="CornerRadius" Value="8" />
+            <Setter Property="Padding" Value="16,12" />
+            <Setter Property="Margin" Value="0,0,0,4" />
+            <Setter Property="MinHeight" Value="62" />
+        </Style>
+        <Style x:Key="RowTitle" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="13.5" />
+            <Setter Property="TextWrapping" Value="Wrap" />
+        </Style>
+        <Style x:Key="RowIcon" TargetType="TextBlock">
+            <Setter Property="FontFamily" Value="{StaticResource Kroko.Icons}" />
+            <Setter Property="FontSize" Value="18" />
+            <Setter Property="Width" Value="34" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+            <Setter Property="Foreground" Value="{StaticResource Kroko.Text}" />
+        </Style>
+
+        <!-- Navegación lateral -->
+        <Style TargetType="TabItem">
+            <Setter Property="Foreground" Value="{StaticResource Kroko.TextMuted}" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="TabItem">
+                        <Grid Margin="0,0,0,2" Cursor="Hand">
+                            <Border x:Name="Bd" CornerRadius="6" Padding="12,9" Background="Transparent">
+                                <ContentPresenter ContentSource="Header" />
+                            </Border>
+                            <Border x:Name="Pill" Width="3" Height="16" CornerRadius="1.5" HorizontalAlignment="Left"
+                                    Background="{StaticResource Kroko.Accent}" Visibility="Collapsed" />
+                        </Grid>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsSelected" Value="True">
+                                <Setter TargetName="Bd" Property="Background" Value="{StaticResource Kroko.Surface}" />
+                                <Setter TargetName="Pill" Property="Visibility" Value="Visible" />
+                                <Setter Property="Foreground" Value="{StaticResource Kroko.Text}" />
+                            </Trigger>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Bd" Property="Background" Value="{StaticResource Kroko.SurfaceHover}" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        <Style x:Key="NavIcon" TargetType="TextBlock">
+            <Setter Property="FontFamily" Value="{StaticResource Kroko.Icons}" />
+            <Setter Property="FontSize" Value="15" />
+            <Setter Property="Width" Value="28" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+        </Style>
+        <Style TargetType="ScrollViewer">
+            <Setter Property="VerticalScrollBarVisibility" Value="Auto" />
+            <Setter Property="Padding" Value="0,0,14,0" />
+        </Style>
+    </Window.Resources>
+
+    <DockPanel>
+        <!-- Barra inferior -->
+        <Border DockPanel.Dock="Bottom" BorderBrush="{StaticResource Kroko.Line}" BorderThickness="0,1,0,0" Padding="22,12">
+            <DockPanel>
+                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                    <Button Content="Guardar" Command="{Binding SaveCommand}" Style="{StaticResource Kroko.Button}" />
+                    <Button Content="Guardar y reiniciar Kroko" Command="{Binding SaveAndRestartCommand}" Style="{StaticResource Kroko.PrimaryButton}" Margin="0"
+                            />
+                </StackPanel>
+                <TextBlock Text="{Binding SaveStatus}" VerticalAlignment="Center" Foreground="{StaticResource Kroko.Accent}" TextWrapping="Wrap" />
+            </DockPanel>
+        </Border>
+
+        <TabControl TabStripPlacement="Left" Background="Transparent" BorderThickness="0" Padding="28,22,8,0" Margin="14,18,0,0">
+            <TabControl.Template>
+                <ControlTemplate TargetType="TabControl">
+                    <DockPanel>
+                        <StackPanel DockPanel.Dock="Left" Width="220">
+                            <StackPanel Orientation="Horizontal" Margin="10,0,0,18">
+                                <Border Width="30" Height="30" CornerRadius="15" Background="{StaticResource Kroko.Body}" BorderBrush="{StaticResource Kroko.BodyEdge}" BorderThickness="1">
+                                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
+                                        <Border Width="5" Height="8" CornerRadius="2.5" Background="{StaticResource Kroko.Eye}" Margin="0,0,4,0" />
+                                        <Border Width="5" Height="8" CornerRadius="2.5" Background="{StaticResource Kroko.Eye}" />
+                                    </StackPanel>
+                                </Border>
+                                <StackPanel Margin="10,0,0,0" VerticalAlignment="Center">
+                                    <TextBlock Text="Kroko" FontWeight="SemiBold" FontSize="14" />
+                                    <TextBlock Text="Ajustes" FontSize="11.5" Foreground="{StaticResource Kroko.TextMuted}" />
+                                </StackPanel>
+                            </StackPanel>
+                            <TabPanel IsItemsHost="True" />
+                        </StackPanel>
+                        <ContentPresenter ContentSource="SelectedContent" Margin="{TemplateBinding Padding}" />
+                    </DockPanel>
+                </ControlTemplate>
+            </TabControl.Template>
+
+            <!-- ======================= General ======================= -->
+            <TabItem>
+                <TabItem.Header>
+                    <StackPanel Orientation="Horizontal"><TextBlock Text="&#xE713;" Style="{StaticResource NavIcon}" /><TextBlock Text="General" /></StackPanel>
+                </TabItem.Header>
+                <ScrollViewer>
+                    <StackPanel>
+                        <TextBlock Text="General" Style="{StaticResource PageTitle}" />
+
+                        <TextBlock Text="Inicio y comportamiento" Style="{StaticResource Group}" />
+                        <Border Style="{StaticResource Row}">
+                            <DockPanel>
+                                <CheckBox DockPanel.Dock="Right" IsChecked="{Binding StartWithWindowsEnabled}" Style="{StaticResource Kroko.Toggle}" />
+                                <TextBlock DockPanel.Dock="Left" Text="&#xE7E8;" Style="{StaticResource RowIcon}" />
+                                <StackPanel VerticalAlignment="Center">
+                                    <TextBlock Text="Iniciar Kroko con Windows" Style="{StaticResource RowTitle}" />
+                                    <TextBlock Text="Aparece solo al encender la PC." Style="{StaticResource Hint}" />
+                                </StackPanel>
+                            </DockPanel>
+                        </Border>
+                        <Border Style="{StaticResource Row}">
+                            <DockPanel>
+                                <CheckBox DockPanel.Dock="Right" IsChecked="{Binding HideOnFullscreen}" Style="{StaticResource Kroko.Toggle}" />
+                                <TextBlock DockPanel.Dock="Left" Text="&#xE740;" Style="{StaticResource RowIcon}" />
+                                <StackPanel VerticalAlignment="Center">
+                                    <TextBlock Text="Esconderse en pantalla completa" Style="{StaticResource RowTitle}" />
+                                    <TextBlock Text="Con juegos, vídeos o presentaciones se aparta y vuelve al salir." Style="{StaticResource Hint}" />
+                                </StackPanel>
+                            </DockPanel>
+                        </Border>
+
+                        <TextBlock Text="Apariencia y sonido" Style="{StaticResource Group}" />
+                        <Border Style="{StaticResource Row}">
+                            <DockPanel>
+                                <Slider DockPanel.Dock="Right" Minimum="0.75" Maximum="1.5" Value="{Binding BubbleScale}" Width="220" VerticalAlignment="Center"
+                                        TickFrequency="0.25" IsSnapToTickEnabled="True" />
+                                <TextBlock DockPanel.Dock="Left" Text="&#xE740;" Style="{StaticResource RowIcon}" />
+                                <StackPanel VerticalAlignment="Center">
+                                    <TextBlock Text="Tamaño de la burbuja" Style="{StaticResource RowTitle}" />
+                                    <TextBlock Text="0.75× · 1× · 1.25× · 1.5× (se aplica al reiniciar)" Style="{StaticResource Hint}" />
+                                </StackPanel>
+                            </DockPanel>
+                        </Border>
+                        <Border Style="{StaticResource Row}">
+                            <DockPanel>
+                                <CheckBox DockPanel.Dock="Right" IsChecked="{Binding SoundsEnabled}" Style="{StaticResource Kroko.Toggle}" />
+                                <TextBlock DockPanel.Dock="Left" Text="&#xE767;" Style="{StaticResource RowIcon}" />
+                                <StackPanel VerticalAlignment="Center">
+                                    <TextBlock Text="Sonidos" Style="{StaticResource RowTitle}" />
+                                    <TextBlock Text="Tonos cortos al escuchar, terminar o confirmar." Style="{StaticResource Hint}" />
+                                </StackPanel>
+                            </DockPanel>
+                        </Border>
+                        <Border Style="{StaticResource Row}">
+                            <DockPanel>
+                                <Slider DockPanel.Dock="Right" Minimum="0" Maximum="1" Value="{Binding SoundVolume}" Width="220" VerticalAlignment="Center" />
+                                <TextBlock DockPanel.Dock="Left" Text="&#xE994;" Style="{StaticResource RowIcon}" />
+                                <TextBlock Text="Volumen de los sonidos" Style="{StaticResource RowTitle}" VerticalAlignment="Center" />
+                            </DockPanel>
+                        </Border>
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+
+            <!-- ======================= Voz y conversación ======================= -->
+            <TabItem IsSelected="True">
+                <TabItem.Header>
+                    <StackPanel Orientation="Horizontal"><TextBlock Text="&#xE720;" Style="{StaticResource NavIcon}" /><TextBlock Text="Voz y conversación" /></StackPanel>
+                </TabItem.Header>
+                <ScrollViewer>
+                    <StackPanel>
+                        <TextBlock Text="Voz y conversación" Style="{StaticResource PageTitle}" />
+                        <TextBlock Text="Estos interruptores se aplican al instante." Style="{StaticResource Hint}" />
+
+                        <TextBlock Text="«Oye Kroko»" Style="{StaticResource Group}" />
+                        <Border Style="{StaticResource Row}">
+                            <StackPanel>
+                                <DockPanel>
+                                    <CheckBox DockPanel.Dock="Right" IsChecked="{Binding WakeWordEnabled}" Style="{StaticResource Kroko.Toggle}" />
+                                    <TextBlock DockPanel.Dock="Left" Text="&#xE720;" Style="{StaticResource RowIcon}" Foreground="{StaticResource Kroko.Accent}" />
+                                    <StackPanel VerticalAlignment="Center">
+                                        <TextBlock Text="Despertar con «Oye Kroko» o «Hola Kroko»" Style="{StaticResource RowTitle}" />
+                                        <TextBlock Text="{Binding ModelStatus}" Style="{StaticResource Hint}" />
+                                    </StackPanel>
+                                </DockPanel>
+                                <StackPanel Margin="34,10,0,0" Visibility="{Binding ModelInstalled, Converter={StaticResource BoolToVisible}, ConverterParameter=invert}">
+                                    <ProgressBar Style="{StaticResource Kroko.Progress}" Maximum="1" Value="{Binding DownloadProgress}" Margin="0,0,0,10"
+                                                 Visibility="{Binding IsDownloading, Converter={StaticResource BoolToVisible}}" />
+                                    <Button HorizontalAlignment="Left" Command="{Binding DownloadModelCommand}" Margin="0">
+                                        <Button.Style>
+                                            <Style TargetType="Button" BasedOn="{StaticResource Kroko.Button}">
+                                                <Setter Property="Content" Value="Descargar modelo de voz (40 MB)" />
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding IsDownloading}" Value="True">
+                                                        <Setter Property="Content" Value="Cancelar descarga" />
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </Button.Style>
+                                    </Button>
+                                </StackPanel>
+                            </StackPanel>
+                        </Border>
+                        <Border Style="{StaticResource Row}">
+                            <DockPanel>
+                                <CheckBox DockPanel.Dock="Right" IsChecked="{Binding ListenInFullscreen}" Style="{StaticResource Kroko.Toggle}" />
+                                <TextBlock DockPanel.Dock="Left" Text="&#xE7FC;" Style="{StaticResource RowIcon}" />
+                                <StackPanel VerticalAlignment="Center">
+                                    <TextBlock Text="Escuchar también en pantalla completa" Style="{StaticResource RowTitle}" />
+                                    <TextBlock Text="Apágalo si juegas con chat de voz para que no se active por error." Style="{StaticResource Hint}" />
+                                </StackPanel>
+                            </DockPanel>
+                        </Border>
+
+                        <TextBlock Text="Conversación" Style="{StaticResource Group}" />
+                        <Border Style="{StaticResource Row}">
+                            <DockPanel>
+                                <CheckBox DockPanel.Dock="Right" IsChecked="{Binding Realtime}" Style="{StaticResource Kroko.Toggle}" />
+                                <TextBlock DockPanel.Dock="Left" Text="&#xE945;" Style="{StaticResource RowIcon}" Foreground="{StaticResource Kroko.Accent}" />
+                                <StackPanel VerticalAlignment="Center">
+                                    <TextBlock Text="Voz en tiempo real (Gemini Live)" Style="{StaticResource RowTitle}" />
+                                    <TextBlock Text="Responde en un segundo mientras conversan, como una llamada. Apagado: graba lo que dices y luego responde." Style="{StaticResource Hint}" />
+                                </StackPanel>
+                            </DockPanel>
+                        </Border>
+                        <Border Style="{StaticResource Row}">
+                            <DockPanel>
+                                <CheckBox DockPanel.Dock="Right" IsChecked="{Binding Conversation}" Style="{StaticResource Kroko.Toggle}" />
+                                <TextBlock DockPanel.Dock="Left" Text="&#xE8BD;" Style="{StaticResource RowIcon}" />
+                                <StackPanel VerticalAlignment="Center">
+                                    <TextBlock Text="Seguir escuchando después de responder" Style="{StaticResource RowTitle}" />
+                                    <TextBlock Text="Conversa sin repetir «Oye Kroko». Termina si te callas o dices «gracias, eso es todo»." Style="{StaticResource Hint}" />
+                                </StackPanel>
+                            </DockPanel>
+                        </Border>
+                        <Border Style="{StaticResource Row}">
+                            <DockPanel>
+                                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center">
+                                    <Slider Minimum="3" Maximum="20" Value="{Binding FollowUpSeconds}" Width="180" TickFrequency="1" IsSnapToTickEnabled="True" VerticalAlignment="Center" />
+                                    <TextBlock Text="{Binding FollowUpSeconds, StringFormat={}{0:0} s}" Width="36" TextAlignment="Right" VerticalAlignment="Center" />
+                                </StackPanel>
+                                <TextBlock DockPanel.Dock="Left" Text="&#xE916;" Style="{StaticResource RowIcon}" />
+                                <StackPanel VerticalAlignment="Center">
+                                    <TextBlock Text="Tiempo de espera" Style="{StaticResource RowTitle}" />
+                                    <TextBlock Text="Cuánto espera a que sigas hablando." Style="{StaticResource Hint}" />
+                                </StackPanel>
+                            </DockPanel>
+                        </Border>
+                        <Border Style="{StaticResource Row}">
+                            <DockPanel>
+                                <CheckBox DockPanel.Dock="Right" IsChecked="{Binding LiveCaptions}" Style="{StaticResource Kroko.Toggle}" />
+                                <TextBlock DockPanel.Dock="Left" Text="&#xE8D2;" Style="{StaticResource RowIcon}" />
+                                <StackPanel VerticalAlignment="Center">
+                                    <TextBlock Text="Subtítulos en vivo" Style="{StaticResource RowTitle}" />
+                                    <TextBlock Text="Ves lo que dices mientras hablas (reconocimiento en esta PC)." Style="{StaticResource Hint}" />
+                                </StackPanel>
+                            </DockPanel>
+                        </Border>
+
+                        <TextBlock Text="Micrófono y atajo" Style="{StaticResource Group}" />
+                        <Border Style="{StaticResource Row}">
+                            <StackPanel>
+                                <DockPanel>
+                                    <ComboBox DockPanel.Dock="Right" ItemsSource="{Binding Microphones}" SelectedIndex="{Binding MicrophoneIndex}" Width="260"
+                                              Style="{StaticResource Kroko.Combo}" />
+                                    <TextBlock DockPanel.Dock="Left" Text="&#xE1D6;" Style="{StaticResource RowIcon}" />
+                                    <StackPanel VerticalAlignment="Center">
+                                        <TextBlock Text="Micrófono" Style="{StaticResource RowTitle}" />
+                                        <TextBlock Text="El cambio se aplica al reiniciar." Style="{StaticResource Hint}" />
+                                    </StackPanel>
+                                </DockPanel>
+                                <DockPanel Margin="34,12,0,0">
+                                    <CheckBox DockPanel.Dock="Left" IsChecked="{Binding MicTesting}" Style="{StaticResource Kroko.Check}" Content="Probar" Margin="0,0,14,0" VerticalAlignment="Center" />
+                                    <ProgressBar Style="{StaticResource Kroko.Progress}" Maximum="1" Value="{Binding MicLevel}" VerticalAlignment="Center" />
+                                </DockPanel>
+                            </StackPanel>
+                        </Border>
+                        <Border Style="{StaticResource Row}">
+                            <DockPanel>
+                                <TextBox DockPanel.Dock="Right" Text="{Binding Hotkey, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource Field}" Width="180" VerticalAlignment="Center" />
+                                <TextBlock DockPanel.Dock="Left" Text="&#xE92E;" Style="{StaticResource RowIcon}" />
+                                <StackPanel VerticalAlignment="Center">
+                                    <TextBlock Text="Atajo para hablar" Style="{StaticResource RowTitle}" />
+                                    <TextBlock Text="Ejemplos: Ctrl+Space, Ctrl+Alt+J, Shift+F2." Style="{StaticResource Hint}" />
+                                </StackPanel>
+                            </DockPanel>
+                        </Border>
+                        <Border Style="{StaticResource Row}">
+                            <DockPanel>
+                                <CheckBox DockPanel.Dock="Right" IsChecked="{Binding PushToTalk}" Style="{StaticResource Kroko.Toggle}" />
+                                <TextBlock DockPanel.Dock="Left" Text="&#xE7C9;" Style="{StaticResource RowIcon}" />
+                                <StackPanel VerticalAlignment="Center">
+                                    <TextBlock Text="Mantener pulsado para hablar" Style="{StaticResource RowTitle}" />
+                                    <TextBlock Text="Apagado: pulsas, hablas y se detiene solo al callarte." Style="{StaticResource Hint}" />
+                                </StackPanel>
+                            </DockPanel>
+                        </Border>
+
+                        <TextBlock Text="Respuestas" Style="{StaticResource Group}" />
+                        <Border Style="{StaticResource Row}">
+                            <DockPanel>
+                                <CheckBox DockPanel.Dock="Right" IsChecked="{Binding SpeakTypedReplies}" Style="{StaticResource Kroko.Toggle}" />
+                                <TextBlock DockPanel.Dock="Left" Text="&#xE8BE;" Style="{StaticResource RowIcon}" />
+                                <TextBlock Text="Hablar también las respuestas a lo que escribo" Style="{StaticResource RowTitle}" VerticalAlignment="Center" />
+                            </DockPanel>
+                        </Border>
+                        <Border Style="{StaticResource Row}">
+                            <DockPanel>
+                                <CheckBox DockPanel.Dock="Right" IsChecked="{Binding LocalTtsFallback}" Style="{StaticResource Kroko.Toggle}" />
+                                <TextBlock DockPanel.Dock="Left" Text="&#xE995;" Style="{StaticResource RowIcon}" />
+                                <StackPanel VerticalAlignment="Center">
+                                    <TextBlock Text="Voz de respaldo de Windows" Style="{StaticResource RowTitle}" />
+                                    <TextBlock Text="Si la voz de Gemini falla, habla con la voz del sistema." Style="{StaticResource Hint}" />
+                                </StackPanel>
+                            </DockPanel>
+                        </Border>
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+
+            <!-- ======================= Cerebro ======================= -->
+            <TabItem>
+                <TabItem.Header>
+                    <StackPanel Orientation="Horizontal"><TextBlock Text="&#xE968;" Style="{StaticResource NavIcon}" /><TextBlock Text="Cerebro" /></StackPanel>
+                </TabItem.Header>
+                <ScrollViewer>
+                    <StackPanel>
+                        <TextBlock Text="Cerebro" Style="{StaticResource PageTitle}" />
+                        <TextBlock Text="Dónde piensa Kroko: en esta PC o en tu servidor." Style="{StaticResource Hint}" />
+
+                        <TextBlock Text="Conexión" Style="{StaticResource Group}" />
+                        <Border Style="{StaticResource Row}">
+                            <StackPanel>
+                                <TextBlock Text="Dirección del cerebro" Style="{StaticResource RowTitle}" />
+                                <TextBlock Text="Local: http://localhost:5080 · En servidor: https://tu-dominio" Style="{StaticResource Hint}" Margin="0,0,0,8" />
+                                <TextBox Text="{Binding BrainUrl, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource Field}" />
+                            </StackPanel>
+                        </Border>
+                        <Border Style="{StaticResource Row}">
+                            <StackPanel>
+                                <TextBlock Text="Token" Style="{StaticResource RowTitle}" />
+                                <TextBlock Text="Obligatorio con el cerebro en un servidor (el mismo Agent__Token de allí)." Style="{StaticResource Hint}" Margin="0,0,0,8" />
+                                <TextBox Text="{Binding BrainToken, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource Field}" FontFamily="Consolas" />
+                            </StackPanel>
+                        </Border>
+                        <Border Style="{StaticResource Row}">
+                            <DockPanel>
+                                <CheckBox DockPanel.Dock="Right" IsChecked="{Binding LaunchLocalBrain}" Style="{StaticResource Kroko.Toggle}" />
+                                <TextBlock DockPanel.Dock="Left" Text="&#xE977;" Style="{StaticResource RowIcon}" />
+                                <StackPanel VerticalAlignment="Center">
+                                    <TextBlock Text="Arrancar el cerebro en esta PC" Style="{StaticResource RowTitle}" />
+                                    <TextBlock Text="Apágalo cuando el cerebro esté en un servidor." Style="{StaticResource Hint}" />
+                                </StackPanel>
+                            </DockPanel>
+                        </Border>
+                        <Border Style="{StaticResource Row}">
+                            <DockPanel>
+                                <Button DockPanel.Dock="Right" Content="Comprobar" Command="{Binding CheckBrainCommand}" Style="{StaticResource Kroko.Button}" Margin="12,0,0,0" VerticalAlignment="Center" />
+                                <TextBlock DockPanel.Dock="Left" Text="&#xE701;" Style="{StaticResource RowIcon}" />
+                                <StackPanel VerticalAlignment="Center">
+                                    <TextBlock Text="Estado" Style="{StaticResource RowTitle}" />
+                                    <TextBlock Text="{Binding BrainStatus}" Style="{StaticResource Hint}" />
+                                </StackPanel>
+                            </DockPanel>
+                        </Border>
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+
+            <!-- ======================= Personalidad ======================= -->
+            <TabItem>
+                <TabItem.Header>
+                    <StackPanel Orientation="Horizontal"><TextBlock Text="&#xE76E;" Style="{StaticResource NavIcon}" /><TextBlock Text="Personalidad" /></StackPanel>
+                </TabItem.Header>
+                <ScrollViewer>
+                    <StackPanel>
+                        <TextBlock Text="Personalidad" Style="{StaticResource PageTitle}" />
+                        <TextBlock Text="Su forma de hablar se edita en Kroko.Brain/prompts/system.md (sin reiniciar). Tu nombre y acento, en Configurar Kroko." Style="{StaticResource Hint}" />
+
+                        <TextBlock Text="Vida propia" Style="{StaticResource Group}" />
+                        <Border Style="{StaticResource Row}">
+                            <DockPanel>
+                                <CheckBox DockPanel.Dock="Right" IsChecked="{Binding DistractionsEnabled}" Style="{StaticResource Kroko.Toggle}" />
+                                <TextBlock DockPanel.Dock="Left" Text="&#xE7FC;" Style="{StaticResource RowIcon}" />
+                                <StackPanel VerticalAlignment="Center">
+                                    <TextBlock Text="Distracciones" Style="{StaticResource RowTitle}" />
+                                    <TextBlock Text="De vez en cuando sigue una mosca, juega con una pelota o bosteza." Style="{StaticResource Hint}" />
+                                </StackPanel>
+                            </DockPanel>
+                        </Border>
+
+                        <TextBlock Text="Sueño" Style="{StaticResource Group}" />
+                        <Border Style="{StaticResource Row}">
+                            <DockPanel>
+                                <TextBox DockPanel.Dock="Right" Text="{Binding SleepAfterMinutes}" Style="{StaticResource Field}" Width="80" VerticalAlignment="Center" />
+                                <TextBlock DockPanel.Dock="Left" Text="&#xE708;" Style="{StaticResource RowIcon}" />
+                                <TextBlock Text="Se duerme tras (minutos sin uso)" Style="{StaticResource RowTitle}" VerticalAlignment="Center" />
+                            </DockPanel>
+                        </Border>
+                        <Border Style="{StaticResource Row}">
+                            <DockPanel>
+                                <TextBox DockPanel.Dock="Right" Text="{Binding NightSleepAfterMinutes}" Style="{StaticResource Field}" Width="80" VerticalAlignment="Center" />
+                                <TextBlock DockPanel.Dock="Left" Text="&#xE708;" Style="{StaticResource RowIcon}" />
+                                <TextBlock Text="De noche se duerme tras (minutos)" Style="{StaticResource RowTitle}" VerticalAlignment="Center" />
+                            </DockPanel>
+                        </Border>
+                        <Border Style="{StaticResource Row}">
+                            <DockPanel>
+                                <TextBox DockPanel.Dock="Right" Text="{Binding HideAfterSleepMinutes}" Style="{StaticResource Field}" Width="80" VerticalAlignment="Center" />
+                                <TextBlock DockPanel.Dock="Left" Text="&#xE7B3;" Style="{StaticResource RowIcon}" />
+                                <StackPanel VerticalAlignment="Center">
+                                    <TextBlock Text="Desaparecer tras dormir (minutos)" Style="{StaticResource RowTitle}" />
+                                    <TextBlock Text="Se esconde y vuelve al decir «Oye Kroko», con el atajo o cuando tiene un aviso. 0 = nunca." Style="{StaticResource Hint}" />
+                                </StackPanel>
+                            </DockPanel>
+                        </Border>
+                        <Border Style="{StaticResource Row}">
+                            <DockPanel>
+                                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center">
+                                    <TextBox Text="{Binding NightStartHour}" Style="{StaticResource Field}" Width="56" />
+                                    <TextBlock Text="a" VerticalAlignment="Center" Margin="10,0" Foreground="{StaticResource Kroko.TextMuted}" />
+                                    <TextBox Text="{Binding NightEndHour}" Style="{StaticResource Field}" Width="56" />
+                                </StackPanel>
+                                <TextBlock DockPanel.Dock="Left" Text="&#xE823;" Style="{StaticResource RowIcon}" />
+                                <TextBlock Text="Horario de noche (hora de inicio y de fin)" Style="{StaticResource RowTitle}" VerticalAlignment="Center" />
+                            </DockPanel>
+                        </Border>
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+
+            <!-- ======================= Herramientas ======================= -->
+            <TabItem>
+                <TabItem.Header>
+                    <StackPanel Orientation="Horizontal"><TextBlock Text="&#xE90F;" Style="{StaticResource NavIcon}" /><TextBlock Text="Herramientas" /></StackPanel>
+                </TabItem.Header>
+                <ScrollViewer>
+                    <StackPanel>
+                        <TextBlock Text="Herramientas" Style="{StaticResource PageTitle}" />
+                        <TextBlock Text="Apaga lo que no quieras que Kroko pueda hacer. Lo peligroso siempre pide confirmación." Style="{StaticResource Hint}" />
+
+                        <TextBlock Text="Lo que puede hacer en tu PC" Style="{StaticResource Group}" />
+                        <Border Background="{StaticResource Kroko.Surface}" BorderBrush="{StaticResource Kroko.Line}" BorderThickness="1" CornerRadius="8" Padding="6">
+                            <ItemsControl ItemsSource="{Binding Tools}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <DockPanel Margin="10,7">
+                                            <CheckBox DockPanel.Dock="Right" IsChecked="{Binding Enabled}" Style="{StaticResource Kroko.Toggle}" Margin="12,0,0,0" />
+                                            <Border DockPanel.Dock="Right" CornerRadius="4" Padding="6,1" Margin="12,0,0,0" VerticalAlignment="Center"
+                                                    Background="{StaticResource Kroko.SurfaceHover}">
+                                                <TextBlock Text="{Binding Risk}" FontSize="10.5" Foreground="{StaticResource Kroko.TextMuted}" />
+                                            </Border>
+                                            <StackPanel VerticalAlignment="Center">
+                                                <TextBlock Text="{Binding Name}" FontFamily="Consolas" FontSize="12.5" />
+                                                <TextBlock Text="{Binding Description}" Style="{StaticResource Hint}" TextTrimming="CharacterEllipsis" />
+                                            </StackPanel>
+                                        </DockPanel>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </Border>
+
+                        <TextBlock Text="Buscar en mis documentos" Style="{StaticResource Group}" />
+                        <Border Style="{StaticResource Row}">
+                            <StackPanel>
+                                <DockPanel>
+                                    <CheckBox DockPanel.Dock="Right" IsChecked="{Binding DocumentsEnabled}" Style="{StaticResource Kroko.Toggle}" />
+                                    <TextBlock DockPanel.Dock="Left" Text="&#xE8A5;" Style="{StaticResource RowIcon}" />
+                                    <StackPanel VerticalAlignment="Center">
+                                        <TextBlock Text="Búsqueda por significado en Word, PDF y textos" Style="{StaticResource RowTitle}" />
+                                        <TextBlock Text="{Binding DocumentsStatus}" Style="{StaticResource Hint}" />
+                                    </StackPanel>
+                                </DockPanel>
+                                <TextBlock Text="Carpetas (una por línea). Para buscar por significado, el texto de los documentos se envía a la IA de Google (Gemini) desde tu cerebro." Style="{StaticResource Hint}" Margin="34,10,0,6" />
+                                <TextBox Text="{Binding DocumentFoldersText, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource Field}" AcceptsReturn="True" Height="64"
+                                         FontFamily="Consolas" VerticalScrollBarVisibility="Auto" Margin="34,0,0,0" />
+                            </StackPanel>
+                        </Border>
+
+                        <TextBlock Text="Alias de programas" Style="{StaticResource Group}" />
+                        <Border Style="{StaticResource Row}">
+                            <StackPanel>
+                                <TextBlock Text="Un alias por línea: nombre = ruta o comando" Style="{StaticResource Hint}" Margin="0,0,0,8" />
+                                <TextBox Text="{Binding AliasesText, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource Field}" AcceptsReturn="True" Height="86"
+                                         FontFamily="Consolas" VerticalScrollBarVisibility="Auto" />
+                            </StackPanel>
+                        </Border>
+                        <TextBlock Text="Lista blanca de scripts" Style="{StaticResource Group}" />
+                        <Border Style="{StaticResource Row}">
+                            <StackPanel>
+                                <TextBlock Text="Kroko solo puede ejecutar estos scripts (nombre = ruta a .ps1/.bat/.cmd/.exe), y siempre pide confirmación." Style="{StaticResource Hint}" Margin="0,0,0,8" />
+                                <TextBox Text="{Binding ScriptsText, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource Field}" AcceptsReturn="True" Height="86"
+                                         FontFamily="Consolas" VerticalScrollBarVisibility="Auto" />
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+
+            <!-- ======================= Cuentas y apps ======================= -->
+            <TabItem>
+                <TabItem.Header>
+                    <StackPanel Orientation="Horizontal"><TextBlock Text="&#xE77B;" Style="{StaticResource NavIcon}" /><TextBlock Text="Cuentas y apps" /></StackPanel>
+                </TabItem.Header>
+                <ScrollViewer>
+                    <StackPanel>
+                        <TextBlock Text="Cuentas y apps" Style="{StaticResource PageTitle}" />
+                        <TextBlock Text="Tus datos, tus cuentas conectadas y lo que Kroko ha hecho." Style="{StaticResource Hint}" />
+                        <TextBlock Text="Tú" Style="{StaticResource Group}" />
+                        <Border Style="{StaticResource Row}">
+                            <DockPanel>
+                                <Button DockPanel.Dock="Right" Content="Abrir" Command="{Binding OpenOnboardingCommand}" Style="{StaticResource Kroko.Button}" VerticalAlignment="Center" Margin="0" />
+                                <TextBlock DockPanel.Dock="Left" Text="&#xE77B;" Style="{StaticResource RowIcon}" />
+                                <StackPanel VerticalAlignment="Center">
+                                    <TextBlock Text="Configurar Kroko" Style="{StaticResource RowTitle}" />
+                                    <TextBlock Text="Tu nombre, claves de IA, Gmail y Telegram." Style="{StaticResource Hint}" />
+                                </StackPanel>
+                            </DockPanel>
+                        </Border>
+                        <Border Style="{StaticResource Row}">
+                            <DockPanel>
+                                <Button DockPanel.Dock="Right" Content="Abrir" Command="{Binding OpenMemoryCommand}" Style="{StaticResource Kroko.Button}" VerticalAlignment="Center" Margin="0" />
+                                <TextBlock DockPanel.Dock="Left" Text="&#xE8F1;" Style="{StaticResource RowIcon}" />
+                                <StackPanel VerticalAlignment="Center">
+                                    <TextBlock Text="Lo que sabe de ti" Style="{StaticResource RowTitle}" />
+                                    <TextBlock Text="Recuerdos, rutinas y su buzón de mejoras. Puedes borrar lo que quieras." Style="{StaticResource Hint}" />
+                                </StackPanel>
+                            </DockPanel>
+                        </Border>
+                        <TextBlock Text="Apps" Style="{StaticResource Group}" />
+                        <Border Style="{StaticResource Row}">
+                            <DockPanel>
+                                <Button DockPanel.Dock="Right" Content="Abrir" Command="{Binding OpenConnectorsCommand}" Style="{StaticResource Kroko.Button}" VerticalAlignment="Center" Margin="0" />
+                                <TextBlock DockPanel.Dock="Left" Text="&#xE71B;" Style="{StaticResource RowIcon}" />
+                                <StackPanel VerticalAlignment="Center">
+                                    <TextBlock Text="Conectores" Style="{StaticResource RowTitle}" />
+                                    <TextBlock Text="Notion, Todoist y navegador web." Style="{StaticResource Hint}" />
+                                </StackPanel>
+                            </DockPanel>
+                        </Border>
+                        <TextBlock Text="Seguridad y extras" Style="{StaticResource Group}" />
+                        <Border Style="{StaticResource Row}">
+                            <DockPanel>
+                                <Button DockPanel.Dock="Right" Content="Abrir" Command="{Binding OpenAuditCommand}" Style="{StaticResource Kroko.Button}" VerticalAlignment="Center" Margin="0" />
+                                <TextBlock DockPanel.Dock="Left" Text="&#xE81C;" Style="{StaticResource RowIcon}" />
+                                <StackPanel VerticalAlignment="Center">
+                                    <TextBlock Text="Registro de acciones" Style="{StaticResource RowTitle}" />
+                                    <TextBlock Text="Todo lo que Kroko ejecutó, con fecha y resultado." Style="{StaticResource Hint}" />
+                                </StackPanel>
+                            </DockPanel>
+                        </Border>
+                        <Border Style="{StaticResource Row}">
+                            <DockPanel>
+                                <Button DockPanel.Dock="Right" Content="Abrir" Command="{Binding OpenGalleryCommand}" Style="{StaticResource Kroko.Button}" VerticalAlignment="Center" Margin="0" />
+                                <TextBlock DockPanel.Dock="Left" Text="&#xE899;" Style="{StaticResource RowIcon}" />
+                                <StackPanel VerticalAlignment="Center">
+                                    <TextBlock Text="Galería de expresiones" Style="{StaticResource RowTitle}" />
+                                    <TextBlock Text="Todas las caras de Kroko." Style="{StaticResource Hint}" />
+                                </StackPanel>
+                            </DockPanel>
+                        </Border>
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+        </TabControl>
+    </DockPanel>
+</Window>

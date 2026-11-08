@@ -1,0 +1,5 @@
+# HTTPS automático para el cerebro (los WebSocket funcionan sin configuración extra).
+{$KROKO_DOMAIN} {
+	encode gzip
+	reverse_proxy brain:8080
+}

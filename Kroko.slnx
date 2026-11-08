@@ -1,0 +1,11 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Kroko.App/Kroko.App.csproj" />
+    <Project Path="src/Kroko.Brain/Kroko.Brain.csproj" />
+    <Project Path="src/Kroko.Shared/Kroko.Shared.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Kroko.App.Tests/Kroko.App.Tests.csproj" />
+    <Project Path="tests/Kroko.Tests/Kroko.Tests.csproj" />
+  </Folder>
+</Solution>

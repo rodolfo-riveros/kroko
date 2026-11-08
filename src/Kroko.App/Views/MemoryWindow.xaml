@@ -1,0 +1,161 @@
+<Window x:Class="Kroko.App.Views.MemoryWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Kroko — Lo que sabe de ti"
+        Width="760" Height="720" MinWidth="560" MinHeight="420"
+        WindowStartupLocation="CenterScreen"
+        Background="{StaticResource Kroko.Window}"
+        Foreground="{StaticResource Kroko.Text}"
+        FontFamily="{StaticResource Kroko.Font}"
+        FontSize="13">
+
+    <Window.Resources>
+        <!-- Botón pequeño de texto para borrar -->
+        <Style x:Key="LinkButton" TargetType="Button">
+            <Setter Property="Foreground" Value="{StaticResource Kroko.TextMuted}" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Margin" Value="10,0,0,0" />
+            <Setter Property="VerticalAlignment" Value="Top" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <TextBlock x:Name="T" Text="{TemplateBinding Content}" FontSize="12" />
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="T" Property="Foreground" Value="{StaticResource Kroko.EyeError}" />
+                                <Setter TargetName="T" Property="TextDecorations" Value="Underline" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        <Style x:Key="Item" TargetType="Border">
+            <Setter Property="Background" Value="{StaticResource Kroko.Surface}" />
+            <Setter Property="BorderBrush" Value="{StaticResource Kroko.Line}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="CornerRadius" Value="12" />
+            <Setter Property="Padding" Value="12,10" />
+            <Setter Property="Margin" Value="0,0,0,8" />
+        </Style>
+        <Style x:Key="Empty" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="{StaticResource Kroko.TextMuted}" />
+            <Setter Property="FontStyle" Value="Italic" />
+            <Setter Property="Margin" Value="2,0,0,8" />
+            <Setter Property="TextWrapping" Value="Wrap" />
+        </Style>
+    </Window.Resources>
+
+    <DockPanel Margin="22">
+        <DockPanel DockPanel.Dock="Top" Margin="0,0,0,14">
+            <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center">
+                <Button Content="Olvidar la conversación" Command="{Binding ClearConversationCommand}"
+                        Style="{StaticResource Kroko.Button}" Margin="0,0,8,0"
+                        ToolTip="Borra el historial de chat. Los recuerdos y rutinas se quedan." />
+                <Button Content="↻ Actualizar" Command="{Binding LoadCommand}" Style="{StaticResource Kroko.Button}" Margin="0" />
+            </StackPanel>
+            <StackPanel>
+                <TextBlock Text="MEMORIA" FontFamily="Consolas" FontSize="11" Foreground="{StaticResource Kroko.Accent}" />
+                <TextBlock Text="Lo que Kroko sabe de ti" FontSize="24" FontWeight="Bold" Margin="0,4,0,0" />
+                <TextBlock Text="{Binding Status}" Foreground="{StaticResource Kroko.TextMuted}" Margin="0,2,0,0" />
+            </StackPanel>
+        </DockPanel>
+
+        <ScrollViewer VerticalScrollBarVisibility="Auto">
+            <StackPanel>
+                <!-- Recuerdos -->
+                <TextBlock Text="RECUERDOS" Style="{StaticResource Kroko.Label}" Margin="0,4,0,8" />
+                <TextBlock Text="Todavía nada. Cuéntale cosas («mi navegador favorito es Brave») y las irá guardando."
+                           Style="{StaticResource Empty}">
+                    <TextBlock.Visibility>
+                        <Binding Path="Recuerdos.Count" Converter="{StaticResource ZeroToVisible}" />
+                    </TextBlock.Visibility>
+                </TextBlock>
+                <ItemsControl ItemsSource="{Binding Recuerdos}">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <Border Style="{StaticResource Item}">
+                                <DockPanel>
+                                    <Button DockPanel.Dock="Right" Content="Olvidar" Style="{StaticResource LinkButton}"
+                                            Command="{Binding DataContext.ForgetCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                            CommandParameter="{Binding}" />
+                                    <StackPanel>
+                                        <TextBlock Text="{Binding Content}" TextWrapping="Wrap" />
+                                        <TextBlock FontSize="11" Foreground="{StaticResource Kroko.TextMuted}" Margin="0,3,0,0">
+                                            <Run Text="{Binding Category, Mode=OneWay}" /> · <Run Text="{Binding UpdatedText, Mode=OneWay}" /> · #<Run Text="{Binding Id, Mode=OneWay}" />
+                                        </TextBlock>
+                                    </StackPanel>
+                                </DockPanel>
+                            </Border>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+
+                <!-- Rutinas -->
+                <TextBlock Text="RUTINAS QUE LE ENSEÑASTE" Style="{StaticResource Kroko.Label}" />
+                <TextBlock Text="Ninguna. Prueba: «cuando diga modo estudio, abre Notion y silencia el sonido»."
+                           Style="{StaticResource Empty}">
+                    <TextBlock.Visibility>
+                        <Binding Path="Rutinas.Count" Converter="{StaticResource ZeroToVisible}" />
+                    </TextBlock.Visibility>
+                </TextBlock>
+                <ItemsControl ItemsSource="{Binding Rutinas}">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <Border Style="{StaticResource Item}">
+                                <DockPanel>
+                                    <Button DockPanel.Dock="Right" Content="Borrar" Style="{StaticResource LinkButton}"
+                                            Command="{Binding DataContext.DeleteRoutineCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                            CommandParameter="{Binding}" />
+                                    <StackPanel>
+                                        <TextBlock Text="{Binding Name}" FontWeight="SemiBold" />
+                                        <TextBlock FontSize="11" Foreground="{StaticResource Kroko.Accent}" Margin="0,2,0,6">
+                                            <Run Text="Se activa con: " /><Run Text="{Binding TriggersText, Mode=OneWay}" />
+                                        </TextBlock>
+                                        <TextBlock Text="{Binding StepsText}" TextWrapping="Wrap" Foreground="{StaticResource Kroko.TextMuted}" />
+                                    </StackPanel>
+                                </DockPanel>
+                            </Border>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+
+                <!-- Buzón de mejoras -->
+                <DockPanel Margin="0,18,0,8">
+                    <Button DockPanel.Dock="Right" Content="Abrir buzón (archivo)" Command="{Binding OpenSuggestionsFileCommand}"
+                            Style="{StaticResource LinkButton}" Foreground="{StaticResource Kroko.Accent}" />
+                    <TextBlock Text="BUZÓN DE MEJORAS" FontFamily="Consolas" FontSize="11" Foreground="{StaticResource Kroko.Accent}" />
+                </DockPanel>
+                <TextBlock Text="Vacío. Cuando le pidas algo que todavía no sabe hacer, lo anotará aquí."
+                           Style="{StaticResource Empty}">
+                    <TextBlock.Visibility>
+                        <Binding Path="Mejoras.Count" Converter="{StaticResource ZeroToVisible}" />
+                    </TextBlock.Visibility>
+                </TextBlock>
+                <ItemsControl ItemsSource="{Binding Mejoras}">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <Border Style="{StaticResource Item}">
+                                <DockPanel>
+                                    <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                                        <Button Content="Hecha" Style="{StaticResource LinkButton}"
+                                                Command="{Binding DataContext.MarkDoneCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                CommandParameter="{Binding}" />
+                                        <Button Content="Borrar" Style="{StaticResource LinkButton}"
+                                                Command="{Binding DataContext.DeleteSuggestionCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                CommandParameter="{Binding}" />
+                                    </StackPanel>
+                                    <StackPanel>
+                                        <TextBlock Text="{Binding Title}" FontWeight="SemiBold" TextWrapping="Wrap" />
+                                        <TextBlock Text="{Binding Detail}" TextWrapping="Wrap" Foreground="{StaticResource Kroko.TextMuted}" Margin="0,3,0,0" />
+                                        <TextBlock Text="{Binding Meta}" FontSize="11" Foreground="{StaticResource Kroko.Accent}" Margin="0,4,0,0" />
+                                    </StackPanel>
+                                </DockPanel>
+                            </Border>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </StackPanel>
+        </ScrollViewer>
+    </DockPanel>
+</Window>

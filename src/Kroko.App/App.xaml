@@ -1,0 +1,14 @@
+﻿<Application x:Class="Kroko.App.App"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:v="clr-namespace:Kroko.App.Views"
+             ShutdownMode="OnExplicitShutdown">
+    <Application.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="Theme/KrokoTheme.xaml" />
+            </ResourceDictionary.MergedDictionaries>
+            <v:ZeroToVisibleConverter x:Key="ZeroToVisible" />
+        </ResourceDictionary>
+    </Application.Resources>
+</Application>

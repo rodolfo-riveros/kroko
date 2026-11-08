@@ -1,0 +1,102 @@
+<Window x:Class="Kroko.App.Views.GalleryWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:face="clr-namespace:Kroko.App.Face"
+        Title="Kroko — Galería de expresiones"
+        Width="980" Height="680" MinWidth="820" MinHeight="560"
+        WindowStartupLocation="CenterScreen"
+        Background="{StaticResource Kroko.Window}"
+        Foreground="{StaticResource Kroko.Text}"
+        FontFamily="{StaticResource Kroko.Font}"
+        FontSize="13">
+
+    <Grid Margin="20">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*" />
+            <ColumnDefinition Width="20" />
+            <ColumnDefinition Width="380" />
+        </Grid.ColumnDefinitions>
+
+        <!-- Lista de expresiones -->
+        <DockPanel>
+            <StackPanel DockPanel.Dock="Top" Margin="2,0,0,14">
+                <TextBlock Text="UN ROBOT CON PERSONALIDAD" FontFamily="Consolas" FontSize="11"
+                           Foreground="{StaticResource Kroko.Accent}" />
+                <TextBlock FontSize="26" FontWeight="Bold" Margin="0,4,0,0">
+                    <Run Text="Dos ojos." /> <Run Text="Mil gestos." Foreground="{StaticResource Kroko.Accent}" />
+                </TextBlock>
+            </StackPanel>
+
+            <ListBox ItemsSource="{Binding Items}" SelectedItem="{Binding Selected}"
+                     Style="{StaticResource Kroko.TileList}">
+                <ListBox.ItemTemplate>
+                    <DataTemplate>
+                        <StackPanel>
+                            <TextBlock Text="{Binding Name}" FontWeight="SemiBold" FontSize="13" TextTrimming="CharacterEllipsis" />
+                            <TextBlock Text="{Binding Key}" FontFamily="Consolas" FontSize="11"
+                                       Foreground="{StaticResource Kroko.TextMuted}" Margin="0,3,0,0" />
+                            <TextBlock Text="{Binding ModeLabel}" FontSize="10" Margin="0,6,0,0"
+                                       Foreground="{StaticResource Kroko.Accent}" Opacity="0.8" />
+                        </StackPanel>
+                    </DataTemplate>
+                </ListBox.ItemTemplate>
+            </ListBox>
+        </DockPanel>
+
+        <!-- Vista previa y controles -->
+        <Border Grid.Column="2" Style="{StaticResource Kroko.Card}">
+            <ScrollViewer VerticalScrollBarVisibility="Auto">
+                <StackPanel>
+                    <Border Background="Black" CornerRadius="14" Height="290">
+                        <face:FaceView Animator="{Binding Face}" Margin="10" />
+                    </Border>
+
+                    <TextBlock Text="{Binding Selected.Name}" FontSize="22" FontWeight="Bold" Margin="0,14,0,0" />
+                    <TextBlock Text="{Binding Selected.Description}" TextWrapping="Wrap"
+                               Foreground="{StaticResource Kroko.TextMuted}" Margin="0,4,0,0" />
+
+                    <WrapPanel Margin="0,12,0,0">
+                        <Button Content="↻ Repetir" Command="{Binding ReplayCommand}" Style="{StaticResource Kroko.Button}" />
+                    </WrapPanel>
+
+                    <TextBlock Text="CAPAS VIVAS" Style="{StaticResource Kroko.Label}" />
+                    <WrapPanel>
+                        <CheckBox Content="Seguir el ratón" IsChecked="{Binding FollowCursor}" Style="{StaticResource Kroko.Check}" />
+                        <CheckBox Content="Parpadeo" IsChecked="{Binding Blink}" Style="{StaticResource Kroko.Check}" />
+                        <CheckBox Content="Respiración" IsChecked="{Binding Breath}" Style="{StaticResource Kroko.Check}" />
+                    </WrapPanel>
+
+                    <TextBlock Text="AUDIO (para escucha y hablando)" Style="{StaticResource Kroko.Label}" />
+                    <CheckBox Content="Simular voz" IsChecked="{Binding SimulateAudio}" Style="{StaticResource Kroko.Check}" />
+                    <DockPanel Margin="0,6,0,0">
+                        <TextBlock Text="Micrófono" Width="80" VerticalAlignment="Center" Foreground="{StaticResource Kroko.TextMuted}" />
+                        <Slider Minimum="0" Maximum="1" Value="{Binding MicLevel}" />
+                    </DockPanel>
+                    <DockPanel Margin="0,4,0,0">
+                        <TextBlock Text="Voz" Width="80" VerticalAlignment="Center" Foreground="{StaticResource Kroko.TextMuted}" />
+                        <Slider Minimum="0" Maximum="1" Value="{Binding SpeechLevel}" />
+                    </DockPanel>
+
+                    <TextBlock Text="DISTRACCIONES" Style="{StaticResource Kroko.Label}" />
+                    <WrapPanel>
+                        <Button Content="Mosca" Command="{Binding FlyCommand}" Style="{StaticResource Kroko.Button}" />
+                        <Button Content="Pelota" Command="{Binding BallCommand}" Style="{StaticResource Kroko.Button}" />
+                        <Button Content="Bostezo" Command="{Binding YawnCommand}" Style="{StaticResource Kroko.Button}" />
+                        <Button Content="Mirar el reloj" Command="{Binding ClockCommand}" Style="{StaticResource Kroko.Button}" />
+                    </WrapPanel>
+
+                    <TextBlock Text="OPCIONES" Style="{StaticResource Kroko.Label}" />
+                    <CheckBox Content="Reproducir también en la burbuja" IsChecked="{Binding MirrorToBubble}" Style="{StaticResource Kroko.Check}" />
+                    <CheckBox Content="Sonidos" IsChecked="{Binding PlaySounds}" Style="{StaticResource Kroko.Check}" />
+
+                    <Button Content="Editar expressions.json" Command="{Binding EditExpressionsCommand}"
+                            Style="{StaticResource Kroko.Button}" HorizontalAlignment="Left" Margin="0,12,0,0" />
+                    <TextBlock Text="{Binding ExpressionsPath}" TextWrapping="Wrap" FontFamily="Consolas" FontSize="10"
+                               Foreground="{StaticResource Kroko.TextMuted}" Margin="0,6,0,0" />
+                    <TextBlock Text="Guarda el archivo y los cambios se ven al instante." FontSize="11"
+                               Foreground="{StaticResource Kroko.TextMuted}" Margin="0,2,0,0" />
+                </StackPanel>
+            </ScrollViewer>
+        </Border>
+    </Grid>
+</Window>

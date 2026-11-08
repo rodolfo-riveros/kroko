@@ -1,0 +1,12 @@
+# Configuración del escáner de claves (Gitleaks): reglas por defecto + excepciones conocidas.
+title = "Kroko"
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Claves de ejemplo falsas en las pruebas y capturas"
+paths = [
+  '''^tests/''',
+  '''\.png$''',
+]

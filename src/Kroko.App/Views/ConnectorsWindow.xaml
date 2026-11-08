@@ -1,0 +1,78 @@
+<Window x:Class="Kroko.App.Views.ConnectorsWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:v="clr-namespace:Kroko.App.Views"
+        Title="Kroko — Conectores"
+        Width="640" Height="520" MinWidth="480" MinHeight="360"
+        WindowStartupLocation="CenterScreen"
+        Background="{StaticResource Kroko.Window}"
+        Foreground="{StaticResource Kroko.Text}"
+        FontFamily="{StaticResource Kroko.Font}"
+        FontSize="13">
+
+    <Window.Resources>
+        <v:BoolToVisibleConverter x:Key="BoolToVisible" />
+    </Window.Resources>
+
+    <DockPanel Margin="22">
+        <StackPanel DockPanel.Dock="Top" Margin="0,0,0,14">
+            <TextBlock Text="SUPERPODERES" FontFamily="Consolas" FontSize="11" Foreground="{StaticResource Kroko.Accent}" />
+            <TextBlock Text="Conectores" FontSize="24" FontWeight="Bold" Margin="0,4,0,0" />
+            <TextBlock Text="{Binding Status}" Foreground="{StaticResource Kroko.TextMuted}" Margin="0,2,0,0" TextWrapping="Wrap" />
+        </StackPanel>
+
+        <TextBlock DockPanel.Dock="Bottom" TextWrapping="Wrap" FontSize="11.5" Margin="0,12,0,0"
+                   Foreground="{StaticResource Kroko.TextMuted}"
+                   Text="Lo que modifique algo (crear páginas, eventos, enviar…) siempre te pedirá confirmación. Los permisos se guardan cifrados con tu usuario de Windows." />
+
+        <ScrollViewer VerticalScrollBarVisibility="Auto">
+            <ItemsControl ItemsSource="{Binding Connectors}">
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <Border Background="{StaticResource Kroko.Surface}" BorderBrush="{StaticResource Kroko.Line}" BorderThickness="1"
+                                CornerRadius="14" Padding="14,12" Margin="0,0,0,10">
+                            <DockPanel>
+                                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center">
+                                    <Button Content="Conectar" Style="{StaticResource Kroko.Button}" Margin="0"
+                                            Visibility="{Binding PuedeConectar, Converter={StaticResource BoolToVisible}}"
+                                            Command="{Binding DataContext.ConnectCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                            CommandParameter="{Binding}" />
+                                    <Button Content="Desconectar" Style="{StaticResource Kroko.Button}" Margin="0"
+                                            Visibility="{Binding IsConnected, Converter={StaticResource BoolToVisible}}"
+                                            Command="{Binding DataContext.DisconnectCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                            CommandParameter="{Binding}" />
+                                </StackPanel>
+                                <StackPanel>
+                                    <TextBlock Text="{Binding Titulo}" FontWeight="SemiBold" FontSize="14" />
+                                    <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
+                                        <Ellipse Width="7" Height="7" Margin="0,0,6,0" VerticalAlignment="Center">
+                                            <Ellipse.Style>
+                                                <Style TargetType="Ellipse">
+                                                    <Setter Property="Fill" Value="{StaticResource Kroko.TextMuted}" />
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding IsConnected}" Value="True">
+                                                            <Setter Property="Fill" Value="{StaticResource Kroko.Accent}" />
+                                                        </DataTrigger>
+                                                        <DataTrigger Binding="{Binding Estado}" Value="Error">
+                                                            <Setter Property="Fill" Value="{StaticResource Kroko.EyeError}" />
+                                                        </DataTrigger>
+                                                        <DataTrigger Binding="{Binding Estado}" Value="NecesitaPermiso">
+                                                            <Setter Property="Fill" Value="{StaticResource Kroko.EyeAlert}" />
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </Ellipse.Style>
+                                        </Ellipse>
+                                        <TextBlock Text="{Binding StateText}" Foreground="{StaticResource Kroko.TextMuted}" />
+                                    </StackPanel>
+                                    <TextBlock Text="{Binding Detalle}" TextWrapping="Wrap" FontSize="11.5" Margin="0,4,0,0"
+                                               Foreground="{StaticResource Kroko.TextMuted}" />
+                                </StackPanel>
+                            </DockPanel>
+                        </Border>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+        </ScrollViewer>
+    </DockPanel>
+</Window>

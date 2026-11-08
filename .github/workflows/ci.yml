@@ -1,0 +1,25 @@
+# Compila y prueba todo en cada cambio (no publica nada).
+name: Pruebas
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  pruebas:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+      - name: Compilar
+        run: dotnet build Kroko.slnx -c Release
+      - name: Pruebas del cerebro
+        run: dotnet test tests/Kroko.Tests -c Release --no-build
+      - name: Pruebas de la App
+        run: dotnet test tests/Kroko.App.Tests -c Release --no-build

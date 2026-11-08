@@ -1,0 +1,48 @@
+# Publica una versión nueva de la App de escritorio.
+# Uso: git tag v1.0.1 && git push origin v1.0.1
+# Resultado: un Release en GitHub con KrokoApp-win-Setup.exe y los paquetes que Kroko usa para actualizarse solo.
+name: Publicar App
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write   # para crear el Release
+
+jobs:
+  publicar:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Versión
+        id: v
+        shell: bash
+        run: echo "version=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
+
+      - name: Pruebas
+        run: |
+          dotnet test tests/Kroko.Tests -c Release
+          dotnet test tests/Kroko.App.Tests -c Release
+
+      - name: Publicar la App (sin el cerebro: vive en el servidor)
+        run: dotnet publish src/Kroko.App/Kroko.App.csproj -c Release -r win-x64 --self-contained true -p:Version=${{ steps.v.outputs.version }} -o publish/app
+
+      - name: Instalar vpk (misma versión que la librería Velopack)
+        run: dotnet tool install -g vpk --version 1.2.161
+
+      - name: Bajar la versión anterior (para actualizaciones pequeñas)
+        run: vpk download github --repoUrl https://github.com/${{ github.repository }} --token ${{ secrets.GITHUB_TOKEN }}
+        continue-on-error: true
+
+      # packId KrokoApp: se instala en %LOCALAPPDATA%\KrokoApp, separado de los datos de Kroko
+      # (%LOCALAPPDATA%\Kroko), así desinstalar nunca borra tu memoria ni tus ajustes.
+      - name: Empaquetar
+        run: vpk pack --packId KrokoApp --packVersion ${{ steps.v.outputs.version }} --packDir publish/app --mainExe Kroko.App.exe --packTitle Kroko --outputDir Releases
+
+      - name: Subir a GitHub Releases
+        run: vpk upload github --repoUrl https://github.com/${{ github.repository }} --publish --releaseName "Kroko ${{ steps.v.outputs.version }}" --tag ${{ github.ref_name }} --token ${{ secrets.GITHUB_TOKEN }} --outputDir Releases
