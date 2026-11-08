@@ -55,7 +55,7 @@ GitHub Actions compila, prueba y sube el instalador a **Releases** (`KrokoApp-wi
 
 ## El cerebro en un servidor
 
-Guía paso a paso **gratis** (Oracle Cloud + DuckDNS): [docs/SERVIDOR-GRATIS.md](docs/SERVIDOR-GRATIS.md). ¿Ya tienes un VPS con los puertos 80/443 ocupados? [docs/VPS-PROPIO.md](docs/VPS-PROPIO.md). Detalles: [docs/DESPLIEGUE.md](docs/DESPLIEGUE.md). En resumen:
+Guía paso a paso **gratis** (Oracle Cloud + DuckDNS): [docs/SERVIDOR-GRATIS.md](docs/SERVIDOR-GRATIS.md). ¿Ya tienes un VPS con los puertos 80/443 ocupados? [docs/VPS-PROPIO.md](docs/VPS-PROPIO.md). ¿Para ti y tus amigos, cada uno con su cerebro? [Varias personas](docs/VPS-PROPIO.md#varias-personas-en-el-mismo-servidor-tú-y-tus-amigos). Detalles: [docs/DESPLIEGUE.md](docs/DESPLIEGUE.md). En resumen:
 
 ```bash
 cd deploy && cp .env.example .env   # pon tu dominio y un token largo

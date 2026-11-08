@@ -1,0 +1,10 @@
+# Actualiza solos TODOS los cerebros de Kroko del servidor (los que tienen la etiqueta de Watchtower).
+# Va una sola vez por servidor, aunque haya varias personas: ./persona.sh lo arranca si hace falta.
+# Fork mantenido de Watchtower (el original se archivó en 2025).
+services:
+  watchtower:
+    image: nickfedor/watchtower:latest
+    restart: unless-stopped
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    command: --label-enable --interval 3600 --cleanup

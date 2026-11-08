@@ -5,7 +5,7 @@ set -u
 fail=0
 
 # 1) Archivos que nunca deben subirse
-blocked=$(git diff --cached --name-only --diff-filter=ACMR | grep -E '(^|/)\.env$|(^|/)\.env\.|secretos\.dat|secrets\.json|(^|/)settings\.json$|\.db$|\.db-(wal|shm)$|\.pfx$|\.pem$|id_rsa' | grep -v '\.env\.example$')
+blocked=$(git diff --cached --name-only --diff-filter=ACMR | grep -E '\.env$|(^|/)\.env\.|(^|/)deploy/personas/|secretos\.dat|secrets\.json|(^|/)settings\.json$|\.db$|\.db-(wal|shm)$|\.pfx$|\.pem$|id_rsa' | grep -v '\.env\.example$')
 if [ -n "$blocked" ]; then
   echo "✋ Kroko: estos archivos tienen secretos o datos personales y no se suben:"
   echo "$blocked" | sed 's/^/   - /'

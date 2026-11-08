@@ -1,0 +1,20 @@
+# UN cerebro de Kroko para UNA persona (varias personas en el mismo servidor, cada una con su cerebro aislado).
+# No lo arranques a mano: usa ./persona.sh nueva <nombre> <dominio> (crea su token, su puerto y su .env).
+#
+# Cada persona = un proyecto de Docker ("kroko-<nombre>") con su propio volumen de datos: memoria, conversación,
+# claves (su Gemini, su Gmail, su Telegram…) y cuentas. Nadie ve lo de otro. El token de cada uno es su "cuenta".
+services:
+  brain:
+    image: ${KROKO_IMAGE:-ghcr.io/rodolfo-riveros/kroko-brain:latest}
+    restart: unless-stopped
+    env_file: personas/${KROKO_PERSONA:?Falta KROKO_PERSONA}.env
+    volumes:
+      - datos:/data
+    ports:
+      # Solo 127.0.0.1: desde internet se entra por tu Nginx/Apache/Caddy con HTTPS
+      - "127.0.0.1:${KROKO_PORT:?Falta KROKO_PORT}:8080"
+    labels:
+      - com.centurylinklabs.watchtower.enable=true
+
+volumes:
+  datos:

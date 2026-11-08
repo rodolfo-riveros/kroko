@@ -157,3 +157,70 @@ Crea un sitio **"Reverse proxy"** para `kroko.tudominio.com` hacia `http://127.0
 
 Actualizar: el cerebro se actualiza solo (Watchtower revisa cada hora). Para forzarlo:
 `docker compose -f docker-compose.vps.yml pull && docker compose -f docker-compose.vps.yml up -d`.
+
+---
+
+## Varias personas en el mismo servidor (tú y tus amigos)
+
+Cada persona tiene **su propio cerebro**: su memoria, su conversación, **su clave de Gemini**, su Gmail, su Telegram y
+sus apps. Nadie ve lo del otro. No hay que crear cuentas: **el token de cada persona es su cuenta**.
+
+```
+tu servidor
+├─ cerebro de pol   → pol.kroko-tunombre.duckdns.org   (token de Pol)
+├─ cerebro de ana   → ana.kroko-tunombre.duckdns.org   (token de Ana)
+└─ cerebro de luis  → luis.kroko-tunombre.duckdns.org  (token de Luis)
+```
+
+### 1. Las direcciones
+
+- **DuckDNS:** con tu dominio `kroko-tunombre.duckdns.org` apuntando al servidor, **cualquier subdominio**
+  (`ana.kroko-tunombre.duckdns.org`) ya apunta solo. No hay que crear nada más.
+- **Dominio propio:** crea un registro **A** comodín `*.kroko` → IP del servidor (o uno por persona).
+
+### 2. Crear a cada persona (un comando)
+
+```bash
+cd kroko/deploy
+chmod +x persona.sh
+./persona.sh nueva pol kroko-tunombre.duckdns.org
+./persona.sh nueva ana kroko-tunombre.duckdns.org
+```
+
+Cada `nueva` genera su token, le da un puerto libre (8091, 8092…), arranca su cerebro y te muestra su
+**dirección y token**. Pásaselos a cada uno por un chat privado.
+
+### 3. El HTTPS de cada una
+
+El script deja lista la configuración en `personas/<nombre>.nginx.conf` y te dice los comandos:
+
+```bash
+sudo cp personas/ana.nginx.conf /etc/nginx/sites-available/kroko-ana
+sudo ln -s /etc/nginx/sites-available/kroko-ana /etc/nginx/sites-enabled/
+sudo nginx -t && sudo systemctl reload nginx
+sudo certbot --nginx -d ana.kroko-tunombre.duckdns.org
+```
+
+(Con Caddy basta añadir `ana.kroko-tunombre.duckdns.org { reverse_proxy 127.0.0.1:8092 }`.)
+
+### 4. En la PC de cada persona
+
+1. Instala Kroko: https://github.com/rodolfo-riveros/kroko/releases/latest/download/KrokoApp-win-Setup.exe
+2. Clic derecho en Kroko → **Ajustes → Cerebro** → su dirección y su token → **Comprobar** → **Guardar y reiniciar**.
+3. Clic derecho → **Configurar Kroko** → su nombre y **su propia clave de Gemini** (https://aistudio.google.com/apikey).
+   Desde ahí también conecta su Gmail, Telegram, Google, Trello o Notion. Todo se guarda cifrado en **su** cerebro.
+
+### Día a día
+
+| Quieres… | Comando |
+|---|---|
+| Ver quién hay y si está encendido | `./persona.sh lista` |
+| Volver a ver la dirección y el token de alguien | `./persona.sh datos ana` |
+| Ver qué pasa en su cerebro | `./persona.sh logs ana` |
+| Apagar / encender su cerebro (sus datos se quedan) | `./persona.sh parar ana` / `./persona.sh iniciar ana` |
+| Actualizar todos ya mismo | `./persona.sh actualizar` (Watchtower igual lo hace solo cada hora) |
+| Quitar a alguien | `./persona.sh borrar ana` (pregunta si borrar también sus datos) |
+
+> Los archivos de `deploy/personas/` tienen los tokens: nunca se suben a git (están en `.gitignore`).
+> Si un token se filtra: edita `Agent__Token` en `personas/<nombre>.env`, `./persona.sh parar <nombre>` y
+> `./persona.sh iniciar <nombre>`, y pásale el nuevo.

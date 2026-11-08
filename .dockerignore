@@ -14,3 +14,7 @@ docs/
 **/*.db
 .github/
 .githooks/
+
+# Tokens de cada persona del servidor
+deploy/personas/
+**/*.env

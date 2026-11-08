@@ -496,3 +496,9 @@ secrets.json
 *.db-wal
 *.db-shm
 *.pem
+
+# Cerebros de cada persona en el servidor (contienen sus tokens): nunca a git
+deploy/personas/
+*.env
+!.env.example
+!deploy/.env.example
