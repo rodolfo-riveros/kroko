@@ -1,3 +1,4 @@
+using Microsoft.Extensions.DependencyInjection;
 using System.Net;
 using System.Text.Json;
 using Kroko.Brain.Agent;
@@ -120,7 +121,8 @@ public class JarvisToolTests
         var auditDir = Path.Combine(Path.GetTempPath(), "kroko-brain-tests", Guid.NewGuid().ToString("N"));
         var audit = new BrainAuditLog(NullLogger<BrainAuditLog>.Instance) { OverrideFolder = auditDir };
         var gateway = new CompositeToolGateway([new ConfirmarAccionTool()], [],
-            new AppToolGateway(new StaticMonitor<AgentOptions>(new AgentOptions()), NullLogger<AppToolGateway>.Instance),
+            new AppToolGateway(new StaticMonitor<AgentOptions>(new AgentOptions()), new ServiceCollection().BuildServiceProvider(),
+                NullLogger<AppToolGateway>.Instance),
             audit, NullLogger<CompositeToolGateway>.Instance);
         var call = new ToolCall("c1", "confirmar_accion", Args(new { accion = "Comprar zapatillas por S/ 200" }));
 

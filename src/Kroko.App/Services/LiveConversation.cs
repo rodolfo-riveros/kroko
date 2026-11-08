@@ -34,6 +34,7 @@ public sealed class LiveConversation : IDisposable
     private bool _unavailable;
     private DateTime _lastActivity;
     private string _lastHeard = "";
+    private bool _krokoSpoke; // Kroko ya respondió: la próxima frase del dueño empieza un turno nuevo
 
     public LiveConversation(BrainConnection brain, MicrophoneStream mic, LivePlayer player, PanelViewModel panel, CompanionBehavior behavior,
         IOptions<KrokoOptions> options, ILogger<LiveConversation> log)
@@ -170,6 +171,11 @@ public sealed class LiveConversation : IDisposable
                 break;
 
             case LiveEventMessage { Kind: "you", Text: { } heard }:
+                if (_krokoSpoke)
+                {
+                    _krokoSpoke = false;
+                    _panel.StartLiveUserTurn();
+                }
                 _lastHeard = heard;
                 _panel.NoteOwnerOrder();
                 _lastActivity = DateTime.Now;
@@ -181,6 +187,7 @@ public sealed class LiveConversation : IDisposable
                 break;
 
             case LiveEventMessage { Kind: "kroko", Text: { } text }:
+                _krokoSpoke = true;
                 _lastActivity = DateTime.Now;
                 _panel.ShowLiveReply(text);
                 break;

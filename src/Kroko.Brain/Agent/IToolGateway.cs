@@ -15,3 +15,19 @@ public interface IToolGateway
 
     Task<ToolExecution> ExecuteAsync(ToolCall call, IAgentChannel channel, CancellationToken ct);
 }
+
+/// <summary>Un archivo de la PC que va al Telegram del dueño (enviar_archivo).</summary>
+public sealed record FileAttachment(string Name, string Mime, byte[] Data, string? Caption);
+
+/// <summary>
+/// Entrega a Telegram lo que la App manda: archivos (siempre al chat del dueño) y, si la orden vino de Telegram,
+/// también las capturas de pantalla. Lo implementa el bot de Telegram.
+/// </summary>
+public interface ITelegramDelivery
+{
+    /// <summary>Envía el archivo. Devuelve null si salió bien o un texto con lo que falló.</summary>
+    Task<string?> SendFileAsync(IAgentChannel channel, FileAttachment file, CancellationToken ct);
+
+    /// <summary>Si la orden vino de un chat de Telegram, le manda la imagen (p. ej. una captura). Si no, no hace nada.</summary>
+    Task SendImageIfTelegramAsync(IAgentChannel channel, byte[] image, string? caption, CancellationToken ct);
+}

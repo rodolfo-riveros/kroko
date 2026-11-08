@@ -185,8 +185,10 @@ public sealed class ToolExecutor
     {
         if (data is null) return "ok";
         var json = JsonSerializer.Serialize(data, Json);
-        // Las capturas no se guardan en el registro
+        // Las capturas y los archivos enviados no se guardan en el registro (van al final del objeto)
         var i = json.IndexOf("\"imageBase64\"", StringComparison.Ordinal);
-        return i >= 0 ? json[..i] + "\"imagen\":\"(no se guarda)\"}" : json;
+        if (i >= 0) return json[..i] + "\"imagen\":\"(no se guarda)\"}";
+        var f = json.IndexOf("\"archivoBase64\"", StringComparison.Ordinal);
+        return f >= 0 ? json[..f] + "\"archivo\":\"(no se guarda)\"}" : json;
     }
 }

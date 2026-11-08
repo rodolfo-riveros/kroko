@@ -38,10 +38,10 @@ public static class AppRouting
         // Eventos con día y hora (decidido por Pol, 08/11/2026: Notion es su agenda y el calendario le avisa en el móvil)
         sb.AppendLine((l.Notion, l.Google) switch
         {
-            (true, true) => "- Citas, reuniones, cumpleaños y eventos con día y hora → los DOS: una entrada en su agenda de Notion " +
-                            "(Tipo Agenda o Reunión, con Fecha) y el evento en Google Calendar (google_calendario_crear; en la " +
-                            "descripción pon el enlace de la página de Notion). Si además quiere que lo avises, recordatorio_crear.",
-            (true, false) => "- Citas, reuniones y eventos con día y hora → su agenda de Notion (Tipo Agenda o Reunión, con Fecha). " +
+            (true, true) => "- Citas, reuniones, cumpleaños y eventos con día y hora → los DOS: guardar_en_notion (tipo Agenda o " +
+                            "Reunión, con fecha) y el evento en Google Calendar (google_calendario_crear; en la descripción pon el " +
+                            "enlace que devuelve guardar_en_notion). Si además quiere que lo avises, recordatorio_crear.",
+            (true, false) => "- Citas, reuniones y eventos con día y hora → guardar_en_notion (tipo Agenda o Reunión, con fecha). " +
                              "Google Calendar no está vinculado: si quiere que lo avises, crea también un recordatorio_crear.",
             (false, true) => "- Citas, reuniones, cumpleaños y eventos con día y hora → Google Calendar (google_calendario_crear). " +
                              "Si además quiere que lo avises, crea también un recordatorio_crear.",
@@ -60,16 +60,12 @@ public static class AppRouting
         // Notas
         if (l.Notion)
         {
-            sb.AppendLine($"- Notas, ideas, apuntes, listas y su agenda → Notion, SIEMPRE en la base de datos «{NotionDatabase}» " +
-                          "(una página nueva por cada nota). Las tareas no van a Notion salvo que lo pida.");
-            sb.AppendLine($"- La base «{NotionDatabase}»: si su enlace no está en tus recuerdos, búscala primero (notion-search). " +
-                          "Si no existe, créala UNA sola vez dentro de una página «Kroko» con estas propiedades: Nombre (título), " +
-                          "Tipo (selección: Nota, Idea, Agenda, Reunión, Lista), Fecha (fecha con hora) y Etiquetas (selección " +
-                          "múltiple); si puedes, añade las vistas Calendario (por Fecha) y Por tipo. Luego guarda su enlace con " +
-                          $"recordar (\"Base de Notion de notas y agenda: …\"). Cuéntale a {owner} en una frase que la creaste.");
-            sb.AppendLine("- Cada nota: título corto y claro, el Tipo que corresponda, Fecha si la tiene, Etiquetas útiles y el " +
-                          "contenido completo en el cuerpo (con viñetas o casillas si es una lista). Crear notas no pide permiso; " +
-                          "editar, mover o borrar páginas que ya existen sí.");
+            sb.AppendLine("- Notas, ideas, apuntes, listas y su agenda → guardar_en_notion, en UN solo paso (ella sola crea la base " +
+                          $"«{NotionDatabase}» la primera vez y la recuerda; no la busques ni la crees tú con las herramientas notion_…). " +
+                          "Las tareas no van a Notion salvo que lo pida.");
+            sb.AppendLine("- Cada nota: título corto y claro, el tipo que corresponda, fecha si la tiene, etiquetas útiles y el " +
+                          "contenido completo (con viñetas o casillas si es una lista). Para LEER o buscar sus notas sí usa notion-search " +
+                          "y notion-fetch. Crear notas no pide permiso; editar, mover o borrar páginas que ya existen sí.");
         }
         else sb.AppendLine(l.Google
                 ? "- Notas e ideas cortas → recordar empezando con \"Nota:\" (Notion no está vinculado). Si es largo, ofrécele vincular Notion."

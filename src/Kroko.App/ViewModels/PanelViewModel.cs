@@ -4,6 +4,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Kroko.App.Audio;
 using Kroko.App.Services;
+using Kroko.Shared;
 using Kroko.Shared.Protocol;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -170,14 +171,14 @@ public partial class PanelViewModel : ObservableObject
     [RelayCommand(CanExecute = nameof(CanSend))]
     private async Task SendAsync()
     {
-        var text = InputText.Trim();
+        var text = KrokoName.Fix(InputText.Trim());
         if (text.Length == 0) return;
         NoteOwnerOrder();
 
         InputText = "";
         StopTyping(applyPending: false);
         ClearCard();
-        UserText = text;
+        UserText = KrokoName.Fix(text);
         ReplyText = "";
         IsReplyError = false;
         RestartAutoHide();
@@ -240,7 +241,7 @@ public partial class PanelViewModel : ObservableObject
                 break;
 
             case TranscriptMessage t:
-                UserText = t.Text;
+                UserText = KrokoName.Fix(t.Text);
                 break;
         }
     }
@@ -521,13 +522,14 @@ public partial class PanelViewModel : ObservableObject
     public void ShowCaption(string text)
     {
         if (!IsListening) return;
-        UserText = text;
+        UserText = KrokoName.Fix(text); // los subtítulos de Vosk oyen "cro co"
         RestartAutoHide();
     }
 
     /// <summary>Voz en tiempo real: lo que Kroko va diciendo aparece mientras habla.</summary>
     public void ShowLiveReply(string text)
     {
+        text = KrokoName.Fix(Reactions.StripTags(text));
         StopTyping(applyPending: false);
         IsThinking = false;
         IsListening = false;
@@ -546,6 +548,16 @@ public partial class PanelViewModel : ObservableObject
         ListeningHint = "En conversación · habla cuando quieras";
         RequestShow(false);
         RestartAutoHide();
+    }
+
+    /// <summary>Voz en tiempo real: empiezas una frase nueva, así que se borra la respuesta anterior (no se queda a la vista).</summary>
+    public void StartLiveUserTurn()
+    {
+        StopTyping(applyPending: false);
+        ReplyText = "";
+        UserText = "";
+        IsReplyError = false;
+        ClearCard();
     }
 
     /// <summary>Se acabó la conversación (te callaste o dijiste «gracias»).</summary>
@@ -643,6 +655,7 @@ public partial class PanelViewModel : ObservableObject
 
     private void StartTyping(string text, bool isError, double? charsPerSecond = null)
     {
+        text = KrokoName.Fix(Reactions.StripTags(text)); // red de seguridad: nunca [[happy]] y siempre "Kroko"
         _cps = charsPerSecond ?? Math.Max(5, _opt.TypingCharsPerSecond);
         _fullReply = text;
         _typed = 0;

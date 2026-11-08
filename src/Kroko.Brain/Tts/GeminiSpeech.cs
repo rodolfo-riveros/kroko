@@ -109,7 +109,7 @@ public sealed class GeminiSpeech(HttpClient http, IOptionsMonitor<LlmOptions> ll
         var text = string.Concat(parts.EnumerateArray()
             .Where(p => !(p.TryGetProperty("thought", out var th) && th.ValueKind == JsonValueKind.True))
             .Select(p => p.TryGetProperty("text", out var t) ? t.GetString() : null)).Trim().Trim('"');
-        return text.Length == 0 ? null : text;
+        return text.Length == 0 ? null : Kroko.Shared.KrokoName.Fix(text); // "croco", "cro co"… → Kroko
     }
 
     public async Task<byte[]?> SynthesizeAsync(string text, CancellationToken ct)

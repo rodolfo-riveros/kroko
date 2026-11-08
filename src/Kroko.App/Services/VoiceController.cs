@@ -5,6 +5,7 @@ using System.Windows.Threading;
 using Kroko.App.Audio;
 using Kroko.App.Native;
 using Kroko.App.ViewModels;
+using Kroko.Shared;
 using Kroko.Shared.Protocol;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -185,7 +186,7 @@ public sealed partial class VoiceController : IDisposable
         {
             // "oye kroko, abre Excel" dicho de corrido: se manda la frase completa tal cual
             _panel.ShowListening();
-            _panel.ShowCaption(Capitalize(hit.Heard.Replace("cro co", "Kroko")));
+            _panel.ShowCaption(Capitalize(KrokoName.Fix(hit.Heard)));
             Send(Wav.FromPcm16(hit.UtterancePcm, VoiceRecorder.Format.SampleRate));
             return;
         }

@@ -35,6 +35,7 @@ public sealed class LiveSession : IAsyncDisposable
         new BoundedChannelOptions(100) { FullMode = BoundedChannelFullMode.DropOldest });
     private readonly StringBuilder _userTurn = new();
     private readonly StringBuilder _krokoTurn = new();
+    private string? _lastExpression;
     private Task? _receive;
     private Task? _pump;
 
@@ -60,7 +61,7 @@ public sealed class LiveSession : IAsyncDisposable
         await _ws.ConnectAsync(new Uri(Endpoint), ct);
 
         var conversation = _conversations.Get(_app.SessionId);
-        var system = _prompt.Build(_time.GetLocalNow(), conversation) + """
+        var system = _prompt.Build(_time.GetLocalNow(), conversation, expressionTags: false) + """
 
 
             Ahora hablas EN VOZ y en tiempo real: respuestas cortas y naturales, como en una llamada.
@@ -178,12 +179,19 @@ public sealed class LiveSession : IAsyncDisposable
         if (content["inputTranscription"]?["text"]?.GetValue<string>() is { Length: > 0 } heard)
         {
             _userTurn.Append(heard);
-            await EmitAsync("you", _userTurn.ToString().Trim(), ct);
+            await EmitAsync("you", Kroko.Shared.KrokoName.Fix(_userTurn.ToString().Trim()), ct);
         }
         if (content["outputTranscription"]?["text"]?.GetValue<string>() is { Length: > 0 } said)
         {
             _krokoTurn.Append(said);
-            await EmitAsync("kroko", _krokoTurn.ToString().Trim(), ct);
+            // Si aun así coló una etiqueta [[happy]], no se muestra: se convierte en la cara que pedía
+            var (clean, expression) = ExpressionTag.Extract(Kroko.Shared.KrokoName.Fix(_krokoTurn.ToString()));
+            if (expression is not null && expression != _lastExpression)
+            {
+                _lastExpression = expression;
+                await _app.SendAsync(new ExpressionMessage { SessionId = _app.SessionId, Name = expression }, ct);
+            }
+            await EmitAsync("kroko", clean, ct);
         }
         if (content["modelTurn"]?["parts"] is JsonArray parts)
         {
@@ -245,8 +253,9 @@ public sealed class LiveSession : IAsyncDisposable
     /// <summary>Fin de un turno: se guarda en el historial (para que el chat escrito sepa de qué hablaron).</summary>
     private async Task CompleteTurnAsync(CancellationToken ct)
     {
-        var user = _userTurn.ToString().Trim();
-        var kroko = _krokoTurn.ToString().Trim();
+        var user = Kroko.Shared.KrokoName.Fix(_userTurn.ToString().Trim());
+        var kroko = ExpressionTag.Extract(Kroko.Shared.KrokoName.Fix(_krokoTurn.ToString())).Text; // al historial, sin etiquetas
+        _lastExpression = null;
         _userTurn.Clear();
         _krokoTurn.Clear();
         if (user.Length > 0 || kroko.Length > 0)

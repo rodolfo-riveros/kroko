@@ -29,4 +29,8 @@ public static class Reactions
     };
 
     public static bool IsValid(string? name) => name is not null && All.ContainsKey(name);
+
+    /// <summary>Quita etiquetas de expresión [[happy]] que se hayan colado en un texto que se va a mostrar.</summary>
+    public static string StripTags(string text) =>
+        System.Text.RegularExpressions.Regex.Replace(text, @"\[\[\s*[a-zA-Z_]+\s*\]{1,2}\s*", "").Trim();
 }

@@ -40,7 +40,8 @@ public class AppRoutingTests
         var text = AppRouting.Describe(new AppLinks(Google: true, Trello: true, Todoist: true, Notion: true), "Pol");
         Assert.Contains("Tareas y pendientes sueltos (\"tengo que…\", \"anota que debo…\") → Todoist", text);
         Assert.Contains("proyecto, un tablero, un equipo o un cliente → Trello", text);
-        Assert.Contains("SIEMPRE en la base de datos «Kroko · Notas y agenda»", text);
+        Assert.Contains("→ guardar_en_notion, en UN solo paso", text);
+        Assert.Contains("«Kroko · Notas y agenda»", text);
         Assert.Contains("Las tareas no van a Notion", text);
         Assert.DoesNotContain("sin vincular", text);
         // Los avisos siempre los da Kroko
@@ -51,10 +52,10 @@ public class AppRoutingTests
     public void Con_Notion_y_Google_la_agenda_va_a_los_dos()
     {
         var text = AppRouting.Describe(new AppLinks(Google: true, Trello: false, Todoist: false, Notion: true), "Pol");
-        Assert.Contains("los DOS: una entrada en su agenda de Notion", text);
-        Assert.Contains("google_calendario_crear; en la descripción pon el enlace de la página de Notion", text);
-        Assert.Contains("créala UNA sola vez", text);
-        Assert.Contains("Tipo (selección: Nota, Idea, Agenda, Reunión, Lista)", text);
+        Assert.Contains("los DOS: guardar_en_notion (tipo Agenda o Reunión, con fecha)", text);
+        Assert.Contains("google_calendario_crear; en la descripción pon el enlace que devuelve guardar_en_notion", text);
+        Assert.Contains("no la busques ni la crees tú", text); // la crea el código, no la IA paso a paso
+        Assert.Contains("Para LEER o buscar sus notas sí usa notion-search", text);
         Assert.Contains("recordar", text); // guarda el enlace de la base para no volver a crearla
     }
 
@@ -62,7 +63,7 @@ public class AppRoutingTests
     public void Con_Notion_sin_Google_la_agenda_queda_en_Notion_y_ofrece_aviso()
     {
         var text = AppRouting.Describe(new AppLinks(Google: false, Trello: false, Todoist: false, Notion: true), "Pol");
-        Assert.Contains("su agenda de Notion (Tipo Agenda o Reunión, con Fecha). Google Calendar no está vinculado", text);
+        Assert.Contains("guardar_en_notion (tipo Agenda o Reunión, con fecha). Google Calendar no está vinculado", text);
         Assert.DoesNotContain("google_calendario_crear", text);
         Assert.Contains("tu memoria (tarea_crear)", text); // las tareas no van a Notion
     }

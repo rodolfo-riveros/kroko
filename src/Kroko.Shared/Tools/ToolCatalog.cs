@@ -111,6 +111,16 @@ public static class ToolCatalog
         },
         new()
         {
+            Name = "enviar_archivo",
+            Description = "Envía un archivo de la PC al Telegram de tu dueño (solo a él), como documento. Úsala cuando te pida " +
+                          "\"mándame el archivo…\", \"pásame el PDF…\" (desde Telegram o desde la PC). Si no sabes la ruta exacta, " +
+                          "búscala antes con buscar_archivos o listar_archivos; si hay varios parecidos, pregúntale cuál. " +
+                          "Solo archivos (no carpetas), hasta 45 MB. Nunca envía contraseñas, llaves ni datos de navegadores.",
+            Parameters = """{"type":"object","properties":{"ruta":{"type":"string","description":"Ruta completa del archivo (o con escritorio, descargas, documentos…)"},"mensaje":{"type":"string","description":"Texto corto que acompaña al archivo (opcional)"}},"required":["ruta"]}""",
+            Risk = ToolRisk.Write,
+        },
+        new()
+        {
             Name = "abrir_ventana",
             Description = "Abre en la PC una de tus propias ventanas para que tu dueño siga configurándote o revise algo. " +
                           "configuracion = Ajustes (\"abre tu configuración\"; con seccion: general, voz, cerebro, personalidad, " +

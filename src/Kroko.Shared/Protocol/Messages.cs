@@ -227,7 +227,8 @@ public static class KrokoProtocol
     public static readonly TimeSpan HeartbeatInterval = TimeSpan.FromSeconds(15);
 
     /// <summary>Tamaño máximo de un mensaje (los audios de la Fase 1C caben de sobra).</summary>
-    public const int MaxMessageBytes = 16 * 1024 * 1024;
+    /// <summary>64 MB: cabe un archivo de 45 MB en base64 (enviar_archivo). Las órdenes normales pesan unos KB.</summary>
+    public const int MaxMessageBytes = 64 * 1024 * 1024;
 
     public static readonly JsonSerializerOptions Json = new(JsonSerializerDefaults.Web)
     {

@@ -100,6 +100,11 @@ try
                  typeof(Kroko.Brain.Apps.GoogleDriveBuscarTool), typeof(Kroko.Brain.Apps.GoogleDriveLeerTool), typeof(Kroko.Brain.Apps.GoogleContactosBuscarTool) })
         builder.Services.AddSingleton(typeof(IBrainTool), t);
 
+    // Notas y agenda en Notion (una herramienta que hace todos los pasos por código)
+    builder.Services.AddSingleton<Kroko.Brain.Apps.INotionCalls, Kroko.Brain.Apps.McpNotionCalls>();
+    builder.Services.AddSingleton<Kroko.Brain.Apps.NotionNotebook>();
+    builder.Services.AddSingleton<IBrainTool, Kroko.Brain.Apps.GuardarEnNotionTool>();
+
     // Apps de tareas: Trello
     builder.Services.Configure<Kroko.Brain.Apps.TrelloOptions>(builder.Configuration.GetSection(Kroko.Brain.Apps.TrelloOptions.Section));
     builder.Services.AddHttpClient<Kroko.Brain.Apps.TrelloClient>(c => c.Timeout = TimeSpan.FromSeconds(20));
@@ -170,6 +175,7 @@ try
     builder.Services.AddSingleton<Kroko.Brain.Telegram.TelegramBot>();
     builder.Services.AddHostedService(sp => sp.GetRequiredService<Kroko.Brain.Telegram.TelegramBot>());
     builder.Services.AddSingleton<INotifier>(sp => sp.GetRequiredService<Kroko.Brain.Telegram.TelegramBot>());
+    builder.Services.AddSingleton<ITelegramDelivery>(sp => sp.GetRequiredService<Kroko.Brain.Telegram.TelegramBot>());
 
     builder.Services.AddSingleton<BrainAuditLog>();
     builder.Services.AddSingleton<AppToolGateway>();

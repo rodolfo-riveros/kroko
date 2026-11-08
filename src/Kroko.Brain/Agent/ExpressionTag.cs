@@ -31,6 +31,7 @@ public static partial class ExpressionTag
 
         var text = TagRegex().Replace(raw, "");
         text = MarkdownRegex().Replace(text, "");
+        text = Kroko.Shared.KrokoName.Fix(text); // las respuestas siempre con "Kroko"
         return (text.Trim(), expression);
     }
 }

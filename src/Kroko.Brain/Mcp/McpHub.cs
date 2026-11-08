@@ -18,6 +18,9 @@ namespace Kroko.Brain.Mcp;
 
 public enum ConnectorState { Desactivado, FaltaConfiguracion, NecesitaPermiso, Conectando, Conectado, Error }
 
+/// <summary>Una llamada directa a un conector falló (no conectado, conexión caída o error del servicio).</summary>
+public sealed class McpCallException(string message) : Exception(message);
+
 public sealed record ConnectorStatus(string Name, string Title, ConnectorState State, int Tools, string? Detail, bool CanConnect, string? AuthUrl = null);
 
 /// <summary>
@@ -35,6 +38,38 @@ public sealed partial class McpHub(IOptionsMonitor<McpOptions> options, ILogger<
     public IEnumerable<string> Instructions =>
         _slots.Values.Where(s => s.State == ConnectorState.Conectado && !string.IsNullOrWhiteSpace(s.Options.Instructions))
             .Select(s => $"{s.Title}: {s.Options.Instructions}");
+
+    /// <summary>¿El conector está conectado y listo?</summary>
+    public bool IsConnected(string server) =>
+        _slots.TryGetValue(server, out var s) && s.State == ConnectorState.Conectado && s.Client is not null;
+
+    /// <summary>
+    /// Llama directamente a una herramienta de un conector, para herramientas de Kroko que hacen varios pasos
+    /// seguros por código (p. ej. guardar_en_notion). Devuelve el texto de la respuesta; lanza McpCallException si falla.
+    /// </summary>
+    public async Task<string> CallAsync(string server, string tool, IReadOnlyDictionary<string, object?> args, CancellationToken ct)
+    {
+        if (!_slots.TryGetValue(server, out var slot) || slot.Client is not { } client || slot.State != ConnectorState.Conectado)
+            throw new McpCallException($"{server} no está conectado ahora mismo (clic derecho en Kroko → Conectores).");
+        CallToolResult result;
+        try
+        {
+            result = await client.CallToolAsync(tool, args, cancellationToken: ct);
+        }
+        catch (Exception ex) when (ex is IOException or ObjectDisposedException or InvalidOperationException or HttpRequestException)
+        {
+            slot.WakeUp();
+            throw new McpCallException($"Se perdió la conexión con {slot.Title}. Inténtalo de nuevo en unos segundos.");
+        }
+        catch (McpException ex)
+        {
+            throw new McpCallException($"{slot.Title} respondió con un error: {ex.Message}");
+        }
+        var text = string.Join("\n", result.Content.OfType<TextContentBlock>().Select(t => t.Text));
+        if (text.Length == 0 && result.StructuredContent is { } structured) text = structured.ToString();
+        if (result.IsError == true) throw new McpCallException(text.Length > 0 ? text : $"{slot.Title} devolvió un error.");
+        return text;
+    }
 
     public IReadOnlyList<ConnectorStatus> Status() =>
         options.CurrentValue.Servers.Select(kv =>

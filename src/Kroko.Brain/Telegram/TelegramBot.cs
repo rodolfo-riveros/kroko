@@ -40,7 +40,7 @@ public sealed class TelegramBot(
     AppConnections apps,
     Config.SecretStore secrets,
     TimeProvider time,
-    ILogger<TelegramBot> log) : BackgroundService, INotifier
+    ILogger<TelegramBot> log) : BackgroundService, INotifier, ITelegramDelivery
 {
     private static readonly TimeSpan PairingLifetime = TimeSpan.FromMinutes(10);
     private readonly Lock _pairingLock = new();
@@ -253,6 +253,46 @@ public sealed class TelegramBot(
         }
     }
 
+    /// <summary>
+    /// enviar_archivo: el archivo va al chat desde el que se pidió o, si se pidió en la PC, al chat del dueño.
+    /// Nunca a un chat que no esté vinculado.
+    /// </summary>
+    public async Task<string?> SendFileAsync(IAgentChannel channel, FileAttachment file, CancellationToken ct)
+    {
+        if (_bot is not { } bot) return "Telegram no está conectado: pon el token del bot en Configurar Kroko → Telegram.";
+        long? chat = channel is TelegramChannel tc ? tc.ChatId
+            : options.CurrentValue.AllowedChatIds.Count > 0 ? options.CurrentValue.AllowedChatIds[0] : null;
+        if (chat is not { } target || !options.CurrentValue.AllowedChatIds.Contains(target))
+            return "Todavía no vinculaste tu Telegram con Kroko (Configurar Kroko → Telegram → Vincular).";
+        try
+        {
+            using var stream = new MemoryStream(file.Data);
+            var caption = string.IsNullOrWhiteSpace(file.Caption) ? null : file.Caption.Length > 1000 ? file.Caption[..1000] + "…" : file.Caption;
+            await bot.SendChatAction(target, ChatAction.UploadDocument, cancellationToken: ct);
+            await bot.SendDocument(target, InputFile.FromStream(stream, file.Name), caption: caption, cancellationToken: ct);
+            return null;
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            log.LogWarning("Telegram: no se pudo enviar el archivo {Name} ({Message})", file.Name, ex.Message);
+            return $"Telegram no aceptó {file.Name} ({ex.Message}).";
+        }
+    }
+
+    public async Task SendImageIfTelegramAsync(IAgentChannel channel, byte[] image, string? caption, CancellationToken ct)
+    {
+        if (_bot is not { } bot || channel is not TelegramChannel tc) return;
+        try
+        {
+            using var stream = new MemoryStream(image);
+            await bot.SendPhoto(tc.ChatId, InputFile.FromStream(stream, "pantalla.jpg"), caption: caption, cancellationToken: ct);
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            log.LogWarning("Telegram: no se pudo enviar la imagen ({Message})", ex.Message);
+        }
+    }
+
     /// <summary>Mensaje al dueño (primer chat vinculado). Telegram corta a 4096 caracteres.</summary>
     public async Task<bool> SendToOwnerAsync(string text, CancellationToken ct)
     {
@@ -347,6 +387,8 @@ public sealed class TelegramBot(
 /// </summary>
 internal sealed class TelegramChannel(TelegramBotClient bot, long chat, TelegramBot owner, AppConnections apps) : IAgentChannel
 {
+    public long ChatId => chat;
+
     private readonly ConcurrentDictionary<string, bool> _approved = new();
 
     public string SessionId => $"telegram-{chat}";
@@ -357,6 +399,10 @@ internal sealed class TelegramChannel(TelegramBotClient bot, long chat, Telegram
         {
             case ReplyMessage r:
                 await bot.SendMessage(chat, r.Text, cancellationToken: ct);
+                break;
+            case CardMessage card when card.Items.Count > 0:
+                // Las tarjetas del panel (tareas, hábitos, estado del equipo) también llegan al chat, como texto
+                await bot.SendMessage(chat, TelegramFormat.Card(card), cancellationToken: ct);
                 break;
             case StateMessage { State: FaceStates.Thinking }:
                 await bot.SendChatAction(chat, ChatAction.Typing, cancellationToken: ct);
@@ -394,5 +440,31 @@ internal sealed class TelegramChannel(TelegramBotClient bot, long chat, Telegram
             default:
                 return null;
         }
+    }
+}
+
+/// <summary>Cómo se ven en el chat las cosas que en la PC son tarjetas del panel.</summary>
+public static class TelegramFormat
+{
+    public static string Card(CardMessage card)
+    {
+        var sb = new System.Text.StringBuilder();
+        if (!string.IsNullOrWhiteSpace(card.Title)) sb.AppendLine((card.Kind == "equipo" ? "💻 " : "📋 ") + card.Title.Trim());
+        foreach (var item in card.Items.Take(40))
+        {
+            var mark = item.Done switch { true => "✅", false => "⬜", _ => "•" };
+            var line = $"{mark} {item.Text}";
+            if (item.Value is { } v) line += $"  {Bar(v)} {Math.Round(Math.Clamp(v, 0, 1) * 100)}%";
+            if (!string.IsNullOrWhiteSpace(item.Detail)) line += $" — {item.Detail}";
+            sb.AppendLine(line);
+        }
+        if (card.Items.Count > 40) sb.AppendLine($"… y {card.Items.Count - 40} más");
+        return sb.ToString().TrimEnd();
+    }
+
+    private static string Bar(double value)
+    {
+        var filled = (int)Math.Round(Math.Clamp(value, 0, 1) * 10);
+        return new string('▰', filled) + new string('▱', 10 - filled);
     }
 }
