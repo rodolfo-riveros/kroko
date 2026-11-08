@@ -181,7 +181,7 @@ public partial class PanelViewModel : ObservableObject
         IsReplyError = false;
         RestartAutoHide();
 
-        var sent = await _brain.SendAsync(new UserTextMessage { Text = text });
+        var sent = await _brain.SendAsync(new UserTextMessage { Text = text, Speak = _opt.Voice.WantsVoice(spoken: false) });
         if (!sent)
         {
             _log.LogInformation("Mensaje no enviado: sin conexión con el Brain");
@@ -415,7 +415,7 @@ public partial class PanelViewModel : ObservableObject
         _behavior.WakeUp();
         IsReplyError = false;
         UserText = "🔔 " + title;
-        await SpeakReplyAsync(new ReplyMessage { Text = text, AudioBase64 = audio });
+        await SpeakReplyAsync(new ReplyMessage { Text = text, AudioBase64 = audio }, notification: true);
         _pendingExpression = expression;
         if (!IsTyping && !_audioDriven && expression is not null) _behavior.PlayExpression(expression);
         if (_notifications.Count > 0) _notifyRetry.Start();
@@ -567,13 +567,16 @@ public partial class PanelViewModel : ObservableObject
         OnSpeechFinished();
     }
 
-    private async Task SpeakReplyAsync(ReplyMessage r)
+    /// <param name="notification">Aviso que no responde a una orden: solo depende de si Kroko habla o está en "solo chat".</param>
+    private async Task SpeakReplyAsync(ReplyMessage r, bool notification = false)
     {
-        var wantsVoice = _voice.LastRequestWasVoice || _opt.Voice.SpeakTypedReplies;
-        _voice.LastRequestWasVoice = false;
+        var spoken = !notification && _voice.LastRequestWasVoice;
+        if (!notification) _voice.LastRequestWasVoice = false;
+        // Modo "solo chat" (Ajustes o «cállate»): nunca suena, aunque el Brain haya mandado audio
+        var wantsVoice = notification ? _opt.Voice.RepliesWithVoice : _opt.Voice.WantsVoice(spoken);
 
         byte[]? wav = null;
-        if (!string.IsNullOrEmpty(r.AudioBase64))
+        if (wantsVoice && !string.IsNullOrEmpty(r.AudioBase64))
         {
             try { wav = Convert.FromBase64String(r.AudioBase64); }
             catch (FormatException) { wav = null; }
@@ -582,7 +585,7 @@ public partial class PanelViewModel : ObservableObject
         if (wav is null && wantsVoice && _opt.Voice.LocalTtsFallback)
             wav = await Task.Run(() => _localTts.Synthesize(r.Text));
 
-        var duration = wav is null || (!wantsVoice && string.IsNullOrEmpty(r.AudioBase64)) ? null : _player.Play(wav);
+        var duration = wav is null ? null : _player.Play(wav);
         if (duration is { TotalSeconds: > 0.3 } d)
         {
             _audioDriven = true;
@@ -593,6 +596,8 @@ public partial class PanelViewModel : ObservableObject
         {
             _audioDriven = false;
             StartTyping(r.Text, r.IsError);
+            // Respuesta sin voz a una orden hablada: la conversación por voz termina (no se queda esperando)
+            if (spoken) ReplyFinished?.Invoke(true);
         }
     }
 

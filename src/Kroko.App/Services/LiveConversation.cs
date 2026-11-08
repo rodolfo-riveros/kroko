@@ -61,7 +61,7 @@ public sealed class LiveConversation : IDisposable
     public bool IsActive { get; private set; }
 
     /// <summary>¿Se usa la voz en tiempo real? (activada, con cerebro y sin haber fallado en esta sesión)</summary>
-    public bool CanUse => _opt.Realtime && !_unavailable && _brain.IsConnected && MicrophoneStream.HasMicrophone;
+    public bool CanUse => _opt.Realtime && _opt.RepliesWithVoice && !_unavailable && _brain.IsConnected && MicrophoneStream.HasMicrophone;
 
     /// <summary>No se pudo abrir: el controlador de voz vuelve al modo clásico.</summary>
     public event Action? Failed;

@@ -102,6 +102,15 @@ public static class ToolCatalog
         },
         new()
         {
+            Name = "modo_respuesta",
+            Description = "Cambia cómo respondes en la PC: con voz (hablas y escribes) o solo por chat (solo escribes, sin audio). " +
+                          "Úsala cuando tu dueño diga cosas como \"cállate\", \"no me hables\", \"mándamelo por chat\", \"solo escribe\" " +
+                          "(voz=false) o \"háblame\", \"respóndeme con voz\", \"ya puedes hablar\" (voz=true). Se recuerda aunque reinicies.",
+            Parameters = """{"type":"object","properties":{"voz":{"type":"boolean","description":"true = responder con voz; false = solo por chat"}},"required":["voz"]}""",
+            Risk = ToolRisk.Write,
+        },
+        new()
+        {
             Name = "mostrar_mi_dia",
             Description = "Abre en la PC la ventana \"Mi día\" (agenda, tareas, recordatorios, hábitos y clima) para que tu dueño lo vea de un vistazo.",
             Parameters = """{"type":"object","properties":{}}""",

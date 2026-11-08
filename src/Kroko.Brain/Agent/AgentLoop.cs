@@ -46,19 +46,19 @@ public sealed class AgentLoop(
         }
         catch (NoLlmConfiguredException)
         {
-            await FinishAsync(channel, true, "Para escucharte necesito la API key de Gemini.", "confused", true, ct);
+            await FinishAsync(channel, speakReply, "Para escucharte necesito la API key de Gemini.", "confused", true, ct);
             return;
         }
         catch (LlmProviderException ex)
         {
             log.LogWarning("No se pudo transcribir: {Message}", ex.Message);
-            await FinishAsync(channel, true, "No pude entender el audio. ¿Me lo repites?", "confused", true, ct);
+            await FinishAsync(channel, speakReply, "No pude entender el audio. ¿Me lo repites?", "confused", true, ct);
             return;
         }
 
         if (string.IsNullOrWhiteSpace(text))
         {
-            await FinishAsync(channel, true, "No te escuché bien. ¿Me lo repites?", "confused", false, ct);
+            await FinishAsync(channel, speakReply, "No te escuché bien. ¿Me lo repites?", "confused", false, ct);
             return;
         }
 

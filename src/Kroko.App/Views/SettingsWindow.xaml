@@ -332,6 +332,16 @@
                         <TextBlock Text="Respuestas" Style="{StaticResource Group}" />
                         <Border Style="{StaticResource Row}">
                             <DockPanel>
+                                <CheckBox DockPanel.Dock="Right" IsChecked="{Binding RepliesWithVoice}" Style="{StaticResource Kroko.Toggle}" />
+                                <TextBlock DockPanel.Dock="Left" Text="&#xE767;" Style="{StaticResource RowIcon}" />
+                                <StackPanel VerticalAlignment="Center">
+                                    <TextBlock Text="Responder con voz" Style="{StaticResource RowTitle}" />
+                                    <TextBlock Text="Apagado: solo por chat. También puedes decirle «cállate» o «háblame otra vez»." Style="{StaticResource Hint}" />
+                                </StackPanel>
+                            </DockPanel>
+                        </Border>
+                        <Border Style="{StaticResource Row}" IsEnabled="{Binding RepliesWithVoice}">
+                            <DockPanel>
                                 <CheckBox DockPanel.Dock="Right" IsChecked="{Binding SpeakTypedReplies}" Style="{StaticResource Kroko.Toggle}" />
                                 <TextBlock DockPanel.Dock="Left" Text="&#xE8BE;" Style="{StaticResource RowIcon}" />
                                 <TextBlock Text="Hablar también las respuestas a lo que escribo" Style="{StaticResource RowTitle}" VerticalAlignment="Center" />

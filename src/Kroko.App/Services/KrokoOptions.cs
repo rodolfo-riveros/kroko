@@ -104,8 +104,14 @@ public sealed class VoiceSettings
     /// <summary>Micrófono a usar (-1 = el predeterminado).</summary>
     public int MicrophoneDevice { get; set; } = -1;
 
-    /// <summary>Hablar también las respuestas a lo que escribes.</summary>
-    public bool SpeakTypedReplies { get; set; }
+    /// <summary>Responder con voz. Apagado = solo por chat (también se cambia diciéndole «cállate» / «háblame»).</summary>
+    public bool RepliesWithVoice { get; set; } = true;
+
+    /// <summary>Hablar también las respuestas a lo que escribes (con la voz de Gemini).</summary>
+    public bool SpeakTypedReplies { get; set; } = true;
+
+    /// <summary>¿La próxima respuesta lleva voz? (según el modo y si la orden fue hablada o escrita).</summary>
+    public bool WantsVoice(bool spoken) => RepliesWithVoice && (spoken || SpeakTypedReplies);
 
     /// <summary>Si el Brain no manda audio, hablar con la voz de Windows.</summary>
     public bool LocalTtsFallback { get; set; } = true;

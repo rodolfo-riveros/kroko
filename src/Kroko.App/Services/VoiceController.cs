@@ -321,7 +321,7 @@ public sealed partial class VoiceController : IDisposable
 
     private async Task SendAsync(byte[] wav)
     {
-        if (!await _brain.SendAsync(new UserAudioMessage { AudioBase64 = Convert.ToBase64String(wav) }))
+        if (!await _brain.SendAsync(new UserAudioMessage { AudioBase64 = Convert.ToBase64String(wav), Speak = _opt.WantsVoice(spoken: true) }))
         {
             _session.LastRequestWasVoice = false;
             EndConversation(quiet: true);

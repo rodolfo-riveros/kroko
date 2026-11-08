@@ -95,7 +95,7 @@ public sealed class SessionHandler(AgentLoop agent, Productivity.AppConnections 
                         await CancelCurrentAsync();
                         current = CancellationTokenSource.CreateLinkedTokenSource(aborted);
                         var token = current.Token;
-                        running = Task.Run(() => RunSafeAsync(() => agent.HandleUserTextAsync(text.Text.Trim(), channel, token)), CancellationToken.None);
+                        running = Task.Run(() => RunSafeAsync(() => agent.HandleUserTextAsync(text.Text.Trim(), channel, token, speak: text.Speak ?? false)), CancellationToken.None);
                         break;
 
                     case UserAudioMessage audio when !string.IsNullOrEmpty(audio.AudioBase64):
@@ -113,7 +113,7 @@ public sealed class SessionHandler(AgentLoop agent, Productivity.AppConnections 
                         await CancelCurrentAsync();
                         current = CancellationTokenSource.CreateLinkedTokenSource(aborted);
                         var audioToken = current.Token;
-                        running = Task.Run(() => RunSafeAsync(() => agent.HandleUserAudioAsync(wav, channel, audioToken)), CancellationToken.None);
+                        running = Task.Run(() => RunSafeAsync(() => agent.HandleUserAudioAsync(wav, channel, audioToken, speakReply: audio.Speak ?? true)), CancellationToken.None);
                         break;
                     }
 

@@ -38,3 +38,27 @@ public class VoiceTests
         Assert.True(wav!.Length > 10_000);
     }
 }
+
+public class ReplyModeTests
+{
+    [Theory]
+    [InlineData(true, true, true, true)]    // con voz: lo hablado responde hablando
+    [InlineData(true, true, false, true)]   // con voz: lo escrito también (por defecto)
+    [InlineData(true, false, false, false)] // "hablar lo escrito" apagado
+    [InlineData(true, false, true, true)]
+    [InlineData(false, true, true, false)]  // solo chat («cállate»): nunca suena
+    [InlineData(false, true, false, false)]
+    public void El_modo_decide_si_la_respuesta_suena(bool repliesWithVoice, bool speakTyped, bool spoken, bool expected)
+    {
+        var v = new VoiceSettings { RepliesWithVoice = repliesWithVoice, SpeakTypedReplies = speakTyped };
+        Assert.Equal(expected, v.WantsVoice(spoken));
+    }
+
+    [Fact]
+    public void Por_defecto_responde_con_voz_tambien_a_lo_escrito()
+    {
+        var v = new VoiceSettings();
+        Assert.True(v.WantsVoice(spoken: false));
+        Assert.True(v.WantsVoice(spoken: true));
+    }
+}

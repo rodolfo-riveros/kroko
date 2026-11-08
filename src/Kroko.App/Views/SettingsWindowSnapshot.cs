@@ -45,10 +45,41 @@ public static class SettingsWindowSnapshot
                 enc.Save(fs);
             }
             paths.Add(path);
+
+            // Pestañas largas: otra captura con el contenido desplazado hasta abajo
+            if (FindVisible<ScrollViewer>(host) is { ScrollableHeight: > 0 } scroll)
+            {
+                scroll.ScrollToEnd();
+                host.UpdateLayout();
+                var lower = new RenderTargetBitmap(W, H, 96, 96, PixelFormats.Pbgra32);
+                lower.Render(host);
+                var lowerPath = Path.Combine(outputDir, $"ajustes-{i}-abajo.png");
+                using (var fs = File.Create(lowerPath))
+                {
+                    var enc = new PngBitmapEncoder();
+                    enc.Frames.Add(BitmapFrame.Create(lower));
+                    enc.Save(fs);
+                }
+                paths.Add(lowerPath);
+                scroll.ScrollToHome();
+            }
         }
         window.Close();
         vm.Dispose();
         return paths;
+    }
+
+    /// <summary>El primer elemento T visible (la pestaña oculta no cuenta).</summary>
+    private static T? FindVisible<T>(DependencyObject root) where T : FrameworkElement
+    {
+        for (var i = 0; i < VisualTreeHelper.GetChildrenCount(root); i++)
+        {
+            var child = VisualTreeHelper.GetChild(root, i);
+            if (child is T match && match.Visibility == Visibility.Visible) return match;
+            if (child is UIElement { Visibility: not Visibility.Visible }) continue;
+            if (FindVisible<T>(child) is { } found) return found;
+        }
+        return null;
     }
 
     private static TabControl? FindTabControl(DependencyObject root)

@@ -60,6 +60,7 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
 
         Hotkey = o.Voice.Hotkey;
         PushToTalk = string.Equals(o.Voice.Mode, "PushToTalk", StringComparison.OrdinalIgnoreCase);
+        RepliesWithVoice = o.Voice.RepliesWithVoice;
         SpeakTypedReplies = o.Voice.SpeakTypedReplies;
         LocalTtsFallback = o.Voice.LocalTtsFallback;
         Microphones.Add("Predeterminado de Windows");
@@ -103,6 +104,7 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
     // ---- Voz
     [ObservableProperty] public partial string Hotkey { get; set; } = "";
     [ObservableProperty] public partial bool PushToTalk { get; set; }
+    [ObservableProperty] public partial bool RepliesWithVoice { get; set; }
     [ObservableProperty] public partial bool SpeakTypedReplies { get; set; }
     [ObservableProperty] public partial bool LocalTtsFallback { get; set; }
     [ObservableProperty] public partial int MicrophoneIndex { get; set; }
@@ -231,6 +233,7 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
     {
         ["Hotkey"] = Hotkey.Trim(),
         ["Mode"] = PushToTalk ? "PushToTalk" : "Tap",
+        ["RepliesWithVoice"] = RepliesWithVoice,
         ["SpeakTypedReplies"] = SpeakTypedReplies,
         ["LocalTtsFallback"] = LocalTtsFallback,
         ["MicrophoneDevice"] = MicrophoneIndex - 1,
@@ -247,6 +250,8 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
         if (_loading) return;
         _voice.WakeWord.Enabled = WakeWordEnabled;
         _voice.WakeWord.ListenInFullscreen = ListenInFullscreen;
+        _voice.RepliesWithVoice = RepliesWithVoice;
+        _voice.SpeakTypedReplies = SpeakTypedReplies;
         _voice.Conversation = Conversation;
         _voice.Realtime = Realtime;
         _voice.FollowUpSeconds = Math.Clamp(FollowUpSeconds, 3, 20);
@@ -255,6 +260,8 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
 
         var k = UserSettings.LoadKrokoSection();
         var voice = k["Voice"] as JsonObject ?? new JsonObject();
+        voice["RepliesWithVoice"] = RepliesWithVoice;
+        voice["SpeakTypedReplies"] = SpeakTypedReplies;
         voice["Conversation"] = Conversation;
         voice["Realtime"] = Realtime;
         voice["FollowUpSeconds"] = Math.Round(Math.Clamp(FollowUpSeconds, 3, 20));
@@ -267,6 +274,8 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
 
     partial void OnWakeWordEnabledChanged(bool value) => ApplyVoiceNow();
     partial void OnListenInFullscreenChanged(bool value) => ApplyVoiceNow();
+    partial void OnRepliesWithVoiceChanged(bool value) => ApplyVoiceNow();
+    partial void OnSpeakTypedRepliesChanged(bool value) => ApplyVoiceNow();
     partial void OnConversationChanged(bool value) => ApplyVoiceNow();
     partial void OnRealtimeChanged(bool value) => ApplyVoiceNow();
     partial void OnFollowUpSecondsChanged(double value) => ApplyVoiceNow();

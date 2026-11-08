@@ -73,11 +73,17 @@ public enum ToolRisk { Read, Write, Dangerous }
 public sealed record UserAudioMessage : KrokoMessage
 {
     public string AudioBase64 { get; init; } = "";
+
+    /// <summary>¿Responder también con voz? null = sí (comportamiento clásico de las órdenes por voz).</summary>
+    public bool? Speak { get; init; }
 }
 
 public sealed record UserTextMessage : KrokoMessage
 {
     public string Text { get; init; } = "";
+
+    /// <summary>¿Responder también con voz? null = no (comportamiento clásico de lo escrito).</summary>
+    public bool? Speak { get; init; }
 }
 
 public sealed record ToolResultMessage : KrokoMessage
