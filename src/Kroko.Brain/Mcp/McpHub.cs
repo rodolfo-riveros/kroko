@@ -37,7 +37,7 @@ public sealed partial class McpHub(IOptionsMonitor<McpOptions> options, ILogger<
     /// <summary>Indicaciones de los conectores activos, para el prompt.</summary>
     public IEnumerable<string> Instructions =>
         _slots.Values.Where(s => s.State == ConnectorState.Conectado && !string.IsNullOrWhiteSpace(s.Options.Instructions))
-            .Select(s => $"{s.Title}: {s.Options.Instructions}");
+            .Select(s => $"{s.Title} (conector «{s.Name}»): {s.Options.Instructions}");
 
     /// <summary>¿El conector está conectado y listo?</summary>
     public bool IsConnected(string server) =>

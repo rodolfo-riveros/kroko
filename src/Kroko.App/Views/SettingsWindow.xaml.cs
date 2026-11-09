@@ -9,7 +9,11 @@ public partial class SettingsWindow : Window
     {
         InitializeComponent();
         DataContext = viewModel;
-        Loaded += async (_, _) => await viewModel.CheckBrainAsync();
+        Loaded += async (_, _) =>
+        {
+            await viewModel.CheckBrainAsync();
+            await viewModel.LoadUsageAsync();
+        };
         Closed += (_, _) => viewModel.Dispose();
     }
 }

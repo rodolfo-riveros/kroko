@@ -77,6 +77,16 @@ public sealed class BrainApiClient(IOptions<KrokoOptions> options) : IDisposable
             : $"Conectado · IA: {string.Join(", ", providers)} ({sources})";
     }
 
+    /// <summary>Gasto de IA de hoy y del mes y el tope diario (/api/uso).</summary>
+    public async Task<UsageDto?> GetUsageAsync(CancellationToken ct = default) =>
+        await _http.GetFromJsonAsync<UsageDto>("api/uso", Json, ct);
+
+    public async Task SetDailyLimitAsync(long tokens, CancellationToken ct = default)
+    {
+        using var res = await _http.PutAsJsonAsync("api/uso/limite", new { tokens }, Json, ct);
+        res.EnsureSuccessStatusCode();
+    }
+
     public async Task<List<ConnectorDto>> GetConnectorsAsync(CancellationToken ct = default) =>
         await _http.GetFromJsonAsync<List<ConnectorDto>>("api/conectores", Json, ct) ?? [];
 
@@ -265,3 +275,7 @@ public sealed record MyDayHabitDto(string Nombre, bool Hecho, int Racha)
 
 public sealed record MyDayDto(string Fecha, string Saludo, MyDayWeatherDto? Clima, List<MyDayEventDto> Agenda, List<MyDayTaskDto> Tareas,
     List<MyDayReminderDto> Recordatorios, List<MyDayHabitDto> Habitos, List<string> Avisos);
+
+public sealed record UsageTotalsDto(long Total, long Entrada, long Salida, long EnCache, int Llamadas, Dictionary<string, long> PorTipo);
+
+public sealed record UsageDto(UsageTotalsDto Hoy, UsageTotalsDto Mes, long LimiteDiario, bool ModoAhorro);

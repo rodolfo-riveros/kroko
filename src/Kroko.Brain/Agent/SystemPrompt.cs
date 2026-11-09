@@ -76,22 +76,12 @@ public sealed class SystemPrompt(
         var sb = new StringBuilder();
         var profile = owner.Get();
         var who = profile.IsComplete ? profile.Nickname : "tu dueño";
+        // Orden pensado para ahorrar: primero lo que casi nunca cambia (personalidad, reglas, apps, conectores, caras)
+        // y al final lo que cambia (recuerdos, resumen y la hora). Gemini cobra con descuento el inicio que se repite
+        // igual entre llamadas (caché implícita); antes la hora al principio rompía ese descuento cada minuto.
         sb.AppendLine(Personalize(ReadPersonality().Trim(), profile));
         sb.AppendLine();
         AppendOwner(sb, profile);
-        sb.AppendLine($"Fecha y hora actual de {who}: {now.ToString("dddd d 'de' MMMM 'de' yyyy, HH:mm", Spanish)} ({TimeZoneLabel(now)}).");
-        sb.AppendLine();
-
-        AppendMemories(sb);
-        AppendRoutines(sb);
-
-        if (conversation?.Summary is { Length: > 0 } summary)
-        {
-            sb.AppendLine();
-            sb.AppendLine("Resumen de lo que hablaron antes (ya no está en el historial):");
-            sb.AppendLine(summary);
-        }
-
         sb.AppendLine();
         sb.AppendLine(Rules.Replace("{dueño}", who));
         sb.AppendLine(AppRouting.Describe(CurrentLinks(), who));
@@ -100,17 +90,32 @@ public sealed class SystemPrompt(
         if (connectorNotes.Count > 0)
         {
             sb.AppendLine();
-            sb.AppendLine("Conectores activos:");
+            sb.AppendLine("Conectores activos. Sus herramientas NO están en tu lista: mira cuáles hay con ver_herramientas_conector " +
+                          "(conector) y sus argumentos (herramientas), y úsalas con usar_conector:");
             foreach (var n in connectorNotes) sb.AppendLine($"- {n}");
         }
 
-        if (!expressionTags) return sb.ToString();
+        if (expressionTags)
+        {
+            sb.AppendLine();
+            sb.AppendLine("Tu cara: empieza SIEMPRE tu respuesta con una etiqueta de expresión entre dobles corchetes, " +
+                          $"por ejemplo [[happy]] Hola{(profile.IsComplete ? " " + who : "")}. Elige la que mejor encaje:");
+            foreach (var (key, when) in Reactions.All)
+                sb.AppendLine($"- {key}: {when}");
+        }
 
         sb.AppendLine();
-        sb.AppendLine("Tu cara: empieza SIEMPRE tu respuesta con una etiqueta de expresión entre dobles corchetes, " +
-                      $"por ejemplo [[happy]] Hola{(profile.IsComplete ? " " + who : "")}. Elige la que mejor encaje:");
-        foreach (var (key, when) in Reactions.All)
-            sb.AppendLine($"- {key}: {when}");
+        AppendMemories(sb);
+        AppendRoutines(sb);
+        if (conversation?.Summary is { Length: > 0 } summary)
+        {
+            sb.AppendLine();
+            sb.AppendLine("Resumen de lo que hablaron antes (ya no está en el historial):");
+            sb.AppendLine(summary);
+        }
+
+        sb.AppendLine();
+        sb.AppendLine($"Fecha y hora actual de {who}: {now.ToString("dddd d 'de' MMMM 'de' yyyy, HH:mm", Spanish)} ({TimeZoneLabel(now)}).");
         return sb.ToString();
     }
 

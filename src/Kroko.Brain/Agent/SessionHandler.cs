@@ -125,6 +125,12 @@ public sealed class SessionHandler(AgentLoop agent, Productivity.AppConnections 
                             await transport.SendAsync(new LiveEventMessage { SessionId = channel.SessionId, Kind = "error", Text = "La voz en tiempo real está desactivada." }, aborted);
                             break;
                         }
+                        if (services.GetService<Usage.UsageTracker>() is { IsOverDailyLimit: true })
+                        {
+                            // Modo ahorro: se pasó el tope diario de IA. La App vuelve sola al modo clásico (más barato).
+                            await transport.SendAsync(new LiveEventMessage { SessionId = channel.SessionId, Kind = "error", Text = "Modo ahorro: llegaste a tu tope diario de IA." }, aborted);
+                            break;
+                        }
                         try
                         {
                             live = ActivatorUtilities.CreateInstance<LiveSession>(services, (IAgentChannel)channel);

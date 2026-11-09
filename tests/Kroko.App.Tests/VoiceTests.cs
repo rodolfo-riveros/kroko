@@ -113,3 +113,13 @@ public class AutoApproveTests
         Assert.False(o.CanAutoApprove("apagar", Now, Now));
     }
 }
+
+public class UsageDisplayTests
+{
+    [Theory]
+    [InlineData(850, "850")]
+    [InlineData(48_000, "48 mil")]
+    [InlineData(2_350_000, "2,4 M")]
+    public void El_gasto_se_lee_facil(long tokens, string expected) =>
+        Assert.Equal(expected, Kroko.App.ViewModels.SettingsViewModel.Tokens(tokens).Replace(".", ","));
+}

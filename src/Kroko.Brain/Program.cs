@@ -71,6 +71,7 @@ try
 
     builder.Services.AddSingleton<Kroko.Brain.Owner.OwnerProfileStore>();
     builder.Services.AddSingleton<TimeProvider, Kroko.Brain.Owner.OwnerTimeProvider>();
+    builder.Services.AddSingleton<Kroko.Brain.Usage.UsageTracker>(); // medidor de gasto de IA y tope diario
     builder.Services.Configure<MemoryOptions>(builder.Configuration.GetSection(MemoryOptions.Section));
     builder.Services.AddSingleton<KrokoDatabase>();
     builder.Services.AddSingleton<MemoryStore>();
@@ -214,6 +215,7 @@ try
     app.MapMemoryApi();
     app.MapConnectorsApi();
     app.MapSetupApi();
+    Kroko.Brain.Usage.UsageApi.MapUsageApi(app);
     Kroko.Brain.Apps.GoogleApi.MapGoogleApi(app);
     app.MapMyDayApi();
     app.MapEmbeddingApi();

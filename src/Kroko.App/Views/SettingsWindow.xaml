@@ -407,6 +407,31 @@
                                 </StackPanel>
                             </DockPanel>
                         </Border>
+
+                        <TextBlock Text="Gasto de IA" Style="{StaticResource Group}" />
+                        <Border Style="{StaticResource Row}">
+                            <DockPanel>
+                                <Button DockPanel.Dock="Right" Content="Actualizar" Command="{Binding LoadUsageCommand}" Style="{StaticResource Kroko.Button}" Margin="12,0,0,0" VerticalAlignment="Center" />
+                                <TextBlock DockPanel.Dock="Left" Text="&#xE9D2;" Style="{StaticResource RowIcon}" />
+                                <StackPanel VerticalAlignment="Center">
+                                    <TextBlock Text="{Binding UsageToday}" Style="{StaticResource RowTitle}" TextWrapping="Wrap" />
+                                    <TextBlock Text="{Binding UsageMonth}" Style="{StaticResource Hint}" />
+                                    <TextBlock Text="{Binding UsageDetail}" Style="{StaticResource Hint}" TextWrapping="Wrap" />
+                                </StackPanel>
+                            </DockPanel>
+                        </Border>
+                        <Border Style="{StaticResource Row}">
+                            <DockPanel>
+                                <Button DockPanel.Dock="Right" Content="Guardar tope" Command="{Binding SaveDailyLimitCommand}" Style="{StaticResource Kroko.Button}" Margin="12,0,0,0" VerticalAlignment="Center" />
+                                <TextBox DockPanel.Dock="Right" Text="{Binding DailyLimitThousands, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource Field}" Width="110" VerticalAlignment="Center" />
+                                <TextBlock DockPanel.Dock="Left" Text="&#xE7BA;" Style="{StaticResource RowIcon}" />
+                                <StackPanel VerticalAlignment="Center" Margin="0,0,12,0">
+                                    <TextBlock Text="Tope diario (miles de tokens, 0 = sin tope)" Style="{StaticResource RowTitle}" />
+                                    <TextBlock Text="Al pasarlo, modo ahorro: sin voz en tiempo real ni voz de Gemini (el chat sigue). Compara con AI Studio → Usage cuánto te cuesta." Style="{StaticResource Hint}" TextWrapping="Wrap" />
+                                    <TextBlock Text="{Binding UsageStatus}" Style="{StaticResource Hint}" Foreground="{StaticResource Kroko.EyeAlert}" TextWrapping="Wrap" />
+                                </StackPanel>
+                            </DockPanel>
+                        </Border>
                     </StackPanel>
                 </ScrollViewer>
             </TabItem>

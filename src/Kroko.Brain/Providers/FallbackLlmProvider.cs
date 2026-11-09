@@ -9,7 +9,8 @@ namespace Kroko.Brain.Providers;
 public sealed class FallbackLlmProvider(
     IEnumerable<ILlmProvider> providers,
     IOptionsMonitor<LlmOptions> options,
-    ILogger<FallbackLlmProvider> log) : IConfiguredLlm
+    ILogger<FallbackLlmProvider> log,
+    Kroko.Brain.Usage.UsageTracker? usage = null) : IConfiguredLlm
 {
     private readonly ILlmProvider[] _providers = [.. providers];
 
@@ -26,7 +27,9 @@ public sealed class FallbackLlmProvider(
         {
             try
             {
-                return await p.ChatAsync(systemPrompt, history, tools, ct);
+                var response = await p.ChatAsync(systemPrompt, history, tools, ct);
+                usage?.Record(response.Usage); // el medidor de gasto (chat, resumen, automatizaciones…)
+                return response;
             }
             catch (LlmProviderException ex)
             {

@@ -108,9 +108,11 @@ public sealed class Conversation
             var max = Math.Max(4, _maxMessages());
             if (_messages.Count > max)
             {
-                // Cortamos en el inicio de un mensaje del usuario para no separar
+                // Se recorta hasta la MITAD de una vez (no de a 2 mensajes): así el resumen con la IA se hace pocas veces
+                // y no en casi cada orden. Cortamos en el inicio de un mensaje del usuario para no separar
                 // una llamada a herramienta de su resultado.
-                var cut = _messages.Count - max;
+                var keep = Math.Max(2, max / 2);
+                var cut = _messages.Count - keep;
                 while (cut < _messages.Count && _messages[cut].Message.Role != ChatRole.User) cut++;
                 var removed = _messages.Take(cut).ToList();
                 foreach (var (dbId, _) in removed)
@@ -188,6 +190,7 @@ public sealed class ConversationSummarizer(IServiceProvider services, KrokoDatab
 
     internal async Task SummarizeAsync(string conversation, IReadOnlyList<ChatMessage> removed)
     {
+        using var _ = Usage.UsageTracker.Scope("resumen"); // en el medidor, aparte del chat
         var transcript = new StringBuilder();
         foreach (var m in removed)
         {

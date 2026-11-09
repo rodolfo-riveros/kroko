@@ -33,7 +33,8 @@ public sealed class AgentLoop(
     TimeProvider time,
     Tts.ITtsProvider tts,
     Tts.ISpeechToText stt,
-    ILogger<AgentLoop> log)
+    ILogger<AgentLoop> log,
+    Usage.UsageTracker? usage = null)
 {
     /// <summary>Orden por voz: transcribe, enseña lo entendido y responde hablando.</summary>
     public async Task HandleUserAudioAsync(byte[] wav, IAgentChannel channel, CancellationToken ct, string mimeType = "audio/wav", bool speakReply = true)
@@ -52,7 +53,9 @@ public sealed class AgentLoop(
         catch (LlmProviderException ex)
         {
             log.LogWarning("No se pudo transcribir: {Message}", ex.Message);
-            await FinishAsync(channel, speakReply, "No pude entender el audio. ¿Me lo repites?", "confused", true, ct);
+            // Sin saldo o límite de uso: se dice claro (no es que no te entendió)
+            if (ex.OwnerMessage is { } account) await FinishAsync(channel, speakReply, account, "sad", true, ct);
+            else await FinishAsync(channel, speakReply, "No pude entender el audio. ¿Me lo repites?", "confused", true, ct);
             return;
         }
 
@@ -130,13 +133,17 @@ public sealed class AgentLoop(
         {
             log.LogError(ex, "Ningún proveedor de IA respondió");
             await FinishAsync(channel, speak,
-                "No me pude conectar con mi cerebro de IA. Revisa el internet o la API key y lo intento de nuevo.",
+                ex.OwnerMessage ?? "No me pude conectar con mi cerebro de IA. Revisa el internet o la API key y lo intento de nuevo.",
                 "sad", true, ct);
         }
     }
 
     private async Task FinishAsync(IAgentChannel channel, bool speak, string text, string? expression, bool isError, CancellationToken ct)
     {
+        // La primera vez del día que se pasa el tope de gasto, se avisa al final de la respuesta
+        if (usage?.TakeLimitNotice() == true)
+            text += "\n\n(Llegaste a tu tope diario de IA: paso a modo ahorro, sin voz en tiempo real ni mi voz de Gemini. " +
+                    "Puedes cambiar el tope en Ajustes → Cerebro.)";
         string? audio = null;
         if (speak)
         {

@@ -57,7 +57,8 @@ public interface ISpeechToText
 /// </summary>
 public sealed class GeminiSpeech(HttpClient http, IOptionsMonitor<LlmOptions> llm, IOptionsMonitor<VoiceOptions> voice,
     Owner.OwnerProfileStore owner,
-    ILogger<GeminiSpeech> log) : ITtsProvider, ISpeechToText
+    ILogger<GeminiSpeech> log,
+    Usage.UsageTracker? usage = null) : ITtsProvider, ISpeechToText
 {
     public async Task<string?> TranscribeAsync(byte[] wav, CancellationToken ct) => await TranscribeAsync(wav, "audio/wav", ct);
 
@@ -104,6 +105,7 @@ public sealed class GeminiSpeech(HttpClient http, IOptionsMonitor<LlmOptions> ll
         }
 
         using var doc = JsonDocument.Parse(json);
+        usage?.Record(Usage.UsageTracker.FromGemini(doc.RootElement), "transcripcion");
         if (!doc.RootElement.TryGetProperty("candidates", out var c) || c.GetArrayLength() == 0) return null;
         if (!c[0].TryGetProperty("content", out var content) || !content.TryGetProperty("parts", out var parts)) return null;
         var text = string.Concat(parts.EnumerateArray()
@@ -116,6 +118,7 @@ public sealed class GeminiSpeech(HttpClient http, IOptionsMonitor<LlmOptions> ll
     {
         var v = voice.CurrentValue;
         if (!v.TtsEnabled || string.IsNullOrWhiteSpace(text) || text.Length > v.MaxTtsChars) return null;
+        if (usage is { IsOverDailyLimit: true }) return null; // modo ahorro: sin voz de Gemini
         var opt = llm.CurrentValue.Gemini;
         var key = opt.ResolveApiKey();
         if (key is null) return null;
@@ -178,6 +181,9 @@ public sealed class GeminiSpeech(HttpClient http, IOptionsMonitor<LlmOptions> ll
             return null;
         }
         var bytes = Convert.FromBase64String(data);
+        // Esta API no informa el uso como generateContent: se estima (texto ≈ 4 letras por token, audio ≈ 25 tokens por segundo
+        // a 24 kHz y 16 bits = 48 000 bytes por segundo)
+        usage?.Record(new Usage.LlmUsage(text.Length / 4 + 1, bytes.Length / 48000 * 25 + 1), "voz");
         return IsWav(bytes) ? bytes : WavFromPcm(bytes, 24000);
     }
 

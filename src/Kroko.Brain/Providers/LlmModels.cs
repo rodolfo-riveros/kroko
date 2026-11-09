@@ -50,7 +50,8 @@ public sealed class ChatMessage
     };
 }
 
-public sealed record LlmResponse(string Text, IReadOnlyList<ToolCall> ToolCalls, ChatMessage AssistantMessage, string Provider);
+public sealed record LlmResponse(string Text, IReadOnlyList<ToolCall> ToolCalls, ChatMessage AssistantMessage, string Provider,
+    Kroko.Brain.Usage.LlmUsage? Usage = null);
 
 public interface ILlmProvider
 {
@@ -73,6 +74,21 @@ public sealed class LlmProviderException(string provider, string message, int? s
 {
     public string Provider { get; } = provider;
     public int? StatusCode { get; } = statusCode;
+
+    /// <summary>
+    /// Explicación para el dueño cuando el problema es de su cuenta y no de Kroko: sin saldo (402) o límite de uso (429).
+    /// null = otro error.
+    /// </summary>
+    public string? OwnerMessage => StatusCode switch
+    {
+        402 => $"Se acabó el saldo de tu cuenta de {ProviderName}. Recárgalo (Gemini: ai.studio/projects → Facturación) o pon otra " +
+               "clave en Configurar Kroko. Mientras tanto no puedo pensar ni hablar con mi voz de siempre.",
+        429 => $"{ProviderName} me pide esperar: llegaste al límite de uso por ahora. Inténtalo en un minuto, o pon una clave de " +
+               "respaldo (DeepSeek) en Configurar Kroko.",
+        _ => null,
+    };
+
+    private string ProviderName => Provider.Equals("gemini", StringComparison.OrdinalIgnoreCase) ? "Gemini (Google)" : Provider;
 }
 
 /// <summary>No hay ningún proveedor con API key configurada.</summary>

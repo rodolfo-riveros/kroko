@@ -36,11 +36,13 @@ public sealed class LiveSession : IAsyncDisposable
     private readonly StringBuilder _userTurn = new();
     private readonly StringBuilder _krokoTurn = new();
     private string? _lastExpression;
+    private readonly Usage.UsageTracker? _usage;
     private Task? _receive;
     private Task? _pump;
 
     public LiveSession(IAgentChannel app, IToolGateway tools, SystemPrompt prompt, ConversationStore conversations,
-        IOptionsMonitor<LlmOptions> llm, IOptionsMonitor<VoiceOptions> voice, TimeProvider time, ILogger<LiveSession> log)
+        IOptionsMonitor<LlmOptions> llm, IOptionsMonitor<VoiceOptions> voice, TimeProvider time, ILogger<LiveSession> log,
+        Usage.UsageTracker? usage = null)
     {
         _app = app;
         _tools = tools;
@@ -50,6 +52,7 @@ public sealed class LiveSession : IAsyncDisposable
         _voice = voice.CurrentValue;
         _time = time;
         _log = log;
+        _usage = usage;
     }
 
     public bool IsOpen => _ws.State == WebSocketState.Open && !_cts.IsCancellationRequested;
@@ -158,6 +161,9 @@ public sealed class LiveSession : IAsyncDisposable
 
     private async Task HandleAsync(JsonObject msg, CancellationToken ct)
     {
+        // Lo que gasta la voz en tiempo real (Gemini manda el uso en sus mensajes)
+        if (msg["usageMetadata"] is JsonObject)
+            _usage?.Record(Usage.UsageTracker.FromGemini(JsonDocument.Parse(msg.ToJsonString()).RootElement), "tiempo_real");
         if (msg["setupComplete"] is not null)
         {
             await EmitAsync("started", null, ct);

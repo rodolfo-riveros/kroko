@@ -49,7 +49,7 @@ public static class AppRouting
         });
 
         // Tareas
-        var tasks = l.Todoist ? "Todoist (sus herramientas todoist_…)"
+        var tasks = l.Todoist ? "Todoist (usar_conector con el conector todoist)"
             : l.Google ? "Google Tasks (google_tarea_crear)"
             : l.Trello ? "Trello (trello_crear_tarjeta, en el tablero y lista que corresponda; si no sabes cuál, mira trello_tableros)"
             : "tu memoria (tarea_crear)";
@@ -61,11 +61,11 @@ public static class AppRouting
         if (l.Notion)
         {
             sb.AppendLine("- Notas, ideas, apuntes, listas y su agenda → guardar_en_notion, en UN solo paso (ella sola crea la base " +
-                          $"«{NotionDatabase}» la primera vez y la recuerda; no la busques ni la crees tú con las herramientas notion_…). " +
+                          $"«{NotionDatabase}» la primera vez y la recuerda; no la busques ni la crees tú con el conector de Notion). " +
                           "Las tareas no van a Notion salvo que lo pida.");
             sb.AppendLine("- Cada nota: título corto y claro, el tipo que corresponda, fecha si la tiene, etiquetas útiles y el " +
-                          "contenido completo (con viñetas o casillas si es una lista). Para LEER o buscar sus notas sí usa notion-search " +
-                          "y notion-fetch. Crear notas no pide permiso; editar, mover o borrar páginas que ya existen sí.");
+                          "contenido completo (con viñetas o casillas si es una lista). Para LEER o buscar sus notas usa usar_conector (notion, notion-search " +
+                          "o notion-fetch). Crear notas no pide permiso; editar, mover o borrar páginas que ya existen sí.");
         }
         else sb.AppendLine(l.Google
                 ? "- Notas e ideas cortas → recordar empezando con \"Nota:\" (Notion no está vinculado). Si es largo, ofrécele vincular Notion."

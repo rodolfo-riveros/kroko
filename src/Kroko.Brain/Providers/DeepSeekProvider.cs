@@ -175,7 +175,7 @@ public sealed class DeepSeekProvider(HttpClient http, IOptionsMonitor<LlmOptions
             RawProvider = ProviderName,
             Raw = message.Clone(),
         };
-        return new LlmResponse(text, calls, assistant, Name);
+        return new LlmResponse(text, calls, assistant, Name, Kroko.Brain.Usage.UsageTracker.FromOpenAi(doc.RootElement));
     }
 
     private static string Trim(string s) => s.Length <= 400 ? s : s[..400] + "…";

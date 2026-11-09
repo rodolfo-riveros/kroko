@@ -136,6 +136,70 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
     [ObservableProperty] public partial bool LaunchLocalBrain { get; set; }
     [ObservableProperty] public partial string BrainStatus { get; set; } = "";
 
+    // ---- Gasto de IA (medidor y tope diario del cerebro)
+    [ObservableProperty] public partial string UsageToday { get; set; } = "Cargando…";
+    [ObservableProperty] public partial string UsageMonth { get; set; } = "";
+    [ObservableProperty] public partial string UsageDetail { get; set; } = "";
+    /// <summary>Tope diario en miles de tokens (0 = sin tope).</summary>
+    [ObservableProperty] public partial double DailyLimitThousands { get; set; }
+    [ObservableProperty] public partial string UsageStatus { get; set; } = "";
+
+    [RelayCommand]
+    public async Task LoadUsageAsync()
+    {
+        try
+        {
+            var u = await _api.GetUsageAsync();
+            if (u is null) return;
+            UsageToday = $"Hoy: {Tokens(u.Hoy.Total)} tokens en {u.Hoy.Llamadas} llamadas" +
+                         (u.Hoy.EnCache > 0 ? $" ({Tokens(u.Hoy.EnCache)} con descuento de caché)" : "");
+            UsageMonth = $"Este mes: {Tokens(u.Mes.Total)} tokens";
+            UsageDetail = u.Hoy.PorTipo.Count == 0 ? "" : "Hoy por tipo: " + string.Join(" · ",
+                u.Hoy.PorTipo.OrderByDescending(p => p.Value).Select(p => $"{KindName(p.Key)} {Tokens(p.Value)}"));
+            DailyLimitThousands = Math.Round(u.LimiteDiario / 1000.0);
+            UsageStatus = u.ModoAhorro ? "⚠ Modo ahorro: pasaste el tope de hoy (sin voz en tiempo real ni voz de Gemini)." : "";
+        }
+        catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException or System.Text.Json.JsonException)
+        {
+            UsageToday = "No pude leer el gasto (¿el cerebro está conectado y actualizado?).";
+            UsageMonth = UsageDetail = "";
+        }
+    }
+
+    [RelayCommand]
+    private async Task SaveDailyLimitAsync()
+    {
+        try
+        {
+            await _api.SetDailyLimitAsync((long)Math.Max(0, Math.Round(DailyLimitThousands)) * 1000);
+            await LoadUsageAsync();
+            UsageStatus = DailyLimitThousands > 0
+                ? $"Tope guardado: {DailyLimitThousands:N0} mil tokens por día." + (UsageStatus.Length > 0 ? " " + UsageStatus : "")
+                : "Sin tope diario.";
+        }
+        catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException)
+        {
+            UsageStatus = "No pude guardar el tope: el cerebro no respondió.";
+        }
+    }
+
+    internal static string Tokens(long n) => n switch
+    {
+        >= 1_000_000 => $"{n / 1_000_000.0:0.#} M",
+        >= 1_000 => $"{n / 1_000.0:0.#} mil",
+        _ => n.ToString(),
+    };
+
+    private static string KindName(string kind) => kind switch
+    {
+        "chat" => "chat",
+        "tiempo_real" => "voz en tiempo real",
+        "resumen" => "resúmenes",
+        "voz" => "voz de Gemini",
+        "transcripcion" => "entender tu voz",
+        _ => kind,
+    };
+
     // ---- Personalidad
     [ObservableProperty] public partial bool DistractionsEnabled { get; set; }
     [ObservableProperty] public partial double SleepAfterMinutes { get; set; }

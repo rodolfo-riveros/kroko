@@ -55,7 +55,7 @@ public class AppRoutingTests
         Assert.Contains("los DOS: guardar_en_notion (tipo Agenda o Reunión, con fecha)", text);
         Assert.Contains("google_calendario_crear; en la descripción pon el enlace que devuelve guardar_en_notion", text);
         Assert.Contains("no la busques ni la crees tú", text); // la crea el código, no la IA paso a paso
-        Assert.Contains("Para LEER o buscar sus notas sí usa notion-search", text);
+        Assert.Contains("Para LEER o buscar sus notas usa usar_conector (notion", text);
         Assert.Contains("recordar", text); // guarda el enlace de la base para no volver a crearla
     }
 

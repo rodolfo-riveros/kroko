@@ -205,7 +205,7 @@ public sealed class GeminiProvider(HttpClient http, IOptionsMonitor<LlmOptions> 
             RawProvider = ProviderName,
             Raw = content.Clone(),
         };
-        return new LlmResponse(joined, calls, assistant, Name);
+        return new LlmResponse(joined, calls, assistant, Name, Kroko.Brain.Usage.UsageTracker.FromGemini(root));
     }
 
     private static JsonNode? ParseOrString(string text)
