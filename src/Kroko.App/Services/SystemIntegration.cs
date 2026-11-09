@@ -23,26 +23,39 @@ public static class UserSettings
         Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Kroko", "settings.json");
 
     /// <summary>Lee la sección "Kroko" guardada (o un objeto vacío).</summary>
-    public static JsonObject LoadKrokoSection()
+    public static JsonObject LoadKrokoSection() => LoadKrokoSection(FilePath);
+
+    public static void SaveKrokoSection(JsonObject kroko) => SaveKrokoSection(kroko, FilePath);
+
+    internal static JsonObject LoadKrokoSection(string path)
     {
         try
         {
-            if (File.Exists(FilePath) && JsonNode.Parse(File.ReadAllText(FilePath)) is JsonObject root && root["Kroko"] is JsonObject k)
-                return k;
+            // Se devuelve una copia suelta: si se devolviera el nodo del archivo (que ya tiene "padre"), al guardarlo
+            // .NET fallaba con "The node already has a parent" y Ajustes no guardaba nada (08/11/2026)
+            if (File.Exists(path) && JsonNode.Parse(File.ReadAllText(path)) is JsonObject root && root["Kroko"] is JsonObject k)
+                return (JsonObject)k.DeepClone();
         }
         catch (Exception ex) when (ex is IOException or JsonException) { }
         return [];
     }
 
-    public static void SaveKrokoSection(JsonObject kroko)
+    internal static void SaveKrokoSection(JsonObject kroko, string path)
     {
-        Directory.CreateDirectory(Path.GetDirectoryName(FilePath)!);
-        var root = new JsonObject { ["Kroko"] = kroko };
-        File.WriteAllText(FilePath, root.ToJsonString(new JsonSerializerOptions
+        Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+        var section = kroko.Parent is null ? kroko : (JsonObject)kroko.DeepClone();
+        var root = new JsonObject { ["Kroko"] = section };
+        var json = root.ToJsonString(new JsonSerializerOptions
         {
             WriteIndented = true,
             Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
-        }));
+        });
+        root.Remove("Kroko"); // el objeto vuelve a quedar suelto: quien lo llamó puede seguir usándolo y guardarlo otra vez
+
+        // Primero a un archivo temporal y luego se reemplaza: un corte a medio guardar nunca deja settings.json roto
+        var temp = path + ".tmp";
+        File.WriteAllText(temp, json);
+        File.Move(temp, path, overwrite: true);
     }
 }
 
