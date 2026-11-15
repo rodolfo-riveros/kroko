@@ -38,16 +38,18 @@ public sealed partial class OnboardingViewModel : ObservableObject, IDisposable
     public const int WelcomeStep = 0, ProfileStep = 1, AiStep = 2, MailStep = 3, TelegramStep = 4, ExtrasStep = 5, DoneStep = 6;
 
     private readonly BrainApiClient _api;
+    private readonly LocalAiKeys _aiKeys; // las claves de IA se guardan en esta PC, nunca en el cerebro
     private readonly WindowService _windows;
     private readonly BrainConnection _brain;
     private readonly ILogger<OnboardingViewModel> _log;
     private readonly DispatcherTimer _telegramPoll;
 
-    public OnboardingViewModel(BrainApiClient api, WindowService windows, BrainConnection brain, ExpressionLibrary library,
+    public OnboardingViewModel(BrainApiClient api, WindowService windows, BrainConnection brain, ExpressionLibrary library, LocalAiKeys aiKeys,
         ILogger<OnboardingViewModel> log)
     {
         _api = api;
         _windows = windows;
+        _aiKeys = aiKeys;
         _brain = brain;
         _log = log;
         Face = new FaceAnimator(library);
@@ -153,6 +155,16 @@ public sealed partial class OnboardingViewModel : ObservableObject, IDisposable
 
     [ObservableProperty]
     public partial string GeminiKey { get; set; } = "";
+
+    // Claves extra de Gemini (gratis) que se turnan si una se agota (14/11/2026)
+    [ObservableProperty]
+    public partial string GeminiKey2 { get; set; } = "";
+
+    [ObservableProperty]
+    public partial string GeminiKey3 { get; set; } = "";
+
+    [ObservableProperty]
+    public partial string GeminiKey4 { get; set; } = "";
 
     [ObservableProperty]
     public partial string DeepSeekKey { get; set; } = "";
@@ -414,8 +426,14 @@ public sealed partial class OnboardingViewModel : ObservableObject, IDisposable
     private void ApplyStatus(SetupStatus s)
     {
         string Source(string key) => s.Fuentes.TryGetValue(key, out var src) && src != "falta" ? $" (desde {src})" : "";
-        GeminiState = s.Gemini ? "✓ Ya tengo una clave de Gemini" + Source("gemini") + ". Escribe otra solo si quieres cambiarla." : "Falta: sin esta clave no puedo pensar.";
-        DeepSeekState = s.Deepseek ? "✓ Configurada" + Source("deepseek") : "Opcional: respaldo si Gemini falla.";
+        // Las claves de IA están en esta PC (no en el cerebro): el estado sale de aquí
+        var local = _aiKeys.Load();
+        GeminiState = local.Gemini.Count == 0 ? "Falta: sin esta clave no puedo pensar. Se guarda solo en esta PC, cifrada."
+            : local.Gemini.Count > 1
+                ? $"✓ {local.Gemini.Count} claves de Gemini guardadas en esta PC; se turnan si una se agota" +
+                  (s.Gemini ? $" ({s.GeminiDisponibles} disponibles ahora)." : ".")
+                : "✓ Clave de Gemini guardada en esta PC (cifrada). Escribe otra solo si quieres cambiarla.";
+        DeepSeekState = !string.IsNullOrEmpty(local.DeepSeek) ? "✓ Guardada en esta PC" : "Opcional: respaldo si Gemini falla.";
         TavilyState = s.Tavily ? "✓ Configurada" + Source("tavily") : "Opcional: mejora las búsquedas y la lectura de páginas.";
         if (s.Correo.Configurado)
         {
@@ -551,19 +569,29 @@ public sealed partial class OnboardingViewModel : ObservableObject, IDisposable
 
     private async Task<bool> SaveAiAsync()
     {
-        var values = new Dictionary<string, string>();
-        if (GeminiKey.Trim().Length > 0) values["Llm:Gemini:ApiKey"] = GeminiKey.Trim();
-        if (DeepSeekKey.Trim().Length > 0) values["Llm:DeepSeek:ApiKey"] = DeepSeekKey.Trim();
-        if (TavilyKey.Trim().Length > 0) values["Web:TavilyApiKey"] = TavilyKey.Trim();
+        // Las claves de IA (Gemini y DeepSeek) se guardan SOLO en esta PC, cifradas (decidido por Pol, 15/11/2026);
+        // el cerebro las recibe prestadas al conectarse y nunca las guarda. Lo vacío no se toca.
+        static string? Slot(string text) => text.Trim().Length > 0 ? text.Trim() : null;
+        var aiChanged = new[] { GeminiKey, GeminiKey2, GeminiKey3, GeminiKey4, DeepSeekKey }.Any(k => k.Trim().Length > 0);
+        if (aiChanged)
+            _aiKeys.Update([Slot(GeminiKey), Slot(GeminiKey2), Slot(GeminiKey3), Slot(GeminiKey4)], Slot(DeepSeekKey));
 
-        if (values.Count > 0 && await _api.SaveSecretsAsync(values) is { } error)
+        // Tavily (búsqueda) sí se guarda en el cerebro, como antes
+        if (TavilyKey.Trim().Length > 0 && await _api.SaveSecretsAsync(new Dictionary<string, string> { ["Web:TavilyApiKey"] = TavilyKey.Trim() }) is { } error)
         {
             Fail(error);
             return false;
         }
-        GeminiKey = DeepSeekKey = TavilyKey = "";
+        GeminiKey = GeminiKey2 = GeminiKey3 = GeminiKey4 = DeepSeekKey = TavilyKey = "";
 
+        // Se le prestan ya al cerebro y se espera a que las tenga (llegan por el WebSocket)
+        await _aiKeys.SendAsync();
         var status = await _api.GetSetupAsync();
+        for (var i = 0; i < 10 && aiChanged && !status.Gemini && !status.Deepseek; i++)
+        {
+            await Task.Delay(200);
+            status = await _api.GetSetupAsync();
+        }
         if (!status.Gemini && !status.Deepseek)
         {
             ApplyStatus(status);

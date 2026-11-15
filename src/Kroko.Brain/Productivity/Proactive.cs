@@ -26,7 +26,8 @@ public sealed class ProactiveOptions
     public int EmailCheckMinutes { get; set; } = 5;
 
     /// <summary>Hora (0–23) del aviso diario de tareas vencidas; -1 = no avisar.</summary>
-    public int OverdueHour { get; set; } = 10;
+    /// <remarks>Apagado por defecto (decidido por Pol, 14/11/2026: solo reuniones y correos importantes).</remarks>
+    public int OverdueHour { get; set; } = -1;
 
     /// <summary>Horario de silencio (no avisa de correos ni vencidas; las reuniones sí).</summary>
     public int QuietStartHour { get; set; } = 22;
@@ -88,7 +89,7 @@ public sealed class ProactiveService(
 
     private async Task CheckMeetingsAsync(CancellationToken ct)
     {
-        var minutes = options.CurrentValue.MeetingMinutesBefore;
+        var minutes = NoticePreferences.MeetingMinutes(store, options.CurrentValue); // lo que el dueño eligió en el panel
         if (minutes <= 0 || !google.IsConnected) return;
         var now = time.GetLocalNow();
 
@@ -124,7 +125,7 @@ public sealed class ProactiveService(
     private async Task CheckImportantEmailAsync(CancellationToken ct)
     {
         var o = options.CurrentValue;
-        if (!o.ImportantEmails || !email.IsConfigured) return;
+        if (!NoticePreferences.Emails(store, o) || !email.IsConfigured) return;
         var now = time.GetLocalNow();
         if (now - _emailChecked < TimeSpan.FromMinutes(Math.Max(2, o.EmailCheckMinutes)) || IsQuiet(now)) return;
         _emailChecked = now;
@@ -153,7 +154,7 @@ public sealed class ProactiveService(
 
     private async Task CheckOverdueAsync(CancellationToken ct)
     {
-        var hour = options.CurrentValue.OverdueHour;
+        var hour = NoticePreferences.OverdueHour(store, options.CurrentValue);
         var now = time.GetLocalNow();
         if (hour < 0 || now.Hour < hour || IsQuiet(now)) return;
         const string key = "proactive.overdueDay";

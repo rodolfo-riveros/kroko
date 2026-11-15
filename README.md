@@ -31,8 +31,10 @@ Solo necesitas la carpeta `deploy/` (con tu `.env`). Guías: [VPS propio](docs/V
 
 ## Tus claves nunca van al repositorio
 
-- Las API keys y cuentas se ponen en **Configurar Kroko** (clic derecho sobre Kroko). Se guardan **cifradas en el
-  servidor** (`/data/Kroko/secretos.dat`), nunca en el código.
+- Las API keys y cuentas se ponen en **Configurar Kroko** (clic derecho sobre Kroko), nunca en el código.
+- **Las claves de IA (Gemini, DeepSeek) viven solo en tu PC**, cifradas con Windows (`%LOCALAPPDATA%Krokoaves-ia.dat`):
+  la App se las presta al cerebro al conectarse y el cerebro las tiene **solo en memoria** (no las lee del `.env` ni
+  las guarda). Gmail, Telegram y las apps se guardan cifradas en el servidor (`/data/Kroko/secretos.dat`).
 - `.env`, `secretos.dat`, bases de datos y `settings.json` están en `.gitignore` y `.dockerignore`.
 - **Protección local:** activa una vez el bloqueo de commits con claves:
   ```bash

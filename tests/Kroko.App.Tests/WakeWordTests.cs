@@ -25,9 +25,8 @@ public sealed class WakeWordTests : IDisposable
 
     [Theory]
     [InlineData("oye kroko", false)]
-    [InlineData("hola kroko", false)]
     [InlineData("oye kroko, abre excel", true)]
-    [InlineData("hola kroko, qué tal", true)]
+    [InlineData("oye kroko, qué hora es", true)]
     public void Despierta_con_la_frase(string phrase, bool hasCommand)
     {
         if (_model is null) return;
@@ -45,6 +44,9 @@ public sealed class WakeWordTests : IDisposable
     [InlineData("voy a comer coco")]
     [InlineData("el cocodrilo come")]
     [InlineData("hola loco")]
+    [InlineData("hola kroko")] // desde el 14/11/2026 solo despierta con «Oye Kroko»
+    [InlineData("hola kroko, qué tal")]
+    [InlineData("le dije a mi amigo oye kroko")] // en medio de una conversación no cuenta
     public void No_despierta_con_frases_parecidas(string phrase)
     {
         if (_model is null) return;
@@ -69,7 +71,7 @@ public sealed class WakeWordTests : IDisposable
         Assert.Contains("eso es todo", s.EffectiveEndPhrases);
         s.EndPhrases = ["ya fue"];
         Assert.Equal(["ya fue"], s.EffectiveEndPhrases);
-        Assert.Equal(["oye cro co", "hola cro co"], new WakeWordSettings().EffectivePhrases);
+        Assert.Equal(["oye cro co"], new WakeWordSettings().EffectivePhrases);
     }
 
     [Fact]
@@ -79,7 +81,7 @@ public sealed class WakeWordTests : IDisposable
     private WakeDetection? Detect(string phrase)
     {
         var wake = new WakeWordSettings();
-        using var detector = new WakeWordDetector(_model!, wake.EffectivePhrases, wake.EffectiveDecoys);
+        using var detector = new WakeWordDetector(_model!, wake.EffectivePhrases, wake.EffectiveDecoys, wake.RequireAtStart, wake.MinConfidence);
         // medio segundo de silencio antes y después, en bloques de 50 ms como el micrófono
         var pcm = new byte[16000].Concat(Speak(phrase)).Concat(new byte[32000]).ToArray();
         WakeDetection? hit = null;

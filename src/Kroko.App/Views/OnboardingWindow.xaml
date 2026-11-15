@@ -309,6 +309,22 @@
                         <Button Content="Conseguir mi clave en Google AI Studio" Style="{StaticResource LinkButton}"
                                 Command="{Binding OpenLinkCommand}" CommandParameter="https://aistudio.google.com/apikey" />
 
+                        <Expander Margin="0,6,0,0" Foreground="{StaticResource Kroko.TextMuted}">
+                            <Expander.Header>
+                                <TextBlock Text="Claves extra de Gemini (opcional): si una se agota, uso la siguiente" Style="{StaticResource Hint}" />
+                            </Expander.Header>
+                            <StackPanel Margin="0,4,0,0">
+                                <TextBlock Style="{StaticResource Hint}" TextWrapping="Wrap"
+                                           Text="Puedes poner hasta 3 claves más (cada una de otro proyecto de Google AI Studio). Cuando una se queda sin saldo o llega a su límite, sigo con la siguiente sin que lo notes." />
+                                <TextBlock Text="Clave extra 2" Style="{StaticResource FieldLabel}" />
+                                <PasswordBox Style="{StaticResource Secret}" v:PasswordBoxAssist.BoundPassword="{Binding GeminiKey2}" />
+                                <TextBlock Text="Clave extra 3" Style="{StaticResource FieldLabel}" />
+                                <PasswordBox Style="{StaticResource Secret}" v:PasswordBoxAssist.BoundPassword="{Binding GeminiKey3}" />
+                                <TextBlock Text="Clave extra 4" Style="{StaticResource FieldLabel}" />
+                                <PasswordBox Style="{StaticResource Secret}" v:PasswordBoxAssist.BoundPassword="{Binding GeminiKey4}" />
+                            </StackPanel>
+                        </Expander>
+
                         <TextBlock Text="Clave de Tavily (búsqueda web)" Style="{StaticResource FieldLabel}" Margin="0,8,0,0" />
                         <PasswordBox Style="{StaticResource Secret}" v:PasswordBoxAssist.BoundPassword="{Binding TavilyKey}" />
                         <TextBlock Text="{Binding TavilyState}" Style="{StaticResource Hint}" Margin="0,0,0,2" />

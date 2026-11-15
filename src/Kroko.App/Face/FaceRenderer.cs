@@ -5,8 +5,9 @@ using System.Windows.Media;
 namespace Kroko.App.Face;
 
 /// <summary>
-/// Dibuja un fotograma de Kroko con vectores (sin imágenes). Lienzo lógico de 150 × 160 unidades;
-/// el cuerpo es un círculo de 84 unidades centrado en (75, 92).
+/// Dibuja un fotograma de Kroko con vectores (sin imágenes). Lienzo lógico de 150 × 160 unidades.
+/// El cuerpo es un "mochi": un trapecio de esquinas muy suaves, más ancho abajo (pedido por Pol el 15/11/2026: redondo
+/// con antena parecía una bomba). La luz de estado vive en el borde de arriba, sin antena.
 /// </summary>
 public static class FaceRenderer
 {
@@ -14,12 +15,57 @@ public static class FaceRenderer
     public const double CanvasHeight = 160;
     public const double CenterX = 75;
     public const double CenterY = 92;
+    /// <summary>Distancia del centro de la cara a la base (el cuerpo se apoya en CenterY + Radius).</summary>
     public const double Radius = 42;
+    public const double BodyTop = 58;
+    public const double BodyBottom = CenterY + Radius; // 134
+    public const double BodyHalfWidth = 54;
+    /// <summary>Centro del cuerpo (no de la cara): para el anillo de escucha y los encuadres.</summary>
+    public static readonly Point BodyCenter = new(CenterX, (BodyTop + BodyBottom) / 2);
+
+    /// <summary>Silueta del cuerpo en unidades del lienzo.</summary>
+    public static readonly Geometry BodyGeometry = BuildBody();
+
+    private static Geometry BuildBody()
+    {
+        // Arriba 66 de ancho, abajo 108; esquinas muy redondeadas y lados apenas abombados
+        double top = BodyTop, bottom = BodyBottom;
+        double tl = CenterX - 33, tr = CenterX + 33, bl = CenterX - BodyHalfWidth, br = CenterX + BodyHalfWidth;
+        var side = new Vector(br - tr, bottom - top);
+        side.Normalize();
+        var outward = new Vector(side.Y, -side.X); // hacia fuera del lado derecho
+        const double rt = 19, rb = 21, bulge = 2.5;
+        var g = new StreamGeometry();
+        using (var c = g.Open())
+        {
+            var r1 = new Point(tr + side.X * rt, top + side.Y * rt);
+            var r2 = new Point(br - side.X * rb, bottom - side.Y * rb);
+            var l1 = new Point(tl - side.X * rt, top + side.Y * rt);
+            var l2 = new Point(bl + side.X * rb, bottom - side.Y * rb);
+            var mid = (Vector)(r1 + (Vector)r2) / 2;
+            var midL = (Vector)(l1 + (Vector)l2) / 2;
+            c.BeginFigure(new Point(tl + rt, top), true, true);
+            c.LineTo(new Point(tr - rt, top), true, true);
+            c.QuadraticBezierTo(new Point(tr + 1, top), r1, true, true);
+            c.QuadraticBezierTo((Point)(mid + outward * bulge), r2, true, true);
+            c.QuadraticBezierTo(new Point(br + 3, bottom), new Point(br - rb - 3, bottom), true, true);
+            c.LineTo(new Point(bl + rb + 3, bottom), true, true);
+            c.QuadraticBezierTo(new Point(bl - 3, bottom), l2, true, true);
+            c.QuadraticBezierTo((Point)(midL + new Vector(-outward.X, outward.Y) * bulge), l1, true, true);
+            c.QuadraticBezierTo(new Point(tl - 1, top), new Point(tl + rt, top), true, true);
+        }
+        g.Freeze();
+        return g;
+    }
+
+    /// <summary>¿El punto (en unidades del lienzo) cae sobre el cuerpo? Con un margen para el ratón.</summary>
+    public static bool HitsBody(Point u) =>
+        BodyGeometry.FillContains(u) || BodyGeometry.StrokeContains(HitPen, u);
+
+    private static readonly Pen HitPen = Frozen(new Pen(Brushes.Black, 6));
 
     private static readonly Brush BodyBrush = Frozen(new SolidColorBrush(Palette.Body));
     private static readonly Pen BodyEdgePen = Frozen(new Pen(Frozen(new SolidColorBrush(Palette.BodyEdge)), 1));
-    private static readonly Brush StemBrush = Frozen(new SolidColorBrush(Color.FromRgb(0x4A, 0x4A, 0x4A)));
-    private static readonly Pen StemPen = Frozen(new Pen(Frozen(new SolidColorBrush(Color.FromRgb(0x1A, 0x1A, 0x1A))), 0.8));
     private static readonly Brush WhiteBrush = Frozen(new SolidColorBrush(Colors.White));
     private static readonly Brush TearBrush = Frozen(new SolidColorBrush(Palette.Tear));
     private static readonly Brush LoveBrush = Frozen(new SolidColorBrush(Palette.Love));
@@ -39,7 +85,8 @@ public static class FaceRenderer
 
     private static readonly Dictionary<string, Geometry> GlyphCache = [];
 
-    public static void Render(DrawingContext dc, FaceFrame fr, double scale, double offsetX = 0, double offsetY = 0)
+    public static void Render(DrawingContext dc, FaceFrame fr, double scale, double offsetX = 0, double offsetY = 0,
+        bool shadow = true)
     {
         var f = fr.Face;
         var t = fr.Time;
@@ -48,10 +95,14 @@ public static class FaceRenderer
 
         // Sombra en el "suelo": se achica cuando Kroko salta
         var jump = Math.Max(0, -f.BodyY);
-        var shadowR = Radius + 7 - jump * 0.3;
-        dc.PushOpacity(Math.Clamp(1 - jump / 25, 0.3, 1));
-        dc.DrawEllipse(ShadowBrush, null, new Point(CenterX, CenterY + 4), shadowR, shadowR);
-        dc.Pop();
+        var shrink = jump * 0.3;
+        if (shadow)
+        {
+            dc.PushOpacity(Math.Clamp(1 - jump / 25, 0.3, 1));
+            dc.DrawEllipse(ShadowBrush, null, new Point(BodyCenter.X, BodyCenter.Y + 5),
+                BodyHalfWidth + 9 - shrink, (BodyBottom - BodyTop) / 2 + 10 - shrink * 0.7);
+            dc.Pop();
+        }
 
         // Transformación del cuerpo: temblor, salto, inclinación y escala (apoyado en la base)
         var shakeX = f.BodyShake * Math.Sin(t * 47);
@@ -68,10 +119,9 @@ public static class FaceRenderer
         dc.PushTransform(body);
 
         DrawRing(dc, f, fr.Mic, t);
-        DrawAntenna(dc, f, fr, t);
-
-        dc.DrawEllipse(BodyBrush, BodyEdgePen, new Point(CenterX, CenterY), Radius, Radius);
-        dc.DrawEllipse(GlassBrush, null, new Point(CenterX, CenterY - 25), 28, 13);
+        dc.DrawGeometry(BodyBrush, BodyEdgePen, BodyGeometry);
+        dc.DrawEllipse(GlassBrush, null, new Point(CenterX, BodyTop + 11), 27, 8);
+        DrawStatusLight(dc, f, fr, t);
 
         var eyeY = CenterY + f.EyeY;
         var lx = CenterX - f.EyeSpacing;
@@ -102,35 +152,36 @@ public static class FaceRenderer
         if (f.Ring <= 0.01) return;
         var idle = 0.15 * (1 + Math.Sin(t * 3)) / 2;
         var level = Math.Max(mic, idle);
-        var r1 = Radius + 4 + level * 7;
-        dc.DrawEllipse(null, new Pen(Brush(Palette.Accent, (0.35 + 0.55 * level) * f.Ring), 2),
-            new Point(CenterX, CenterY), r1, r1);
-        var r2 = Radius + 5 + level * 14;
-        dc.DrawEllipse(null, new Pen(Brush(Palette.Accent, 0.18 * level * f.Ring), 1.5),
-            new Point(CenterX, CenterY), r2, r2);
+        // El contorno del cuerpo, un poco más grande, que late con la voz
+        var halfH = (BodyBottom - BodyTop) / 2;
+        void Outline(double grow, double alpha, double width)
+        {
+            dc.PushTransform(new ScaleTransform(1 + grow / BodyHalfWidth, 1 + grow / halfH, BodyCenter.X, BodyCenter.Y));
+            dc.DrawGeometry(null, new Pen(Brush(Palette.Accent, alpha), width / (1 + grow / BodyHalfWidth)), BodyGeometry);
+            dc.Pop();
+        }
+        Outline(4 + level * 7, (0.35 + 0.55 * level) * f.Ring, 2);
+        Outline(5 + level * 14, 0.18 * level * f.Ring, 1.5);
     }
 
-    private static void DrawAntenna(DrawingContext dc, FaceParams f, FaceFrame fr, double t)
+    /// <summary>Luz de estado (antes la punta de la antena): una pastilla en el borde de arriba.</summary>
+    private static void DrawStatusLight(DrawingContext dc, FaceParams f, FaceFrame fr, double t)
     {
-        var top = CenterY - Radius;
-        dc.DrawRoundedRectangle(StemBrush, StemPen, new Rect(CenterX - 1.75, top - 10, 3.5, 11), 1.75, 1.75);
-
         var pulse = f.AntennaPulse * 0.5 * (1 - Math.Sin(t * 6));
         var level = Math.Max(fr.Mic, fr.Speech) * f.AntennaSync;
         var glow = Math.Clamp(f.AntennaGlow * (1 - pulse) + level * 0.6, 0, 1);
-        var tip = new Point(CenterX, top - 13);
+        var light = new Point(CenterX, BodyTop + 5.5);
 
         if (glow > 0.02)
         {
-            var gr = 4.5 + 8 * glow;
             var gb = new RadialGradientBrush(
-                Color.FromArgb((byte)(150 * glow), f.AntennaColor.R, f.AntennaColor.G, f.AntennaColor.B),
+                Color.FromArgb((byte)(140 * glow), f.AntennaColor.R, f.AntennaColor.G, f.AntennaColor.B),
                 Color.FromArgb(0, f.AntennaColor.R, f.AntennaColor.G, f.AntennaColor.B));
             gb.Freeze();
-            dc.DrawEllipse(gb, null, tip, gr, gr);
+            dc.DrawEllipse(gb, null, light, 9 + 9 * glow, 4 + 5 * glow);
         }
-        var tipColor = MathUtil.Lerp(Palette.BodyEdge, f.AntennaColor, 0.35 + 0.65 * Math.Max(glow, 0.4));
-        dc.DrawEllipse(Brush(tipColor), null, tip, 4.5, 4.5);
+        var color = MathUtil.Lerp(Palette.BodyEdge, f.AntennaColor, 0.35 + 0.65 * Math.Max(glow, 0.4));
+        dc.DrawRoundedRectangle(Brush(color), null, new Rect(light.X - 6, light.Y - 1.75, 12, 3.5), 1.75, 1.75);
     }
 
     private static void DrawBlush(DrawingContext dc, FaceParams f, double lx, double rx, double eyeY)

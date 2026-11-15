@@ -27,7 +27,7 @@ public sealed class MemoryOptions
 /// </summary>
 public sealed class KrokoDatabase
 {
-    private const int SchemaVersion = 3;
+    private const int SchemaVersion = 4;
     private readonly string _connectionString;
 
     public KrokoDatabase(IOptions<MemoryOptions> options, ILogger<KrokoDatabase> log)
@@ -60,6 +60,19 @@ public sealed class KrokoDatabase
         pragma.CommandText = "PRAGMA foreign_keys = ON; PRAGMA busy_timeout = 3000;";
         pragma.ExecuteNonQuery();
         return c;
+    }
+
+    /// <summary>Agrega una columna si falta (las bases antiguas la ganan; las nuevas ya la tienen).</summary>
+    private static void AddColumn(SqliteConnection c, SqliteTransaction tx, string table, string column, string definition)
+    {
+        using var info = c.CreateCommand();
+        info.Transaction = tx;
+        info.CommandText = $"SELECT COUNT(*) FROM pragma_table_info('{table}') WHERE name = '{column}'";
+        if (Convert.ToInt32(info.ExecuteScalar()) > 0) return;
+        using var alter = c.CreateCommand();
+        alter.Transaction = tx;
+        alter.CommandText = $"ALTER TABLE {table} ADD COLUMN {column} {definition}";
+        alter.ExecuteNonQuery();
     }
 
     private void Migrate()
@@ -163,6 +176,14 @@ public sealed class KrokoDatabase
             );
             """;
         cmd.ExecuteNonQuery();
+
+        // Versión 4 (14/11/2026): hábitos con meta diaria, unidad, estilo y avisos; cada registro cuenta (8 vasos de agua…)
+        AddColumn(c, tx, "habits", "goal", "INTEGER NOT NULL DEFAULT 1");
+        AddColumn(c, tx, "habits", "unit", "TEXT NOT NULL DEFAULT ''");
+        AddColumn(c, tx, "habits", "style", "TEXT NOT NULL DEFAULT ''");
+        AddColumn(c, tx, "habits", "remind_at", "TEXT NOT NULL DEFAULT ''");
+        AddColumn(c, tx, "habit_log", "count", "INTEGER NOT NULL DEFAULT 1");
+
         cmd.CommandText = $"PRAGMA user_version = {SchemaVersion};";
         cmd.ExecuteNonQuery();
         tx.Commit();

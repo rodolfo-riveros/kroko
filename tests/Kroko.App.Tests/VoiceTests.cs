@@ -123,3 +123,31 @@ public class UsageDisplayTests
     public void El_gasto_se_lee_facil(long tokens, string expected) =>
         Assert.Equal(expected, Kroko.App.ViewModels.SettingsViewModel.Tokens(tokens).Replace(".", ","));
 }
+
+public class KrokoPanelTests
+{
+    [Theory]
+    [InlineData("agua", "💧")]
+    [InlineData("lectura", "📖")]
+    [InlineData("desconocido", "⭐")]
+    public void Cada_estilo_de_habito_tiene_su_dibujo(string style, string emoji) =>
+        Assert.Equal(emoji, Kroko.App.ViewModels.KrokoPanelViewModel.EmojiFor(style));
+
+    [Fact]
+    public void Las_fechas_se_leen_como_personas()
+    {
+        var today = DateOnly.FromDateTime(DateTime.Today);
+        Assert.Equal("hoy", Kroko.App.ViewModels.KrokoPanelViewModel.DayLabel(today));
+        Assert.Equal("mañana", Kroko.App.ViewModels.KrokoPanelViewModel.DayLabel(today.AddDays(1)));
+        Assert.StartsWith("venció", Kroko.App.ViewModels.KrokoPanelViewModel.DayLabel(today.AddDays(-2)));
+    }
+
+    [Fact]
+    public void Las_secciones_del_panel_coinciden_con_el_catalogo()
+    {
+        var tool = Assert.Single(Kroko.Shared.Tools.ToolCatalog.All, t => t.Name == "abrir_ventana");
+        foreach (var s in new[] { "panel", "habitos", "tareas", "enfoque", "mipc" })
+            Assert.Contains($"\"{s}\"", tool.Parameters);
+        Assert.Equal(["inicio", "tareas", "habitos", "enfoque", "mipc", "ajustes"], Kroko.App.ViewModels.KrokoPanelViewModel.Sections);
+    }
+}

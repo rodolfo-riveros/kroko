@@ -37,6 +37,7 @@ public sealed class LiveSession : IAsyncDisposable
     private readonly StringBuilder _krokoTurn = new();
     private string? _lastExpression;
     private readonly Usage.UsageTracker? _usage;
+    private string? _key;
     private Task? _receive;
     private Task? _pump;
 
@@ -59,7 +60,7 @@ public sealed class LiveSession : IAsyncDisposable
 
     public async Task StartAsync(CancellationToken ct)
     {
-        var key = _llm.Gemini.ResolveApiKey() ?? throw new NoLlmConfiguredException();
+        var key = _key = _llm.Gemini.ResolveApiKey() ?? throw new NoLlmConfiguredException();
         _ws.Options.SetRequestHeader("x-goog-api-key", key);
         await _ws.ConnectAsync(new Uri(Endpoint), ct);
 
@@ -142,6 +143,11 @@ public sealed class LiveSession : IAsyncDisposable
                     if (r.MessageType == WebSocketMessageType.Close)
                     {
                         _log.LogInformation("Gemini cerró la voz en tiempo real: {Reason}", _ws.CloseStatusDescription);
+                        // Sin saldo o sin cuota: esa clave se aparta y la próxima conversación usa otra
+                        var why = _ws.CloseStatusDescription ?? "";
+                        if (why.Contains("credit", StringComparison.OrdinalIgnoreCase) || why.Contains("quota", StringComparison.OrdinalIgnoreCase)
+                            || why.Contains("exhausted", StringComparison.OrdinalIgnoreCase))
+                            GeminiKeyRing.Report(_key, why.Contains("credit", StringComparison.OrdinalIgnoreCase) ? 402 : 429, why);
                         await EmitAsync("ended", _ws.CloseStatusDescription, CancellationToken.None);
                         return;
                     }

@@ -20,7 +20,7 @@ public class ProviderTests
             {"candidates":[{"content":{"role":"model","parts":[
               {"text":"[[happy]] Hola Pol","thoughtSignature":"FIRMA123"}]}}]}
             """);
-        var gemini = new GeminiProvider(new HttpClient(handler), Options(o => o.Gemini.ApiKey = "clave-g"),
+        var gemini = new GeminiProvider(new HttpClient(handler), Options(o => { o.Gemini.KeysFromAppOnly = false; o.Gemini.ApiKey = "clave-g"; }),
             NullLogger<GeminiProvider>.Instance);
 
         var first = await gemini.ChatAsync("Eres Kroko", [ChatMessage.User("hola")], [SampleTool], default);
@@ -48,7 +48,7 @@ public class ProviderTests
             {"candidates":[{"content":{"role":"model","parts":[
               {"functionCall":{"name":"estado_equipo","args":{"detalle":true}}}]}}]}
             """);
-        var gemini = new GeminiProvider(new HttpClient(handler), Options(o => o.Gemini.ApiKey = "k"),
+        var gemini = new GeminiProvider(new HttpClient(handler), Options(o => { o.Gemini.KeysFromAppOnly = false; o.Gemini.ApiKey = "k"; }),
             NullLogger<GeminiProvider>.Instance);
 
         var res = await gemini.ChatAsync("p", [ChatMessage.User("¿batería?")], [SampleTool], default);
@@ -69,7 +69,7 @@ public class ProviderTests
     public async Task Gemini_error_http_lanza_LlmProviderException()
     {
         var handler = new FakeHandler("""{"error":{"message":"API key not valid"}}""", HttpStatusCode.BadRequest);
-        var gemini = new GeminiProvider(new HttpClient(handler), Options(o => o.Gemini.ApiKey = "mala"),
+        var gemini = new GeminiProvider(new HttpClient(handler), Options(o => { o.Gemini.KeysFromAppOnly = false; o.Gemini.ApiKey = "mala"; }),
             NullLogger<GeminiProvider>.Instance);
 
         var ex = await Assert.ThrowsAsync<LlmProviderException>(() =>
@@ -84,7 +84,7 @@ public class ProviderTests
             {"choices":[{"finish_reason":"stop","message":{"role":"assistant","content":"[[wink]] Hecho",
               "reasoning_content":"RAZONAMIENTO-XYZ"}}]}
             """);
-        var ds = new DeepSeekProvider(new HttpClient(handler), Options(o => o.DeepSeek.ApiKey = "clave-d"),
+        var ds = new DeepSeekProvider(new HttpClient(handler), Options(o => { o.DeepSeek.KeysFromAppOnly = false; o.DeepSeek.ApiKey = "clave-d"; }),
             NullLogger<DeepSeekProvider>.Instance);
 
         var first = await ds.ChatAsync("Eres Kroko", [ChatMessage.User("hola")], [SampleTool], default);

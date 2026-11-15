@@ -15,7 +15,8 @@ public sealed class ProductivityOptions
     public const string Section = "Productivity";
 
     /// <summary>Hora (0–23) del resumen automático del día; -1 = desactivado.</summary>
-    public int DailySummaryHour { get; set; } = 8;
+    /// <remarks>Apagado por defecto (decidido por Pol, 14/11/2026): solo si él lo pide («todos los días a las 8 dime…» crea una automatización).</remarks>
+    public int DailySummaryHour { get; set; } = -1;
 
     /// <summary>Decir los recordatorios en voz alta (además de mostrarlos).</summary>
     public bool SpeakNotifications { get; set; } = true;
@@ -133,7 +134,7 @@ public sealed class ReminderScheduler(
 
     private async Task MaybeDailySummaryAsync(CancellationToken ct)
     {
-        var hour = options.CurrentValue.DailySummaryHour;
+        var hour = NoticePreferences.SummaryHour(store, options.CurrentValue);
         var now = time.GetLocalNow();
         var today = DateOnly.FromDateTime(now.DateTime).ToString("yyyy-MM-dd");
         if (hour < 0 || now.Hour < hour || store.GetValue("resumen:ultimo") == today) return;

@@ -216,6 +216,7 @@ try
     app.MapConnectorsApi();
     app.MapSetupApi();
     Kroko.Brain.Usage.UsageApi.MapUsageApi(app);
+    Kroko.Brain.Productivity.PanelApi.MapPanelApi(app);
     Kroko.Brain.Apps.GoogleApi.MapGoogleApi(app);
     app.MapMyDayApi();
     app.MapEmbeddingApi();
@@ -224,9 +225,10 @@ try
 
     Log.Information("Kroko.Brain {Version} arrancando", version);
     if (dotEnvFile is not null) Log.Information("Claves leídas de {File} (sin mostrar valores)", dotEnvFile);
+    Log.Information("Claves de IA: las presta la App de la PC al conectarse y solo viven en memoria (nunca se guardan aquí)");
     foreach (var (name, source) in KeySources.Describe(app.Configuration))
     {
-        if (source == "falta") Log.Warning("{Name}: SIN API key (ponla en Configurar Kroko, el .env o user-secrets)", name);
+        if (source == "falta") Log.Information("{Name}: sin clave (opcional; se pone en Configurar Kroko)", name);
         else Log.Information("{Name}: API key encontrada en {Source}", name, source);
     }
     app.Run();

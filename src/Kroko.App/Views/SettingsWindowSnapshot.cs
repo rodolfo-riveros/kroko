@@ -16,7 +16,20 @@ public static class SettingsWindowSnapshot
     public static IEnumerable<string> Render(IServiceProvider services, string outputDir)
     {
         var vm = services.GetRequiredService<SettingsViewModel>();
-        var window = new SettingsWindow(vm);
+        var paths = RenderTabs(new SettingsWindow(vm), vm, "ajustes", outputDir).ToList();
+        vm.Dispose();
+
+        // El panel «Kroko» con datos de muestra (sin cerebro)
+        var panelVm = services.GetRequiredService<KrokoPanelViewModel>();
+        panelVm.ShowSample();
+        paths.AddRange(RenderTabs(new KrokoPanelWindow(panelVm), panelVm, "panel", outputDir));
+        panelVm.Dispose();
+        return paths;
+    }
+
+    /// <summary>Dibuja cada pestaña de una ventana con navegación lateral (y otra vez desplazada si es larga).</summary>
+    internal static IEnumerable<string> RenderTabs(Window window, object vm, string prefix, string outputDir)
+    {
         var content = (FrameworkElement)window.Content;
         window.Content = null;
         var host = new Border { Background = (Brush)Application.Current.Resources["Kroko.Window"], Child = content };
@@ -37,7 +50,7 @@ public static class SettingsWindowSnapshot
             host.UpdateLayout();
             var bmp = new RenderTargetBitmap(W, H, 96, 96, PixelFormats.Pbgra32);
             bmp.Render(host);
-            var path = Path.Combine(outputDir, $"ajustes-{i}.png");
+            var path = Path.Combine(outputDir, $"{prefix}-{i}.png");
             using (var fs = File.Create(path))
             {
                 var enc = new PngBitmapEncoder();
@@ -53,7 +66,7 @@ public static class SettingsWindowSnapshot
                 host.UpdateLayout();
                 var lower = new RenderTargetBitmap(W, H, 96, 96, PixelFormats.Pbgra32);
                 lower.Render(host);
-                var lowerPath = Path.Combine(outputDir, $"ajustes-{i}-abajo.png");
+                var lowerPath = Path.Combine(outputDir, $"{prefix}-{i}-abajo.png");
                 using (var fs = File.Create(lowerPath))
                 {
                     var enc = new PngBitmapEncoder();
@@ -65,7 +78,6 @@ public static class SettingsWindowSnapshot
             }
         }
         window.Close();
-        vm.Dispose();
         return paths;
     }
 

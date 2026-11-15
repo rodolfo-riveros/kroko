@@ -110,9 +110,14 @@ public partial class App : Application
                 services.AddHostedService<OnboardingLauncher>();
                 services.AddTransient<SettingsViewModel>();
                 services.AddTransient<SettingsWindow>();
+                services.AddTransient<KrokoPanelViewModel>();
+                services.AddTransient<KrokoPanelWindow>();
                 services.AddSingleton<TrayService>();
                 services.AddSingleton<UpdateService>();
                 services.AddSingleton<ResponsePanel>();
+                services.AddSingleton<BadgeViewModel>();
+                services.AddSingleton<BadgeWindow>();
+                services.AddSingleton<LocalAiKeys>();
                 services.AddSingleton<CompanionBehavior>();
                 services.AddSingleton<WindowService>();
                 services.AddSingleton<BubbleViewModel>();
@@ -148,9 +153,24 @@ public partial class App : Application
             return;
         }
 
+        // Herramienta de desarrollo: --icon <archivo.ico> genera el icono de la App (cara de Kroko, varios tamaños) y sale.
+        var icon = Array.IndexOf(e.Args, "--icon");
+        if (icon >= 0 && e.Args.Length > icon + 1)
+        {
+            var lib = _host.Services.GetRequiredService<ExpressionLibrary>();
+            KrokoIcon.WriteIco(lib, e.Args[icon + 1]);
+            KrokoIcon.WritePng(KrokoIcon.Render(lib, 256), Path.ChangeExtension(e.Args[icon + 1], ".png"));
+            Log.Information("Icono guardado en {Path}", e.Args[icon + 1]);
+            Shutdown();
+            return;
+        }
+
         var bubble = _host.Services.GetRequiredService<BubbleWindow>();
         bubble.Show();
         _host.Services.GetRequiredService<ResponsePanel>(); // se suscribe al panel; se muestra cuando haga falta
+        _host.Services.GetRequiredService<BadgeWindow>(); // check verde y cuenta atrás bajo Kroko
+        // Las claves de IA viven en esta PC: se le prestan al cerebro al conectarse (y ya mismo si ya estaba conectado)
+        _ = _host.Services.GetRequiredService<LocalAiKeys>().SendAsync();
         _host.Services.GetRequiredService<ToolExecutor>();  // escucha las herramientas que pide el Brain
         _host.Services.GetRequiredService<ForegroundTracker>(); // recuerda tu última ventana (Fase 4)
         _host.Services.GetRequiredService<AuditLog>().LoadRecent();

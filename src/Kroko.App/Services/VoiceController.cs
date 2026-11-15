@@ -7,6 +7,7 @@ using Kroko.App.Native;
 using Kroko.App.ViewModels;
 using Kroko.Shared;
 using Kroko.Shared.Protocol;
+using Kroko.Shared.Tools;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
@@ -53,6 +54,7 @@ public sealed partial class VoiceController : IDisposable
     // Conversación en curso: tras cada respuesta hablada se vuelve a escuchar
     private bool _conversation;
     private bool _endRequested;
+    private string _lastCaption = ""; // lo último que entendió Vosk (local) mientras grababas
 
     public VoiceController(VoiceRecorder recorder, SpeechPlayer player, BrainConnection brain, CompanionBehavior behavior,
         PanelViewModel panel, ToolExecutor tools, VoiceSession session, WakeWordService wake, LiveConversation live, IOptions<KrokoOptions> options,
@@ -83,6 +85,9 @@ public sealed partial class VoiceController : IDisposable
         _recorder.Level += level => System.Windows.Application.Current?.Dispatcher.BeginInvoke(() => OnLevel(level));
         _wake.Detected += OnWakeWord;
         _wake.Caption += _panel.ShowCaption;
+        _wake.Caption += t => _lastCaption = t;
+        _live.RestRequested += Rest;
+        _panel.RestRequested += Rest;
         _panel.ReplyFinished += OnReplyFinished;
         _panel.ConfirmShown += OnConfirmShown;
         _brain.MessageReceived += m =>
@@ -154,6 +159,13 @@ public sealed partial class VoiceController : IDisposable
     {
         if (_recorder.IsRecording || _tools.IsPaused || _panel.IsConfirming) return;
 
+        // «Oye Kroko, cállate» (también mientras habla): se calla, se esconde y deja de escuchar
+        if (hit.HasCommand && QuietCommand.Matches(hit.Heard))
+        {
+            Rest();
+            return;
+        }
+
         // En plena conversación en tiempo real, «Oye Kroko» lo calla y te escucha
         if (_live.IsActive)
         {
@@ -197,6 +209,7 @@ public sealed partial class VoiceController : IDisposable
 
     private void StartListening(ListenReason reason)
     {
+        _lastCaption = "";
         _followUpDelay.Stop();
         if (_tools.IsPaused)
         {
@@ -309,7 +322,34 @@ public sealed partial class VoiceController : IDisposable
                 : "No te escuché. Pulsa " + _opt.Hotkey + " y habla cerca del micrófono.");
             return;
         }
+        // «Cállate» dicho tras el atajo o en la conversación: se resuelve aquí, sin mandarlo a la IA
+        if (QuietCommand.Matches(_lastCaption))
+        {
+            Rest();
+            return;
+        }
         Send(wav);
+    }
+
+    /// <summary>
+    /// «Cállate» / «descansa» (decidido por Pol, 14/11/2026): deja de hablar, termina la conversación (también la de
+    /// tiempo real), cierra el panel y se esconde dormido. Vuelve con «Oye Kroko», el atajo o la bandeja.
+    /// </summary>
+    public void Rest()
+    {
+        _followUpDelay.Stop();
+        if (_recorder.IsRecording)
+        {
+            _tick.Stop();
+            _recorder.Stop();
+            _wake.EndCaptions();
+        }
+        if (_live.IsActive) _live.Stop(farewell: null);
+        _panel.StopSpeaking();
+        EndConversation(quiet: true);
+        _panel.Hide();
+        _behavior.Face.MicLevel = 0;
+        _behavior.RestNow();
     }
 
     private void Send(byte[] wav)
@@ -350,6 +390,11 @@ public sealed partial class VoiceController : IDisposable
 
     private void OnTranscript(string text)
     {
+        if (QuietCommand.Matches(text))
+        {
+            Rest();
+            return;
+        }
         if (!_conversation) return;
         var said = WakeWordDetector.Normalize(text);
         if (_opt.EffectiveEndPhrases.Any(p => said.Contains(WakeWordDetector.Normalize(p), StringComparison.Ordinal)))

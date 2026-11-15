@@ -76,6 +76,13 @@ public sealed class SessionHandler(AgentLoop agent, Productivity.AppConnections 
                         await transport.SendAsync(new PongMessage { SessionId = ping.SessionId }, aborted);
                         break;
 
+                    case CredentialsMessage keys:
+                        // Las claves de IA vienen de la PC y quedan solo en memoria mientras esta App siga conectada
+                        Providers.AppProvidedKeys.Set(transport, keys.Gemini, keys.DeepSeek);
+                        log.LogInformation("La App prestó sus claves de IA ({Gemini} de Gemini, DeepSeek: {DeepSeek}); quedan solo en memoria",
+                            keys.Gemini.Count, !string.IsNullOrEmpty(keys.DeepSeek));
+                        break;
+
                     case ToolResultMessage r:
                         channel.Complete(r.CallId, r);
                         break;
@@ -172,6 +179,7 @@ public sealed class SessionHandler(AgentLoop agent, Productivity.AppConnections 
         finally
         {
             apps.Remove(registration);
+            Providers.AppProvidedKeys.Forget(transport); // la App se fue: el cerebro olvida sus claves
             await CancelCurrentAsync();
             await StopLiveAsync();
             await transport.CloseAsync("adiós", CancellationToken.None);

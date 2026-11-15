@@ -114,7 +114,7 @@ public class ReplyModeTests
     {
         var tool = Assert.Single(ToolCatalog.All, t => t.Name == "modo_respuesta");
         Assert.Equal(ToolRisk.Write, tool.Risk);
-        Assert.Contains("cállate", tool.Description);
+        Assert.Contains("no me hables con voz", tool.Description); // «cállate» ahora lo calla y lo esconde (QuietCommand)
         Assert.Contains("háblame", tool.Description);
     }
 }

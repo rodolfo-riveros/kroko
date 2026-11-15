@@ -7,8 +7,6 @@ public static class KeySources
 {
     private static readonly (string Name, string Key, string EnvFallback)[] Keys =
     [
-        ("gemini", "Llm:Gemini:ApiKey", "GEMINI_API_KEY"),
-        ("deepseek", "Llm:DeepSeek:ApiKey", "DEEPSEEK_API_KEY"),
         ("tavily", "Web:TavilyApiKey", "TAVILY_API_KEY"),
     ];
 

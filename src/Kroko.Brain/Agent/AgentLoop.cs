@@ -47,7 +47,7 @@ public sealed class AgentLoop(
         }
         catch (NoLlmConfiguredException)
         {
-            await FinishAsync(channel, speakReply, "Para escucharte necesito la API key de Gemini.", "confused", true, ct);
+            await FinishAsync(channel, speakReply, NoKeysMessage, "confused", true, ct);
             return;
         }
         catch (LlmProviderException ex)
@@ -73,6 +73,13 @@ public sealed class AgentLoop(
     /// <param name="speak">true = la respuesta también se convierte en voz (órdenes por voz).</param>
     public async Task HandleUserTextAsync(string text, IAgentChannel channel, CancellationToken ct, bool speak = false)
     {
+        // «Cállate» / «descansa» en la PC: la App ya lo calló y lo escondió; no se le pregunta a la IA (ni gasta)
+        if (!channel.SessionId.StartsWith("telegram-", StringComparison.Ordinal) && Kroko.Shared.Tools.QuietCommand.Matches(text))
+        {
+            await channel.SendAsync(new StateMessage { SessionId = channel.SessionId, State = FaceStates.Idle }, ct);
+            return;
+        }
+
         await channel.SendAsync(new StateMessage { SessionId = channel.SessionId, State = FaceStates.Thinking }, ct);
 
         var conversation = store.Get(channel.SessionId);
@@ -126,7 +133,7 @@ public sealed class AgentLoop(
         catch (NoLlmConfiguredException)
         {
             await FinishAsync(channel, speak,
-                "Todavía no tengo una API key de IA. Ponla en el asistente de configuración (clic derecho en Kroko) y te contesto al toque.",
+                NoKeysMessage,
                 "confused", true, ct);
         }
         catch (LlmProviderException ex)
@@ -137,6 +144,12 @@ public sealed class AgentLoop(
                 "sad", true, ct);
         }
     }
+
+    /// <summary>
+    /// Sin claves de IA (15/11/2026 viven en la PC): o la PC está apagada / Kroko cerrado, o aún no se pusieron.
+    /// </summary>
+    private static string NoKeysMessage => "Para pensar necesito tu clave de Gemini, y esa clave vive en tu PC: abre Kroko en la " +
+                                          "computadora (si aún no la pusiste, clic derecho en Kroko → Configurar Kroko → Cerebro de IA).";
 
     private async Task FinishAsync(IAgentChannel channel, bool speak, string text, string? expression, bool isError, CancellationToken ct)
     {

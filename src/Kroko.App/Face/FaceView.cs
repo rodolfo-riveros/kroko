@@ -113,17 +113,13 @@ public sealed class FaceView : FrameworkElement
         FaceRenderer.Render(dc, _frame, s, ox, oy);
     }
 
-    /// <summary>Solo el cuerpo (y la antena) cuentan para el ratón; lo demás deja pasar el clic.</summary>
+    /// <summary>Solo el cuerpo cuenta para el ratón; lo demás deja pasar el clic.</summary>
     protected override HitTestResult? HitTestCore(PointHitTestParameters hitTestParameters)
     {
         var s = FaceScale;
         var (ox, oy) = Offset(s);
         var p = hitTestParameters.HitPoint;
         var u = new Point((p.X - ox) / s, (p.Y - oy) / s);
-        var inBody = (u - new Point(FaceRenderer.CenterX, FaceRenderer.CenterY)).Length <= FaceRenderer.Radius + 2;
-        var inAntenna = Math.Abs(u.X - FaceRenderer.CenterX) <= 7
-                        && u.Y >= FaceRenderer.CenterY - FaceRenderer.Radius - 20
-                        && u.Y <= FaceRenderer.CenterY - FaceRenderer.Radius;
-        return inBody || inAntenna ? new PointHitTestResult(this, p) : null;
+        return FaceRenderer.HitsBody(u) ? new PointHitTestResult(this, p) : null;
     }
 }

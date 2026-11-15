@@ -1,0 +1,49 @@
+<Window x:Class="Kroko.App.Views.BadgeWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:v="clr-namespace:Kroko.App.Views"
+        Title="Kroko"
+        WindowStyle="None"
+        AllowsTransparency="True"
+        Background="Transparent"
+        ResizeMode="NoResize"
+        Topmost="True"
+        ShowInTaskbar="False"
+        ShowActivated="False"
+        Focusable="False"
+        IsHitTestVisible="False"
+        SizeToContent="WidthAndHeight"
+        FontFamily="{StaticResource Kroko.Font}"
+        UseLayoutRounding="True">
+    <Window.Resources>
+        <v:BoolToVisibleConverter x:Key="BoolToVisible" />
+        <v:EmptyToCollapsedConverter x:Key="EmptyToCollapsed" />
+    </Window.Resources>
+
+    <!-- Sin interacción: solo se mira. Margen para la sombra. -->
+    <StackPanel Margin="10">
+        <!-- Check verde con la palabra («Anotado», «Agendado»…) -->
+        <Border Background="{StaticResource Kroko.Accent}" CornerRadius="12" Padding="10,5" HorizontalAlignment="Center"
+                Visibility="{Binding BadgeText, Converter={StaticResource EmptyToCollapsed}}">
+            <Border.Effect>
+                <DropShadowEffect BlurRadius="10" ShadowDepth="1" Opacity="0.35" />
+            </Border.Effect>
+            <StackPanel Orientation="Horizontal">
+                <TextBlock Text="&#xE73E;" FontFamily="{StaticResource Kroko.Icons}" FontSize="12" Foreground="{StaticResource Kroko.OnAccent}"
+                           VerticalAlignment="Center" Margin="0,0,6,0" />
+                <TextBlock Text="{Binding BadgeText}" FontSize="12.5" FontWeight="SemiBold" Foreground="{StaticResource Kroko.OnAccent}" />
+            </StackPanel>
+        </Border>
+
+        <!-- Cuenta atrás del enfoque o temporizador -->
+        <Border Background="#F2181818" BorderBrush="{StaticResource Kroko.BodyEdge}" BorderThickness="1" CornerRadius="12" Padding="10,5"
+                HorizontalAlignment="Center" Margin="0,6,0,0"
+                Visibility="{Binding Timers.IsActive, Converter={StaticResource BoolToVisible}}">
+            <StackPanel Orientation="Horizontal">
+                <Ellipse Width="7" Height="7" Fill="{StaticResource Kroko.Accent}" VerticalAlignment="Center" Margin="0,0,7,0" />
+                <TextBlock Text="{Binding Timers.RemainingText}" FontSize="13" FontWeight="SemiBold" Foreground="{StaticResource Kroko.Text}" />
+                <TextBlock Text="{Binding Timers.Label}" FontSize="11.5" Foreground="{StaticResource Kroko.TextMuted}" Margin="7,1,0,0" />
+            </StackPanel>
+        </Border>
+    </StackPanel>
+</Window>

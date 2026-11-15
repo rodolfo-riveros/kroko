@@ -28,7 +28,7 @@ if ($LASTEXITCODE -ne 0) { throw "Falló la publicación de la App" }
 
 Write-Host "2/2 Empaquetando con Velopack..." -ForegroundColor Cyan
 vpk pack --packId KrokoApp --packVersion $Version --packDir $publish --mainExe Kroko.App.exe `
-    --packTitle "Kroko" --outputDir (Join-Path $root "Releases")
+    --packTitle "Kroko" --icon (Join-Path $root "assets\kroko.ico") --outputDir (Join-Path $root "Releases")
 if ($LASTEXITCODE -ne 0) { throw "Falló vpk pack (¿instalaste vpk con 'dotnet tool install -g vpk'?)" }
 
 Write-Host "Listo: carpeta Releases (instalador KrokoApp-win-Setup.exe)" -ForegroundColor Green

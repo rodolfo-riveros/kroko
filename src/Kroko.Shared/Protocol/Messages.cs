@@ -23,6 +23,8 @@ namespace Kroko.Shared.Protocol;
 [JsonDerivedType(typeof(StopMessage), MessageTypes.Stop)]
 [JsonDerivedType(typeof(NotifyMessage), MessageTypes.Notify)]
 [JsonDerivedType(typeof(CardMessage), MessageTypes.Card)]
+[JsonDerivedType(typeof(BadgeMessage), MessageTypes.Badge)]
+[JsonDerivedType(typeof(CredentialsMessage), MessageTypes.Credentials)]
 [JsonDerivedType(typeof(LiveStartMessage), MessageTypes.LiveStart)]
 [JsonDerivedType(typeof(LiveAudioMessage), MessageTypes.LiveAudio)]
 [JsonDerivedType(typeof(LiveStopMessage), MessageTypes.LiveStop)]
@@ -50,6 +52,8 @@ public static class MessageTypes
     public const string Stop = "control.stop";
     public const string Notify = "notify";
     public const string Card = "card";
+    public const string Badge = "badge";
+    public const string Credentials = "credentials";
     public const string LiveStart = "live.start";
     public const string LiveAudio = "live.audio";
     public const string LiveStop = "live.stop";
@@ -258,4 +262,28 @@ public static class KrokoProtocol
             return null;
         }
     }
+}
+
+/// <summary>
+/// Check verde con una palabra junto a Kroko tras hacer algo (14/11/2026): «Anotado», «Agendado», «Enviado»…
+/// </summary>
+public sealed record BadgeMessage : KrokoMessage
+{
+    public string Text { get; init; } = "";
+}
+
+/// <summary>
+/// App → cerebro, al conectar (decidido por Pol, 15/11/2026): las claves de IA viven SOLO en la PC; la App se las
+/// presta al cerebro mientras está conectada y el cerebro las tiene en memoria, nunca en disco. Viaja por la misma
+/// conexión protegida con el token (HTTPS en un servidor). Nunca se escribe en registros.
+/// </summary>
+public sealed record CredentialsMessage : KrokoMessage
+{
+    /// <summary>Hasta 4 claves de Gemini, en orden (se turnan si una se agota).</summary>
+    public List<string> Gemini { get; init; } = [];
+
+    public string? DeepSeek { get; init; }
+
+    /// <summary>Para los registros: cuántas claves trae, sin mostrarlas.</summary>
+    public override string ToString() => $"credentials(gemini: {Gemini.Count}, deepseek: {(string.IsNullOrEmpty(DeepSeek) ? 0 : 1)})";
 }

@@ -105,6 +105,7 @@ public sealed class TrayService(ExpressionLibrary library, Audio.WakeWordService
     {
         var menu = new ContextMenu();
         menu.Items.Add(Item("Hablar (Ctrl+Espacio)", talk));
+        menu.Items.Add(Item("Abrir Kroko (tu día, hábitos, tareas)", () => windows.ShowPanel()));
         menu.Items.Add(Item("Mi día", windows.ShowMyDay));
         menu.Items.Add(Item("Mostrar / ocultar", toggleVisible));
         menu.Items.Add(Item("Pausar / reanudar (Ctrl+Alt+K)", togglePause));
@@ -140,24 +141,7 @@ public sealed class TrayService(ExpressionLibrary library, Audio.WakeWordService
     }
 
     /// <summary>La cara de Kroko en reposo, 64×64.</summary>
-    private BitmapSource RenderIcon()
-    {
-        var anim = new FaceAnimator(library, () => 1.0) { EnableBlink = false, FollowCursor = false, EnableBreath = false };
-        anim.SetBase("idle");
-        var frame = anim.Tick(null);
-        var visual = new DrawingVisual();
-        using (var dc = visual.RenderOpen())
-        {
-            // Encuadre centrado en el cuerpo (no en todo el lienzo)
-            var scale = 64 / ((FaceRenderer.Radius + 14) * 2);
-            FaceRenderer.Render(dc, frame, scale,
-                32 - FaceRenderer.CenterX * scale, 34 - FaceRenderer.CenterY * scale);
-        }
-        var bmp = new RenderTargetBitmap(64, 64, 96, 96, PixelFormats.Pbgra32);
-        bmp.Render(visual);
-        bmp.Freeze();
-        return bmp;
-    }
+    private BitmapSource RenderIcon() => KrokoIcon.Render(library, 64);
 
     public void Dispose() => _icon?.Dispose();
 }

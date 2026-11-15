@@ -74,12 +74,28 @@ public sealed class CompositeToolGateway(
 
     public async Task<ToolExecution> ExecuteAsync(ToolCall call, IAgentChannel channel, CancellationToken ct)
     {
+        var result = await ExecuteCoreAsync(call, channel, ct);
+        // Check verde con una palabra junto a Kroko (14/11/2026): «Anotado», «Agendado»… solo si salió bien
+        var name = call.Name.Equals(UseTool, StringComparison.OrdinalIgnoreCase) ? ResolveConnectorCall(call)?.Name ?? call.Name : call.Name;
+        if (result.Json.StartsWith("{\"ok\":true", StringComparison.Ordinal) && Badges.For(name) is { } word)
+        {
+            try
+            {
+                await channel.SendAsync(new BadgeMessage { SessionId = channel.SessionId, Text = word }, ct);
+            }
+            catch (Exception ex) when (ex is not OperationCanceledException) { } // un adorno nunca rompe la orden
+        }
+        return result;
+    }
+
+    private async Task<ToolExecution> ExecuteCoreAsync(ToolCall call, IAgentChannel channel, CancellationToken ct)
+    {
         if (call.Name.Equals(ListTool, StringComparison.OrdinalIgnoreCase)) return ListConnectorTools(call.Arguments);
         if (call.Name.Equals(UseTool, StringComparison.OrdinalIgnoreCase))
         {
             // Se ejecuta como si la IA la hubiera llamado por su nombre: mismo riesgo, tarjeta y auditoría
             if (ResolveConnectorCall(call) is not { } inner) return ToolConfirmation.Fail(UnknownConnectorTool(call.Arguments));
-            return await ExecuteAsync(inner, channel, ct);
+            return await ExecuteCoreAsync(inner, channel, ct);
         }
         if (!Current().TryGetValue(call.Name, out var tool)) return await app.ExecuteAsync(call, channel, ct);
 

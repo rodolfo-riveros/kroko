@@ -13,6 +13,7 @@ namespace Kroko.Tests;
 /// Prueba de punta a punta del Brain: WebSocket real en memoria, agente real, IA simulada.
 /// Es exactamente el criterio de la Fase 1B: le escribo "hola" y responde con texto y expresión.
 /// </summary>
+[Collection("ClavesIA")] // comparte con las pruebas de claves prestadas (estado del cerebro en memoria)
 public class EndToEndTests
 {
     private const string Token = "token-de-prueba";
@@ -95,7 +96,7 @@ public class EndToEndTests
 
         var reply = Assert.Single(msgs.OfType<ReplyMessage>());
         Assert.True(reply.IsError);
-        Assert.Contains("API key", reply.Text);
+        Assert.Contains("clave de Gemini", reply.Text); // vive en la PC: hay que abrir Kroko allí
         Assert.Equal("confused", Assert.Single(msgs.OfType<ExpressionMessage>()).Name);
     }
 

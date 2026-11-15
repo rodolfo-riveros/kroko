@@ -18,8 +18,6 @@ public sealed class SecretStore
     /// <summary>Únicas claves que se pueden escribir desde la API (nada de tokens del Brain ni rutas).</summary>
     public static readonly IReadOnlySet<string> WritableKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
     {
-        "Llm:Gemini:ApiKey",
-        "Llm:DeepSeek:ApiKey",
         "Web:TavilyApiKey",
         "Email:Address",
         "Email:AppPassword",
@@ -37,9 +35,28 @@ public sealed class SecretStore
     {
         FilePath = path;
         _values = Read(path);
+        PurgeAiKeys();
     }
 
     public string FilePath { get; }
+
+    /// <summary>
+    /// Claves de IA que el cerebro ya NO guarda (decidido por Pol, 15/11/2026): viven en la PC y la App las presta en
+    /// memoria. Si quedaron en secretos.dat de antes, se borran al arrancar.
+    /// </summary>
+    public static readonly string[] AiKeys =
+        ["Llm:Gemini:ApiKey", "Llm:Gemini:ApiKey2", "Llm:Gemini:ApiKey3", "Llm:Gemini:ApiKey4", "Llm:DeepSeek:ApiKey"];
+
+    private void PurgeAiKeys()
+    {
+        lock (_lock)
+        {
+            if (!AiKeys.Any(_values.ContainsKey)) return;
+            var next = _values.Where(kv => !AiKeys.Contains(kv.Key, StringComparer.OrdinalIgnoreCase)).ToDictionary(StringComparer.OrdinalIgnoreCase);
+            Write(FilePath, next);
+            _values = next;
+        }
+    }
 
     /// <summary>Se dispara tras guardar; la fuente de configuración se recarga con esto.</summary>
     public event Action? Changed;

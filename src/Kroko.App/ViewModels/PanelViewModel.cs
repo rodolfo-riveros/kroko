@@ -65,6 +65,8 @@ public partial class PanelViewModel : ObservableObject
         _confirmTimeout.Tick += (_, _) => Decide(false);
         _behavior = behavior;
         _opt = options.Value;
+        // Kroko no se esconde mientras el panel está abierto o hay algo en marcha (conversación, tarjeta, respuesta…)
+        _behavior.KeepAwake = () => _panelShown || IsBusy || IsConversation;
         _log = log;
 
         _typing = new DispatcherTimer(DispatcherPriority.Render) { Interval = TimeSpan.FromMilliseconds(16) };
@@ -83,6 +85,9 @@ public partial class PanelViewModel : ObservableObject
     public event Action<bool>? ShowRequested;
 
     public event Action? HideRequested;
+
+    /// <summary>Escribiste «cállate» / «descansa»: el controlador de voz lo calla y lo esconde.</summary>
+    public event Action? RestRequested;
 
     [ObservableProperty]
     public partial string UserText { get; set; } = "";
@@ -134,10 +139,15 @@ public partial class PanelViewModel : ObservableObject
     public void Hide()
     {
         _autoHide.Stop();
+        _panelShown = false;
+        _behavior.NoteActivity(); // el minuto para esconderse empieza cuando se cierra el panel
         HideRequested?.Invoke();
     }
 
     private bool _suppressed;
+
+    /// <summary>Escondido por el usuario o en pantalla completa.</summary>
+    public bool IsSuppressed => _suppressed;
 
     /// <summary>
     /// Mientras hay un juego o presentación a pantalla completa, el panel no aparece
@@ -148,6 +158,7 @@ public partial class PanelViewModel : ObservableObject
         _suppressed = suppressed;
         if (suppressed)
         {
+            _panelShown = false;
             HideRequested?.Invoke();
             return;
         }
@@ -156,13 +167,22 @@ public partial class PanelViewModel : ObservableObject
 
     }
 
+    private bool _panelShown;
+
     private void RequestShow(bool activate)
     {
-        if (!_suppressed) ShowRequested?.Invoke(activate);
+        if (_suppressed) return;
+        _panelShown = true;
+        _behavior.NoteActivity();
+        ShowRequested?.Invoke(activate);
     }
 
     /// <summary>Llamado por la vista con cualquier actividad (teclear, mover el ratón…).</summary>
-    public void NotifyActivity() => RestartAutoHide();
+    public void NotifyActivity()
+    {
+        RestartAutoHide();
+        _behavior.NoteActivity();
+    }
 
     // ---------------------------------------------------------------- enviar
 
@@ -173,6 +193,12 @@ public partial class PanelViewModel : ObservableObject
     {
         var text = KrokoName.Fix(InputText.Trim());
         if (text.Length == 0) return;
+        if (Kroko.Shared.Tools.QuietCommand.Matches(text))
+        {
+            InputText = "";
+            RestRequested?.Invoke();
+            return;
+        }
         NoteOwnerOrder();
 
         InputText = "";

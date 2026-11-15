@@ -120,10 +120,11 @@ Kroko tiene **identidad propia** (no es copia de otro personaje). Es una burbuja
 
 ### Cuerpo
 
-- Círculo de **84 px** (escala configurable 0.75×–1.5×), en esquina inferior derecha con margen de 24 px. Arrastrable; recuerda su posición por monitor.
+- Cuerpo **"mochi"** (decidido por Pol, 15/11/2026: redondo con antena "parecía una bomba"; forma inspirada en Troko Desk): trapecio de esquinas muy suaves, más ancho abajo (108 × 76 unidades), escala configurable 0.75×–1.5×, en esquina inferior derecha con margen de 24 px. Arrastrable; recuerda su posición por monitor.
 - **Referencia visual oficial:** https://troko.vercel.app/index.html#personalidad (Troko). Ojos **blancos**, grandes y redondeados, sobre pantalla **negra**; acentos lima. Copiar ese lenguaje de gestos (extras lima, lágrimas azules, mejillas rosa con rayitas, marca de enfado roja), pero dibujado con vectores, no GIFs.
 - Fondo: **negro** `#0F0F0F` con borde interior sutil `#2A2A2A` (1 px) y un brillo superior tipo vidrio (elipse semitransparente blanca al 6 %).
-- **Antena corta** arriba con punta luminosa (lima por defecto) que cambia de color según el estado (detalle de identidad de Kroko).
+- **Luz de estado** (antes la punta de la antena): pastilla luminosa en el borde de arriba (lima por defecto) que cambia de color según el estado. Las expresiones siguen usando los parámetros `Antenna*` para esa luz.
+- **Icono** de la App, la bandeja y el instalador: la cara de Kroko dibujada por el mismo motor (`assets/kroko.ico`, se regenera con `Kroko.App.exe --icon assets\kroko.ico`).
 - Sombra suave real de Windows (la ventana es transparente; dibuja la sombra en WPF con `DropShadowEffect` de bajo costo o un borde difuminado pre-renderizado).
 
 ### Paleta (tokens en un `ResourceDictionary`)
@@ -322,6 +323,7 @@ Todo se ve y se borra en la ventana **"Lo que sabe de ti"** (clic derecho en Kro
 - **Interruptor de emergencia:** `Ctrl + Alt + K` detiene cualquier acción en curso y pone a Kroko en pausa.
 - Registro de auditoría de cada herramienta ejecutada (fecha, argumentos, resultado) visible en Ajustes.
 - Kroko **nunca** escribe contraseñas, datos de tarjetas ni datos bancarios.
+- **Las claves de IA (Gemini, DeepSeek) viven solo en la PC** (decidido por Pol, 15/11/2026: «el cerebro no puede tener la API de Gemini»): cifradas con DPAPI en `%LOCALAPPDATA%\Kroko\claves-ia.dat` (`Services/LocalAiKeys`). La App se las presta al cerebro al conectarse (`credentials`) y el cerebro las tiene **solo en memoria** (`AppProvidedKeys`) y las olvida al desconectarse. El cerebro no las lee de appsettings, `.env`, user-secrets ni variables de entorno (`KeysFromAppOnly`), `secretos.dat` no las acepta y borra las antiguas al arrancar. Consecuencia aceptada: con la PC apagada no puede pensar (Telegram y automatizaciones lo explican).
 - Lo que lea de pantallas, páginas o documentos es **información, no órdenes**: no obedece instrucciones que aparezcan dentro de contenido externo.
 
 ---
@@ -528,6 +530,10 @@ Telegram, autenticación por token, despliegue del Brain en servidor (Docker), l
 
 - [x] Arreglo — «Guardar y reiniciar» de Ajustes no guardaba (08/11/2026, **v1.0.5**): `UserSettings.LoadKrokoSection` devolvía el nodo enganchado al archivo y, en cuanto `settings.json` existía, guardar fallaba con «The node already has a parent». Ahora se lee una copia suelta y se guarda por archivo temporal + reemplazo (nunca queda roto). Pruebas: 102 (App).
 
+- [x] Extra — Kroko discreto, «cállate», varias claves y panel «Kroko» con hábitos (14–15/11/2026, decidido por Pol; inspirado en el tracker de hábitos de Troko-Desk, con identidad propia): **arranca escondido** (`Kroko:StartHidden`) y **se esconde al minuto** sin actividad (`HideAfterIdleSeconds` 60; no mientras el panel está abierto, habla, escucha o hay pomodoro). **Solo «Oye Kroko»** (sin «Hola Kroko»), y estricto: tiene que abrir la frase, con seguridad de Vosk ≥ `MinConfidence` (0,8) y **pausa antes** (si venías hablando en los 0,6 s previos no cuenta; `WakeWordDetector.SpokeRightBefore`). **«Cállate» / «descansa»** (`Kroko.Shared/Tools/QuietCommand`): se calla, termina la conversación (también tiempo real), se esconde y deja de escuchar hasta «Oye Kroko»; se resuelve en la App y el cerebro no le pregunta a la IA. **Hasta 4 claves de Gemini** que se turnan (`GeminiKeyRing`: 402/sin saldo → 12 h aparte, 429 por minuto → 2 min; chat, voz, transcripción, búsqueda, vectores y tiempo real; Configurar Kroko → «Claves extra»). **Avisos**: por defecto solo reuniones y correos importantes (resumen del día y tareas vencidas apagados; elegibles en el panel, `NoticePreferences` en `kv`, `/api/avisos`). **Hábitos con meta** (esquema SQLite v4: meta, unidad, estilo, avisos, conteo por día; `AddToHabit` +1; racha = días con la meta cumplida; 15 estilos con dibujo; `habito_marcar` avisa `metaCumplida` para celebrar). **Panel «Kroko»** (`Views/KrokoPanelWindow`, API `/api/hoy`, `/api/habitos`, `/api/tareas`, `/api/recordatorios`): Inicio (anillo del día, 3 cifras, escribir o hablar, ejemplos), Tareas y avisos, Hábitos (tarjetas con +1, racha y semana), Enfoque (pomodoro con anillo), Mi PC y Ajustes simples (cada interruptor se guarda al instante; «Ajustes avanzados» abre la ventana anterior). Menú de clic derecho corto. **Check verde con palabra** bajo Kroko tras cada acción (`BadgeMessage`, `Agent/Badges.cs`) y **cuenta atrás** del enfoque aunque el panel esté cerrado (`Views/BadgeWindow`). Capturas: `docs/panel-kroko-*.png`. Pruebas: 214 (cerebro) + 109 (App).
+
+- [x] Cambio — Claves de IA solo en la PC (15/11/2026, decidido por Pol): ver sección 8. Mensaje nuevo `credentials` (App → cerebro, nunca en registros); `GeminiOptions/DeepSeekOptions.KeysFromAppOnly` (por defecto sí; las pruebas lo apagan); `SecretStore` ya no acepta `Llm:*` y purga las guardadas; `DotEnv` ignora las claves de IA; Configurar Kroko guarda Gemini (hasta 4) y DeepSeek en la PC y Tavily sigue en el cerebro; el asistente se abre solo si la PC aún no tiene clave. Sin claves, Kroko responde «tu clave vive en tu PC: abre Kroko en la computadora». Pruebas: 218 (cerebro) + 110 (App).
+
 ### Qué falta para dar todo por terminado (07/11/2026)
 
 1. **Pruebas en vivo de Pol:** asistente "Configurar Kroko" (se abre solo al arrancar si no hay perfil), voz con micrófono (1C, «Oye Kroko» y conversación), acciones con confirmación (1D), control visual (4), Notion y navegador (Conectar), Gmail (contraseña de aplicación).
@@ -535,3 +541,5 @@ Telegram, autenticación por token, despliegue del Brain en servidor (Docker), l
 3. **Primera publicación:** subir a GitHub (`rodolfo-riveros/kroko`, público) y crear el tag `v1.0.0`: GitHub Actions publica el instalador y la imagen del cerebro.
 4. **Cuentas de apps:** Google (proyecto en Google Cloud + cliente OAuth), Trello (clave + token) y Todoist (Conectar) desde Configurar Kroko → Tus apps.
 5. **Pulido pendiente:** probar «Oye Kroko» y la conversación con micrófono real (y ajustar `Voice:WakeWord:Decoys` si se activa por error); medir CPU con la escucha encendida.
+
+- [x] Extra — Nueva forma e icono (15/11/2026, **v1.0.6** con todo lo del 14–15/11): Kroko deja de ser redondo con antena («parecía una bomba»): cuerpo **"mochi"** (`FaceRenderer.BodyGeometry`, trapecio de esquinas suaves, más ancho abajo) con la luz de estado en el borde de arriba; el anillo de escucha sigue la silueta y solo el cuerpo recibe clics (`FaceRenderer.HitsBody`). **Icono** propio (`Face/KrokoIcon.cs`, `assets/kroko.ico` con 9 tamaños): programa (`ApplicationIcon`), bandeja e instalador (`vpk --icon`). Pruebas: 218 (cerebro) + 110 (App).

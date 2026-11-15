@@ -26,21 +26,32 @@ public sealed class GeminiProvider(HttpClient http, IOptionsMonitor<LlmOptions> 
         IReadOnlyList<ToolDefinition> tools, CancellationToken ct)
     {
         var opt = options.CurrentValue;
-        var key = opt.Gemini.ResolveApiKey() ?? throw new NoLlmConfiguredException();
+        var keys = opt.Gemini.AllApiKeys();
+        if (keys.Count == 0) throw new NoLlmConfiguredException();
 
         var url = $"{opt.Gemini.BaseUrl.TrimEnd('/')}/v1beta/models/{Uri.EscapeDataString(opt.Gemini.Model)}:generateContent";
-        using var req = new HttpRequestMessage(HttpMethod.Post, url)
+        var body = BuildRequest(systemPrompt, history, tools, opt).ToJsonString();
+
+        // Varias claves: si una se quedó sin saldo o sin cuota (402/429), se aparta y se prueba la siguiente
+        LlmProviderException? last = null;
+        for (var attempt = 0; attempt < keys.Count; attempt++)
         {
-            Content = JsonContent.Create(BuildRequest(systemPrompt, history, tools, opt)),
-        };
-        req.Headers.Add("x-goog-api-key", key);
+            var key = GeminiKeyRing.Pick(keys)!;
+            using var req = new HttpRequestMessage(HttpMethod.Post, url)
+            {
+                Content = new StringContent(body, System.Text.Encoding.UTF8, "application/json"),
+            };
+            req.Headers.Add("x-goog-api-key", key);
 
-        using var res = await SendAsync(req, ct);
-        var body = await res.Content.ReadAsStringAsync(ct);
-        if (!res.IsSuccessStatusCode)
-            throw new LlmProviderException(Name, $"Gemini respondió {(int)res.StatusCode}: {Trim(body)}", (int)res.StatusCode);
+            using var res = await SendAsync(req, ct);
+            var text = await res.Content.ReadAsStringAsync(ct);
+            if (res.IsSuccessStatusCode) return ParseResponse(text);
 
-        return ParseResponse(body);
+            last = new LlmProviderException(Name, $"Gemini respondió {(int)res.StatusCode}: {Trim(text)}", (int)res.StatusCode);
+            if (!GeminiKeyRing.Report(key, (int)res.StatusCode, text) || keys.Count == 1) break;
+            log.LogWarning("Una clave de Gemini se agotó ({Status}); pruebo con la siguiente", (int)res.StatusCode);
+        }
+        throw last!;
     }
 
     private async Task<HttpResponseMessage> SendAsync(HttpRequestMessage req, CancellationToken ct)

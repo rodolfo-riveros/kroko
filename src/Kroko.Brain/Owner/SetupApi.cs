@@ -70,6 +70,9 @@ public static class SetupApi
             {
                 perfilCompleto = owner.Get().IsComplete,
                 gemini = !string.IsNullOrEmpty(llm.CurrentValue.Gemini.ResolveApiKey()),
+                // Claves de Gemini que se turnan: cuántas hay y cuántas pueden usarse ahora (las agotadas descansan un rato)
+                geminiClaves = llm.CurrentValue.Gemini.AllApiKeys().Count,
+                geminiDisponibles = GeminiKeyRing.Available(llm.CurrentValue.Gemini.AllApiKeys()),
                 deepseek = !string.IsNullOrEmpty(llm.CurrentValue.DeepSeek.ResolveApiKey()),
                 tavily = web.CurrentValue.TavilyConfigured,
                 fuentes = sources,
@@ -162,10 +165,24 @@ public static class SetupApi
     private static async Task<TestResult> TestGeminiAsync(IServiceProvider sp, CancellationToken ct)
     {
         var opt = sp.GetRequiredService<IOptionsMonitor<LlmOptions>>().CurrentValue.Gemini;
-        if (opt.ResolveApiKey() is not { } key) return new(false, "Falta la API key de Gemini.");
-        using var req = new HttpRequestMessage(HttpMethod.Get, $"{opt.BaseUrl.TrimEnd('/')}/v1beta/models?pageSize=1");
-        req.Headers.Add("x-goog-api-key", key);
-        return await SendAsync(sp, req, "Gemini responde: la clave funciona.", ct);
+        var keys = opt.AllApiKeys();
+        if (keys.Count == 0) return new(false, "Falta la API key de Gemini.");
+
+        // Con varias claves se prueban todas y se dice cuántas responden
+        var ok = 0;
+        TestResult? lastFailure = null;
+        foreach (var key in keys)
+        {
+            using var req = new HttpRequestMessage(HttpMethod.Get, $"{opt.BaseUrl.TrimEnd('/')}/v1beta/models?pageSize=1");
+            req.Headers.Add("x-goog-api-key", key);
+            var result = await SendAsync(sp, req, "Gemini responde: la clave funciona.", ct);
+            if (result.Ok) ok++;
+            else lastFailure = result;
+        }
+        if (keys.Count == 1) return lastFailure ?? new(true, "Gemini responde: la clave funciona.");
+        return ok == keys.Count
+            ? new(true, $"Gemini responde: las {keys.Count} claves funcionan y se turnan si una se agota.")
+            : new(ok > 0, $"Funcionan {ok} de {keys.Count} claves de Gemini. {lastFailure?.Mensaje}");
     }
 
     private static async Task<TestResult> TestDeepSeekAsync(IServiceProvider sp, CancellationToken ct)

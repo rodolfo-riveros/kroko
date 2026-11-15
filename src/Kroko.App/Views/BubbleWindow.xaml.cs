@@ -69,10 +69,23 @@ public partial class BubbleWindow : Window
         };
         Loaded += (_, _) =>
         {
-            // Empieza invisible: si ya hay un juego a pantalla completa, ni se asoma
+            // Arranca escondido y dormido (decidido por Pol, 14/11/2026): aparece cuando lo llamas («Oye Kroko», el atajo,
+            // la bandeja) o tiene un aviso. Se marca antes de mirar la pantalla completa, para que al salir de un juego
+            // tampoco reaparezca solo.
+            if (_options.StartHidden)
+            {
+                _hiddenAsleep = true;
+                _vm.Behavior.StartAsleepHidden();
+            }
+            // Si ya hay un juego a pantalla completa, ni se asoma
             if (_options.HideOnFullscreen && _fullscreen.StartAndCheck())
             {
                 EnterFullscreenHidden();
+                return;
+            }
+            if (_hiddenAsleep)
+            {
+                Hide();
                 return;
             }
             BeginAnimation(OpacityProperty, new DoubleAnimation(1, TimeSpan.FromMilliseconds(250)));
@@ -111,16 +124,16 @@ public partial class BubbleWindow : Window
         else
         {
             // Por defecto: esquina inferior derecha, con el CUERPO a 24 px del borde
-            var bodyRight = (FaceRenderer.CenterX + FaceRenderer.Radius) * unit;
+            var bodyRight = (FaceRenderer.CenterX + FaceRenderer.BodyHalfWidth) * unit;
             var bodyBottom = (FaceRenderer.CenterY + FaceRenderer.Radius) * unit;
             left = (int)Math.Round(work.Right - _options.ScreenMargin * ms - bodyRight);
             top = (int)Math.Round(work.Bottom - _options.ScreenMargin * ms - bodyBottom);
         }
 
         // Que el cuerpo nunca quede fuera del área visible
-        var minLeft = work.Left - (int)((FaceRenderer.CenterX - FaceRenderer.Radius) * unit);
-        var maxLeft = work.Right - (int)((FaceRenderer.CenterX + FaceRenderer.Radius) * unit);
-        var minTop = work.Top - (int)((FaceRenderer.CenterY - FaceRenderer.Radius - 16) * unit);
+        var minLeft = work.Left - (int)((FaceRenderer.CenterX - FaceRenderer.BodyHalfWidth) * unit);
+        var maxLeft = work.Right - (int)((FaceRenderer.CenterX + FaceRenderer.BodyHalfWidth) * unit);
+        var minTop = work.Top - (int)((FaceRenderer.BodyTop - 4) * unit);
         var maxTop = work.Bottom - (int)((FaceRenderer.CenterY + FaceRenderer.Radius) * unit);
         left = Math.Clamp(left, minLeft, Math.Max(minLeft, maxLeft));
         top = Math.Clamp(top, minTop, Math.Max(minTop, maxTop));
@@ -159,9 +172,9 @@ public partial class BubbleWindow : Window
         var unit = r.Width / FaceRenderer.CanvasWidth;
         var body = new NativeMethods.RECT
         {
-            Left = r.Left + (int)Math.Round((FaceRenderer.CenterX - FaceRenderer.Radius) * unit),
-            Top = r.Top + (int)Math.Round((FaceRenderer.CenterY - FaceRenderer.Radius) * unit),
-            Right = r.Left + (int)Math.Round((FaceRenderer.CenterX + FaceRenderer.Radius) * unit),
+            Left = r.Left + (int)Math.Round((FaceRenderer.CenterX - FaceRenderer.BodyHalfWidth) * unit),
+            Top = r.Top + (int)Math.Round(FaceRenderer.BodyTop * unit),
+            Right = r.Left + (int)Math.Round((FaceRenderer.CenterX + FaceRenderer.BodyHalfWidth) * unit),
             Bottom = r.Top + (int)Math.Round((FaceRenderer.CenterY + FaceRenderer.Radius) * unit),
         };
         _geometry.Update(body, mi.rcWork, NativeMethods.GetMonitorScale(monitor), unit);

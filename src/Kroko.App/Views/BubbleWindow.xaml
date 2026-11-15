@@ -28,20 +28,18 @@
                    MouseLeave="Face_MouseLeave">
         <face:FaceView.ContextMenu>
             <ContextMenu>
+                <!-- Menú corto (14/11/2026): lo demás está en el panel «Kroko» -->
+                <MenuItem Header="Abrir Kroko" FontWeight="SemiBold" Command="{Binding OpenPanelCommand}" CommandParameter="inicio" />
                 <MenuItem Header="Hablar" InputGestureText="Ctrl+Espacio" Command="{Binding TalkCommand}" />
                 <MenuItem Header="Escribir a Kroko" Command="{Binding WriteCommand}" />
-                <MenuItem Header="Mi día" Command="{Binding OpenMyDayCommand}" />
-                <MenuItem Header="Configurar Kroko (tú y tus cuentas)" Command="{Binding OpenOnboardingCommand}" />
-                <MenuItem Header="Conectores (Notion, navegador…)" Command="{Binding OpenConnectorsCommand}" />
-                <MenuItem Header="Lo que sabe de ti" Command="{Binding OpenMemoryCommand}" />
-                <MenuItem Header="Registro de acciones" Command="{Binding OpenAuditCommand}" />
+                <Separator />
+                <MenuItem Header="Hábitos" Command="{Binding OpenPanelCommand}" CommandParameter="habitos" />
+                <MenuItem Header="Tareas y avisos" Command="{Binding OpenPanelCommand}" CommandParameter="tareas" />
+                <MenuItem Header="Enfoque (pomodoro)" Command="{Binding OpenPanelCommand}" CommandParameter="enfoque" />
+                <Separator />
+                <MenuItem Header="Ajustes" Command="{Binding OpenPanelCommand}" CommandParameter="ajustes" />
                 <MenuItem Header="Pausar / reanudar" InputGestureText="Ctrl+Alt+K" Command="{Binding TogglePauseCommand}" />
-                <Separator />
-                <MenuItem Header="Galería de expresiones" Command="{Binding OpenGalleryCommand}" />
-                <MenuItem Header="Dormir" Command="{Binding SleepCommand}" />
-                <MenuItem Header="Despertar" Command="{Binding WakeCommand}" />
-                <Separator />
-                <MenuItem Header="Ajustes" Command="{Binding OpenSettingsCommand}" />
+                <MenuItem Header="Esconder (descansa)" Command="{Binding RestCommand}" />
                 <MenuItem Header="Salir" Command="{Binding ExitCommand}" />
             </ContextMenu>
         </face:FaceView.ContextMenu>

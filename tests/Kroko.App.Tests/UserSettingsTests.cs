@@ -60,3 +60,35 @@ public class UserSettingsTests
         }
     }
 }
+
+/// <summary>Las claves de IA viven en la PC, cifradas con Windows (15/11/2026).</summary>
+public class LocalAiKeysTests
+{
+    [Fact]
+    public void Se_guardan_cifradas_y_se_leen_igual()
+    {
+        var dir = Path.Combine(Path.GetTempPath(), "kroko-claves-" + Guid.NewGuid().ToString("N"));
+        var file = Path.Combine(dir, "claves-ia.dat");
+        try
+        {
+            var brain = new BrainConnection(Microsoft.Extensions.Options.Options.Create(new KrokoOptions()),
+                Microsoft.Extensions.Logging.Abstractions.NullLogger<BrainConnection>.Instance);
+            var keys = new LocalAiKeys(brain, Microsoft.Extensions.Logging.Abstractions.NullLogger<LocalAiKeys>.Instance, file);
+
+            keys.Update(["AQ.principal", null, "AQ.tercera", null], "sk-deep");
+            var saved = keys.Load();
+            Assert.Equal(["AQ.principal", "AQ.tercera"], saved.Gemini);
+            Assert.Equal("sk-deep", saved.DeepSeek);
+            Assert.DoesNotContain("AQ.principal", System.Text.Encoding.UTF8.GetString(File.ReadAllBytes(file))); // cifrado
+
+            // Vacío = borrar; null = no tocar
+            keys.Update(["", null, null, null], null);
+            Assert.Equal(["AQ.tercera"], keys.Load().Gemini);
+            Assert.Equal("sk-deep", keys.Load().DeepSeek);
+        }
+        finally
+        {
+            if (Directory.Exists(dir)) Directory.Delete(dir, true);
+        }
+    }
+}

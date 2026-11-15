@@ -67,6 +67,9 @@ public sealed class LiveConversation : IDisposable
     /// <summary>No se pudo abrir: el controlador de voz vuelve al modo clásico.</summary>
     public event Action? Failed;
 
+    /// <summary>Dijiste «cállate» / «descansa» en plena conversación: el controlador de voz lo calla y lo esconde.</summary>
+    public event Action? RestRequested;
+
     /// <summary>Abre la conversación. preroll = lo dicho junto a «Oye Kroko» (para no perder la orden).</summary>
     public bool Start(byte[]? preroll)
     {
@@ -171,6 +174,11 @@ public sealed class LiveConversation : IDisposable
                 break;
 
             case LiveEventMessage { Kind: "you", Text: { } heard }:
+                if (Kroko.Shared.Tools.QuietCommand.Matches(heard))
+                {
+                    RestRequested?.Invoke();
+                    break;
+                }
                 if (_krokoSpoke)
                 {
                     _krokoSpoke = false;

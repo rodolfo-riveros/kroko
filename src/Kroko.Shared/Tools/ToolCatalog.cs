@@ -104,7 +104,7 @@ public static class ToolCatalog
         {
             Name = "modo_respuesta",
             Description = "Cambia cómo respondes en la PC: con voz (hablas y escribes) o solo por chat (solo escribes, sin audio). " +
-                          "Úsala cuando tu dueño diga cosas como \"cállate\", \"no me hables\", \"mándamelo por chat\", \"solo escribe\" " +
+                          "Úsala cuando tu dueño diga cosas como \"no me hables con voz\", \"mándamelo por chat\", \"solo escribe\" " +
                           "(voz=false) o \"háblame\", \"respóndeme con voz\", \"ya puedes hablar\" (voz=true). Se recuerda aunque reinicies.",
             Parameters = """{"type":"object","properties":{"voz":{"type":"boolean","description":"true = responder con voz; false = solo por chat"}},"required":["voz"]}""",
             Risk = ToolRisk.Write,
@@ -123,12 +123,13 @@ public static class ToolCatalog
         {
             Name = "abrir_ventana",
             Description = "Abre en la PC una de tus propias ventanas para que tu dueño siga configurándote o revise algo. " +
-                          "configuracion = Ajustes (\"abre tu configuración\"; con seccion: general, voz, cerebro, personalidad, " +
+                          "panel = el panel Kroko (tu día); habitos, tareas, enfoque (pomodoro) y mipc = esa parte del panel; " +
+                          "configuracion = Ajustes simples del panel (\"abre tu configuración\"); avanzado = Ajustes avanzados (con seccion: general, voz, cerebro, personalidad, " +
                           "herramientas o cuentas); asistente = \"Configurar Kroko\" (sus datos y TODAS sus claves y cuentas: IA, Tavily, Gmail, Telegram y " +
                           "vincular apps: Google, Trello, Notion, Todoist); conectores = conectar o desconectar Notion, Todoist y el " +
                           "navegador; memoria = \"Lo que sabe de ti\" (recuerdos, rutinas, buzón de mejoras); registro = acciones " +
                           "que hiciste; galeria = tus caras; mi_dia = agenda, tareas y clima de hoy.",
-            Parameters = """{"type":"object","properties":{"ventana":{"type":"string","enum":["configuracion","asistente","conectores","memoria","registro","galeria","mi_dia"]},"seccion":{"type":"string","enum":["general","voz","cerebro","personalidad","herramientas","cuentas"],"description":"Solo con configuracion: la pestaña que se abre"}},"required":["ventana"]}""",
+            Parameters = """{"type":"object","properties":{"ventana":{"type":"string","enum":["panel","habitos","tareas","enfoque","mipc","configuracion","avanzado","asistente","conectores","memoria","registro","galeria","mi_dia"]},"seccion":{"type":"string","enum":["general","voz","cerebro","personalidad","herramientas","cuentas"],"description":"Solo con avanzado: la pestaña que se abre"}},"required":["ventana"]}""",
             Risk = ToolRisk.Read,
         },
         new()

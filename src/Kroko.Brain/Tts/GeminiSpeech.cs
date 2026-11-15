@@ -64,8 +64,25 @@ public sealed class GeminiSpeech(HttpClient http, IOptionsMonitor<LlmOptions> ll
 
     public async Task<string?> TranscribeAsync(byte[] audio, string mimeType, CancellationToken ct)
     {
+        var keys = llm.CurrentValue.Gemini.AllApiKeys();
+        for (var attempt = 0; ; attempt++)
+        {
+            var key = llm.CurrentValue.Gemini.ResolveApiKey() ?? throw new NoLlmConfiguredException();
+            try
+            {
+                return await TranscribeWithKeyAsync(audio, mimeType, key, ct);
+            }
+            catch (LlmProviderException ex) when (ex.StatusCode is 402 or 429 && attempt + 1 < keys.Count
+                                                   && llm.CurrentValue.Gemini.ResolveApiKey() != key)
+            {
+                // esa clave se agotó y ya se apartó: se prueba con la siguiente
+            }
+        }
+    }
+
+    private async Task<string?> TranscribeWithKeyAsync(byte[] audio, string mimeType, string key, CancellationToken ct)
+    {
         var opt = llm.CurrentValue.Gemini;
-        var key = opt.ResolveApiKey() ?? throw new NoLlmConfiguredException();
         var model = string.IsNullOrWhiteSpace(voice.CurrentValue.SttModel) ? opt.Model : voice.CurrentValue.SttModel;
 
         var body = new JsonObject
@@ -101,6 +118,7 @@ public sealed class GeminiSpeech(HttpClient http, IOptionsMonitor<LlmOptions> ll
         if (!res.IsSuccessStatusCode)
         {
             log.LogWarning("Transcripción falló: {Status} {Body}", (int)res.StatusCode, Trim(json));
+            GeminiKeyRing.Report(key, (int)res.StatusCode, json);
             throw new LlmProviderException("gemini", "No se pudo transcribir el audio", (int)res.StatusCode);
         }
 
@@ -120,14 +138,20 @@ public sealed class GeminiSpeech(HttpClient http, IOptionsMonitor<LlmOptions> ll
         if (!v.TtsEnabled || string.IsNullOrWhiteSpace(text) || text.Length > v.MaxTtsChars) return null;
         if (usage is { IsOverDailyLimit: true }) return null; // modo ahorro: sin voz de Gemini
         var opt = llm.CurrentValue.Gemini;
-        var key = opt.ResolveApiKey();
-        if (key is null) return null;
-
         try
         {
-            // Primero con estilo; si el servidor no acepta la anotación, se reintenta sin ella
-            return await RequestAsync(text, v, key, opt.BaseUrl, withStyle: true, ct)
-                   ?? await RequestAsync(text, v, key, opt.BaseUrl, withStyle: false, ct);
+            // Con varias claves: si una se agota, se prueba con la siguiente en el acto
+            for (var attempt = 0; attempt < Math.Max(1, opt.AllApiKeys().Count); attempt++)
+            {
+                var key = opt.ResolveApiKey();
+                if (key is null) return null;
+                // Primero con estilo; si el servidor no acepta la anotación, se reintenta sin ella
+                var wav = await RequestAsync(text, v, key, opt.BaseUrl, withStyle: true, ct)
+                          ?? await RequestAsync(text, v, key, opt.BaseUrl, withStyle: false, ct);
+                if (wav is not null) return wav;
+                if (opt.ResolveApiKey() == key) break; // no era cuota de esa clave: otra no lo arregla
+            }
+            return null;
         }
         catch (Exception ex) when (ex is HttpRequestException or JsonException or TaskCanceledException && !ct.IsCancellationRequested)
         {
@@ -171,6 +195,7 @@ public sealed class GeminiSpeech(HttpClient http, IOptionsMonitor<LlmOptions> ll
         if (!res.IsSuccessStatusCode)
         {
             log.LogWarning("TTS ({Style}) respondió {Status}: {Body}", withStyle ? "con estilo" : "sin estilo", (int)res.StatusCode, Trim(json));
+            GeminiKeyRing.Report(key, (int)res.StatusCode, json); // clave agotada: la próxima vez se usa otra
             return null;
         }
 

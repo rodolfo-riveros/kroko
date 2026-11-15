@@ -72,6 +72,12 @@ public sealed class KrokoOptions
     /// <summary>Minutos dormido antes de desaparecer de la pantalla (0 = nunca). Sigue escuchando «Oye Kroko».</summary>
     public double HideAfterSleepMinutes { get; set; } = 5;
 
+    /// <summary>Arranca escondido (dormido): aparece con «Oye Kroko», el atajo, la bandeja o un aviso (decidido por Pol, 14/11/2026).</summary>
+    public bool StartHidden { get; set; } = true;
+
+    /// <summary>Segundos sin actividad tras los que se esconde otra vez (0 = no; entonces vale HideAfterSleepMinutes).</summary>
+    public double HideAfterIdleSeconds { get; set; } = 60;
+
     public int NightStartHour { get; set; } = 23;
     public int NightEndHour { get; set; } = 6;
 
@@ -123,7 +129,7 @@ public sealed class VoiceSettings
     /// <summary>Micrófono a usar (-1 = el predeterminado).</summary>
     public int MicrophoneDevice { get; set; } = -1;
 
-    /// <summary>Responder con voz. Apagado = solo por chat (también se cambia diciéndole «cállate» / «háblame»).</summary>
+    /// <summary>Responder con voz. Apagado = solo por chat (también se cambia diciéndole «no me hables con voz» / «háblame»). «Cállate» es otra cosa: lo calla y lo esconde.</summary>
     public bool RepliesWithVoice { get; set; } = true;
 
     /// <summary>Hablar también las respuestas a lo que escribes (con la voz de Gemini).</summary>
@@ -182,7 +188,14 @@ public sealed class WakeWordSettings
 
     public IReadOnlyList<string> EffectivePhrases => Phrases is { Count: > 0 } ? Phrases : DefaultPhrases;
 
-    private static readonly string[] DefaultPhrases = ["oye cro co", "hola cro co"];
+    // Solo «Oye Kroko» (decidido por Pol, 14/11/2026: «Hola Kroko» lo despertaba mientras conversaba)
+    private static readonly string[] DefaultPhrases = ["oye cro co"];
+
+    /// <summary>La frase tiene que ABRIR lo que dices (no vale en medio de una conversación).</summary>
+    public bool RequireAtStart { get; set; } = true;
+
+    /// <summary>Seguridad mínima de Vosk (0–1) en cada palabra de la frase. Más alto = más estricto.</summary>
+    public double MinConfidence { get; set; } = 0.8;
 
     /// <summary>Palabras que compiten con la frase para no confundirla.</summary>
     public List<string>? Decoys { get; set; }
@@ -194,6 +207,8 @@ public sealed class WakeWordSettings
         "oye", "hola", "hoy", "voy", "como", "loco", "poco", "coco", "foco", "coloca", "colocó", "croquetas", "croqueta",
         "cocodrilo", "cro", "co", "creo", "comer", "calor", "a", "qué", "que", "tal", "cómo", "estás", "te", "va", "abre",
         "es", "hora", "el", "la", "eso", "ahí", "y", "por", "favor",
+        // para oír «oye kroko, cállate» y que se calle sin pasar por la IA
+        "cállate", "calla", "silencio", "descansa", "basta", "ya",
     ];
 }
 

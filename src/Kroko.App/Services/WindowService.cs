@@ -15,6 +15,32 @@ public sealed class WindowService(IServiceProvider services)
     private SettingsWindow? _settings;
     private OnboardingWindow? _onboarding;
     private MyDayWindow? _myDay;
+    private KrokoPanelWindow? _panel;
+
+    /// <summary>
+    /// El panel «Kroko» (14/11/2026): inicio, tareas, hábitos, enfoque, mi PC y ajustes simples. section = una de
+    /// KrokoPanelViewModel.Sections (null = inicio).
+    /// </summary>
+    public void ShowPanel(string? section = null)
+    {
+        if (_panel is not { IsLoaded: true })
+        {
+            _panel = services.GetRequiredService<KrokoPanelWindow>();
+            _panel.Closed += (_, _) =>
+            {
+                _panel?.ViewModel.Dispose();
+                _panel = null;
+            };
+            _panel.ViewModel.OpenSection(section);
+            _panel.Show();
+        }
+        else
+        {
+            _panel.ViewModel.OpenSection(section);
+            if (_panel.WindowState == WindowState.Minimized) _panel.WindowState = WindowState.Normal;
+        }
+        _panel.Activate();
+    }
 
     public void ShowMyDay()
     {

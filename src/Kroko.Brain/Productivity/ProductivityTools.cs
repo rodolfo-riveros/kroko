@@ -138,43 +138,101 @@ public sealed class TareaBorrarTool(ProductivityStore store, TimeProvider time) 
 public sealed class HabitoCrearTool(ProductivityStore store, TimeProvider time) : ProductivityTool(store, time)
 {
     public override ToolDefinition Definition { get; } = BrainToolResult.Define("habito_crear",
-        "Empieza a seguir un hábito diario (leer, hacer ejercicio, tomar agua…).",
-        """{"type":"object","properties":{"nombre":{"type":"string"}},"required":["nombre"]}""");
+        "Empieza a seguir un hábito diario con su meta (\"tomar 8 vasos de agua\", \"leer 20 minutos\", \"ir al gimnasio\"). " +
+        "Si pide que se lo recuerdes a ciertas horas, ponlas en avisos (se crean recordatorios diarios).",
+        """
+        {"type":"object","properties":{
+          "nombre":{"type":"string","description":"Nombre corto: Beber agua, Leer, Ejercicio…"},
+          "meta":{"type":"integer","description":"Cuántas veces o unidades al día (1 si es hacerlo una vez)"},
+          "unidad":{"type":"string","description":"vasos, páginas, minutos… (opcional)"},
+          "estilo":{"type":"string","enum":["agua","lectura","ejercicio","caminar","meditacion","sueno","estudio","comida","medicina","orden","pantalla","diario","musica","dinero","estrella"],"description":"La escena con la que lo celebras; si no lo sabes, omítelo"},
+          "avisos":{"type":"string","description":"Horas para recordárselo cada día, p. ej. 10:00, 16:00"}
+        },"required":["nombre"]}
+        """);
 
     public override ToolExecution Execute(JsonElement args)
     {
         var name = ToolCatalog.Str(args, "nombre").Trim();
-        return name.Length == 0 ? ToolConfirmation.Fail("Falta el nombre del hábito.") : BrainToolResult.Ok(new { id = Store.AddHabit(name), habito = name });
+        if (name.Length == 0) return ToolConfirmation.Fail("Falta el nombre del hábito.");
+        var goal = args.TryGetProperty("meta", out var m) && m.TryGetInt32(out var g) ? g : 1;
+        var avisos = ToolCatalog.Str(args, "avisos").Trim();
+        var times = avisos.Split([',', ';', ' ', 'y'], StringSplitOptions.RemoveEmptyEntries)
+            .Select(t => TimeOnly.TryParse(t.Trim(), CultureInfo.InvariantCulture, out var time) ? time : (TimeOnly?)null)
+            .Where(t => t is not null).Select(t => t!.Value).Distinct().ToList();
+
+        var id = Store.AddHabit(name, goal, ToolCatalog.Str(args, "unidad"), ToolCatalog.Str(args, "estilo"),
+            times.Count > 0 ? string.Join(",", times.Select(t => t.ToString("HH:mm"))) : null);
+
+        // Avisos diarios del hábito (se entregan como cualquier recordatorio: en la PC y por Telegram si está vinculado)
+        foreach (var t in times)
+        {
+            var due = new DateTimeOffset(Today.ToDateTime(t), Zone.GetUtcOffset(Today.ToDateTime(t)));
+            if (due <= Now) due = due.AddDays(1);
+            Store.AddReminder($"Hábito: {name}", due, "diario");
+        }
+        var habit = Store.Habits().First(x => x.Id == id);
+        return BrainToolResult.Ok(new
+        {
+            id,
+            habito = habit.Name,
+            meta = habit.Goal,
+            unidad = habit.Unit,
+            estilo = habit.Style,
+            avisos = times.Select(t => t.ToString("HH:mm")),
+        });
     }
 }
 
 public sealed class HabitoMarcarTool(ProductivityStore store, TimeProvider time) : ProductivityTool(store, time)
 {
     public override ToolDefinition Definition { get; } = BrainToolResult.Define("habito_marcar",
-        "Marca un hábito como hecho hoy (o en otra fecha yyyy-MM-dd). hecho=false lo desmarca.",
-        """{"type":"object","properties":{"nombre":{"type":"string"},"hecho":{"type":"boolean"},"fecha":{"type":"string"}},"required":["nombre"]}""");
+        "Registra un hábito hoy (o en otra fecha yyyy-MM-dd). Con meta de varias veces suma de a una (\"tomé un vaso de " +
+        "agua\" = +1; cantidad para sumar más). hecho=true lo da por cumplido del todo; hecho=false lo deja en cero. " +
+        "Si devuelve metaCumplida=true, celebra con success o love.",
+        """{"type":"object","properties":{"nombre":{"type":"string"},"cantidad":{"type":"integer"},"hecho":{"type":"boolean"},"fecha":{"type":"string"}},"required":["nombre"]}""");
 
     public override ToolExecution Execute(JsonElement args)
     {
         var name = ToolCatalog.Str(args, "nombre");
         if (Store.FindHabit(name) is not { } id) return ToolConfirmation.Fail($"No sigo ningún hábito llamado \"{name}\". ¿Lo creo?");
-        var done = !args.TryGetProperty("hecho", out var h) || h.ValueKind != JsonValueKind.False;
-        Store.MarkHabit(id, ParseDate(ToolCatalog.Str(args, "fecha")) ?? Today, done);
+        var day = ParseDate(ToolCatalog.Str(args, "fecha")) ?? Today;
+        var before = Store.Habits().First(x => x.Id == id);
+
+        if (args.TryGetProperty("hecho", out var h) && h.ValueKind is JsonValueKind.True or JsonValueKind.False)
+            Store.MarkHabit(id, day, h.ValueKind == JsonValueKind.True);
+        else if (before.Goal <= 1)
+            Store.MarkHabit(id, day, true);
+        else
+            Store.AddToHabit(id, day, args.TryGetProperty("cantidad", out var c) && c.TryGetInt32(out var n) ? n : 1);
+
         var habit = Store.Habits().First(x => x.Id == id);
-        return BrainToolResult.Ok(new { habito = habit.Name, hechoHoy = habit.DoneToday, racha = habit.Streak });
+        return BrainToolResult.Ok(new
+        {
+            habito = habit.Name,
+            llevas = habit.TodayCount,
+            meta = habit.Goal,
+            unidad = habit.Unit,
+            hechoHoy = habit.DoneToday,
+            metaCumplida = habit.DoneToday && !before.DoneToday, // recién llegó: ¡a celebrar!
+            racha = habit.Streak,
+        });
     }
 }
 
 public sealed class HabitosListarTool(ProductivityStore store, TimeProvider time) : ProductivityTool(store, time)
 {
     public override ToolDefinition Definition { get; } = BrainToolResult.Define("habitos_listar",
-        "Muestra los hábitos de tu dueño: si los hizo hoy, su racha y cuántos de los últimos 7 días.",
+        "Muestra los hábitos de tu dueño: cuánto lleva hoy de su meta, si la cumplió, su racha y cuántos de los últimos 7 días.",
         """{"type":"object","properties":{}}""", ToolRisk.Read);
 
     public override ToolExecution Execute(JsonElement args) =>
         BrainToolResult.Ok(new
         {
-            habitos = Store.Habits().Select(h => new { h.Id, habito = h.Name, hechoHoy = h.DoneToday, racha = h.Streak, ultimos7 = h.Last7Days }),
+            habitos = Store.Habits().Select(h => new
+            {
+                h.Id, habito = h.Name, llevas = h.TodayCount, meta = h.Goal, unidad = h.Unit, hechoHoy = h.DoneToday,
+                racha = h.Streak, ultimos7 = h.Last7Days,
+            }),
         });
 }
 

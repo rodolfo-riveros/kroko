@@ -56,6 +56,14 @@ public partial class BubbleViewModel(CompanionBehavior behavior, PanelViewModel 
     [RelayCommand]
     private void Write() => OnDoubleClick();
 
+    /// <summary>El panel «Kroko» en una sección (inicio, habitos, tareas, enfoque, mipc, ajustes).</summary>
+    [RelayCommand]
+    private void OpenPanel(string? section) => windows.ShowPanel(section);
+
+    /// <summary>Lo mismo que decirle «descansa»: se calla y se esconde.</summary>
+    [RelayCommand]
+    private void Rest() => voice.Rest();
+
     [RelayCommand]
     private void OpenGallery() => windows.ShowGallery();
 

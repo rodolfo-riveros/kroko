@@ -6,7 +6,19 @@ public sealed record Reminder(long Id, string Text, DateTimeOffset Due, string R
 
 public sealed record TaskItem(long Id, string Text, DateOnly? DueDate, bool Done, DateTimeOffset Created);
 
-public sealed record Habit(long Id, string Name, bool DoneToday, int Streak, int Last7Days);
+/// <summary>
+/// Un hábito con meta diaria (14/11/2026): "Beber agua" 8 vasos, "Leer" 1 vez… DoneToday = llegó a la meta hoy; la racha
+/// cuenta días seguidos con la meta cumplida. Week = los últimos 7 días (de hace 6 días a hoy).
+/// </summary>
+public sealed record Habit(long Id, string Name, bool DoneToday, int Streak, int Last7Days)
+{
+    public int Goal { get; init; } = 1;
+    public string Unit { get; init; } = "";
+    public string Style { get; init; } = HabitStyles.Default;
+    public int TodayCount { get; init; }
+    public bool[] Week { get; init; } = new bool[7];
+    public string RemindAt { get; init; } = "";
+}
 
 /// <summary>Recordatorios, tareas y hábitos de Pol (SQLite, sección 9 · Productividad).</summary>
 public sealed class ProductivityStore(KrokoDatabase db, TimeProvider time)
@@ -140,16 +152,33 @@ public sealed class ProductivityStore(KrokoDatabase db, TimeProvider time)
 
     // ---------------------------------------------------------------- hábitos
 
-    public long AddHabit(string name)
+    /// <summary>
+    /// Crea el hábito (o actualiza su meta, unidad, estilo y avisos si ya existía). El estilo, si no se dice, se deduce
+    /// del nombre ("Beber agua" → agua).
+    /// </summary>
+    public long AddHabit(string name, int goal = 1, string? unit = null, string? style = null, string? remindAt = null)
     {
+        name = name.Trim();
         using var c = db.Open();
         using var cmd = c.CreateCommand();
         cmd.CommandText = """
-            INSERT INTO habits(name, created) VALUES($n, $c) ON CONFLICT(name) DO NOTHING;
+            INSERT INTO habits(name, created, goal, unit, style, remind_at) VALUES($n, $c, $g, $u, $s, $r)
+            ON CONFLICT(name) DO UPDATE SET
+                goal = CASE WHEN $explicitGoal = 1 THEN excluded.goal ELSE habits.goal END,
+                unit = CASE WHEN $u <> '' THEN excluded.unit ELSE habits.unit END,
+                style = CASE WHEN $explicitStyle = 1 THEN excluded.style ELSE habits.style END,
+                remind_at = CASE WHEN $explicitRemind = 1 THEN excluded.remind_at ELSE habits.remind_at END;
             SELECT id FROM habits WHERE name = $n;
             """;
-        cmd.Parameters.AddWithValue("$n", name.Trim());
+        cmd.Parameters.AddWithValue("$n", name);
         cmd.Parameters.AddWithValue("$c", KrokoDatabase.Now());
+        cmd.Parameters.AddWithValue("$g", Math.Clamp(goal, 1, 99));
+        cmd.Parameters.AddWithValue("$u", (unit ?? "").Trim());
+        cmd.Parameters.AddWithValue("$s", HabitStyles.Normalize(style) ?? HabitStyles.Guess(name));
+        cmd.Parameters.AddWithValue("$r", (remindAt ?? "").Trim());
+        cmd.Parameters.AddWithValue("$explicitGoal", goal > 1 ? 1 : 0);
+        cmd.Parameters.AddWithValue("$explicitStyle", HabitStyles.Normalize(style) is null ? 0 : 1);
+        cmd.Parameters.AddWithValue("$explicitRemind", remindAt is null ? 0 : 1);
         return (long)cmd.ExecuteScalar()!;
     }
 
@@ -163,16 +192,44 @@ public sealed class ProductivityStore(KrokoDatabase db, TimeProvider time)
         return cmd.ExecuteScalar() as long?;
     }
 
+    /// <summary>Marca el día como cumplido (llega a la meta) o lo borra.</summary>
     public void MarkHabit(long id, DateOnly day, bool done)
     {
         using var c = db.Open();
         using var cmd = c.CreateCommand();
         cmd.CommandText = done
-            ? "INSERT OR IGNORE INTO habit_log(habit_id, day) VALUES($id, $d)"
+            ? """
+              INSERT INTO habit_log(habit_id, day, count) VALUES($id, $d, (SELECT goal FROM habits WHERE id = $id))
+              ON CONFLICT(habit_id, day) DO UPDATE SET count = MAX(habit_log.count, (SELECT goal FROM habits WHERE id = $id))
+              """
             : "DELETE FROM habit_log WHERE habit_id = $id AND day = $d";
         cmd.Parameters.AddWithValue("$id", id);
         cmd.Parameters.AddWithValue("$d", day.ToString("yyyy-MM-dd"));
         cmd.ExecuteNonQuery();
+    }
+
+    /// <summary>Suma (o resta) a lo hecho ese día: "tomé un vaso de agua" = +1. Devuelve cuánto lleva.</summary>
+    public int AddToHabit(long id, DateOnly day, int delta)
+    {
+        using var c = db.Open();
+        using var tx = c.BeginTransaction();
+        using var cmd = c.CreateCommand();
+        cmd.Transaction = tx;
+        cmd.CommandText = "SELECT count FROM habit_log WHERE habit_id = $id AND day = $d";
+        cmd.Parameters.AddWithValue("$id", id);
+        cmd.Parameters.AddWithValue("$d", day.ToString("yyyy-MM-dd"));
+        var current = cmd.ExecuteScalar() is long n ? (int)n : 0;
+        var next = Math.Clamp(current + delta, 0, 99);
+        cmd.CommandText = next == 0
+            ? "DELETE FROM habit_log WHERE habit_id = $id AND day = $d"
+            : """
+              INSERT INTO habit_log(habit_id, day, count) VALUES($id, $d, $n)
+              ON CONFLICT(habit_id, day) DO UPDATE SET count = $n
+              """;
+        cmd.Parameters.AddWithValue("$n", next);
+        cmd.ExecuteNonQuery();
+        tx.Commit();
+        return next;
     }
 
     public bool DeleteHabit(long id) => Exec("DELETE FROM habits WHERE id = $id", id);
@@ -180,37 +237,49 @@ public sealed class ProductivityStore(KrokoDatabase db, TimeProvider time)
     public IReadOnlyList<Habit> Habits()
     {
         using var c = db.Open();
-        var habits = new List<(long Id, string Name)>();
+        var habits = new List<(long Id, string Name, int Goal, string Unit, string Style, string RemindAt)>();
         using (var cmd = c.CreateCommand())
         {
-            cmd.CommandText = "SELECT id, name FROM habits ORDER BY name";
+            cmd.CommandText = "SELECT id, name, goal, unit, style, remind_at FROM habits ORDER BY created, name";
             using var r = cmd.ExecuteReader();
-            while (r.Read()) habits.Add((r.GetInt64(0), r.GetString(1)));
+            while (r.Read())
+                habits.Add((r.GetInt64(0), r.GetString(1), Math.Max(1, r.GetInt32(2)), r.GetString(3),
+                    r.GetString(4).Length > 0 ? r.GetString(4) : HabitStyles.Guess(r.GetString(1)), r.GetString(5)));
         }
 
         var today = Today;
         var result = new List<Habit>();
-        foreach (var (id, name) in habits)
+        foreach (var h in habits)
         {
-            var days = new HashSet<DateOnly>();
+            var counts = new Dictionary<DateOnly, int>();
             using (var cmd = c.CreateCommand())
             {
-                cmd.CommandText = "SELECT day FROM habit_log WHERE habit_id = $id AND day >= $since";
-                cmd.Parameters.AddWithValue("$id", id);
+                cmd.CommandText = "SELECT day, count FROM habit_log WHERE habit_id = $id AND day >= $since";
+                cmd.Parameters.AddWithValue("$id", h.Id);
                 cmd.Parameters.AddWithValue("$since", today.AddDays(-400).ToString("yyyy-MM-dd"));
                 using var r = cmd.ExecuteReader();
-                while (r.Read()) days.Add(DateOnly.Parse(r.GetString(0)));
+                while (r.Read()) counts[DateOnly.Parse(r.GetString(0))] = r.GetInt32(1);
             }
-            // Racha: días seguidos hasta hoy (o hasta ayer si hoy aún no lo hizo)
+            bool Done(DateOnly d) => counts.TryGetValue(d, out var n) && n >= h.Goal;
+
+            // Racha: días seguidos con la meta cumplida hasta hoy (o hasta ayer si hoy aún no llega)
             var streak = 0;
-            var d = days.Contains(today) ? today : today.AddDays(-1);
-            while (days.Contains(d))
+            var day = Done(today) ? today : today.AddDays(-1);
+            while (Done(day))
             {
                 streak++;
-                d = d.AddDays(-1);
+                day = day.AddDays(-1);
             }
-            var last7 = Enumerable.Range(0, 7).Count(i => days.Contains(today.AddDays(-i)));
-            result.Add(new Habit(id, name, days.Contains(today), streak, last7));
+            var week = Enumerable.Range(0, 7).Select(i => Done(today.AddDays(i - 6))).ToArray();
+            result.Add(new Habit(h.Id, h.Name, Done(today), streak, week.Count(x => x))
+            {
+                Goal = h.Goal,
+                Unit = h.Unit,
+                Style = h.Style,
+                TodayCount = counts.GetValueOrDefault(today),
+                Week = week,
+                RemindAt = h.RemindAt,
+            });
         }
         return result;
     }

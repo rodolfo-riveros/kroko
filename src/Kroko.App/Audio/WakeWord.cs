@@ -133,20 +133,64 @@ public sealed class WakeWordDetector : IDisposable
     private readonly VoskRecognizer _recognizer;
     private readonly string[] _phrases;
     private readonly MemoryStream _utterance = new();
+    private readonly bool _requireAtStart;
+    private readonly double _minConfidence;
 
-    public WakeWordDetector(Model model, IEnumerable<string> phrases, IEnumerable<string> decoys)
+    // Últimos segundos de audio con su posición en el flujo (Vosk da los tiempos de cada palabra desde que se creó el
+    // reconocedor, también después de Reset): sirve para saber si hablabas justo antes de «oye kroko».
+    private const int RecentSamples = 16000 * 5;
+    private const double PauseBeforeSeconds = 0.6;
+    private const int SpeechRms = 1200; // de 32768: voz clara; el ruido de una habitación suele quedar por debajo de 400
+    private readonly short[] _recent = new short[RecentSamples];
+    private long _samples;
+
+    /// <param name="requireAtStart">
+    /// La frase tiene que abrir lo que dices: ni en medio de la frase ni justo después de otras palabras (hace falta una
+    /// pausa antes). Así no despierta cuando conversas con alguien (decidido por Pol, 14/11/2026).
+    /// </param>
+    /// <param name="minConfidence">Seguridad mínima de Vosk en cada palabra de la frase (0 = no se mira).</param>
+    public WakeWordDetector(Model model, IEnumerable<string> phrases, IEnumerable<string> decoys,
+        bool requireAtStart = true, double minConfidence = 0.8)
     {
         _phrases = phrases.Select(Normalize).Where(p => p.Length > 0).Distinct().ToArray();
+        _requireAtStart = requireAtStart;
+        _minConfidence = Math.Clamp(minConfidence, 0, 1);
         var grammar = JsonSerializer.Serialize(_phrases.Concat(decoys.Select(Normalize)).Append("[unk]").Distinct());
         _recognizer = new VoskRecognizer(model, 16000f, grammar);
+        _recognizer.SetWords(true); // con la seguridad y el tiempo de cada palabra
     }
 
     public WakeDetection? Feed(byte[] pcm, int count)
     {
         if (_utterance.Length + count > MaxUtteranceBytes) _utterance.SetLength(0);
         _utterance.Write(pcm, 0, count);
+        for (var i = 0; i + 1 < count; i += 2)
+            _recent[(int)(_samples++ % RecentSamples)] = BitConverter.ToInt16(pcm, i);
         if (!_recognizer.AcceptWaveform(pcm, count)) return null;
-        return Decide(Text(_recognizer.Result()));
+        var json = _recognizer.Result();
+        return Decide(Text(json), Words(json));
+    }
+
+    /// <summary>¿Hubo voz en los PauseBeforeSeconds anteriores a ese momento (en segundos del flujo)?</summary>
+    internal bool SpokeRightBefore(double startSeconds)
+    {
+        var end = (long)(startSeconds * 16000) - 800; // 50 ms de margen antes de la palabra
+        var begin = end - (long)(PauseBeforeSeconds * 16000);
+        if (end <= 0) return false;
+        const int frame = 320; // 20 ms
+        var voiced = 0;
+        for (var f = Math.Max(0, begin); f + frame <= end; f += frame)
+        {
+            if (_samples - f > RecentSamples) continue; // ya no está en el búfer
+            double sum = 0;
+            for (var s = f; s < f + frame; s++)
+            {
+                double v = _recent[(int)(s % RecentSamples)];
+                sum += v * v;
+            }
+            if (Math.Sqrt(sum / frame) >= SpeechRms) voiced++;
+        }
+        return voiced * 20 >= 150; // más de 150 ms de voz justo antes: venías hablando
     }
 
     /// <summary>Vacía el estado (tras grabar una orden, para no arrastrar audio viejo).</summary>
@@ -156,22 +200,51 @@ public sealed class WakeWordDetector : IDisposable
         _utterance.SetLength(0);
     }
 
-    private WakeDetection? Decide(string heard)
+    internal WakeDetection? Decide(string heard, IReadOnlyList<(string Word, double Conf, double Start)> words)
     {
         var audio = _utterance.ToArray();
         _utterance.SetLength(0);
         heard = Normalize(heard);
         if (heard.Length == 0) return null;
 
-        // La frase puede venir al principio o en medio ("ya, oye kroko, apaga…")
         foreach (var phrase in _phrases)
         {
             var at = (" " + heard + " ").IndexOf(" " + phrase + " ", StringComparison.Ordinal);
             if (at < 0) continue;
+            // Estricto (14/11/2026): la frase tiene que abrir lo que dijiste, no aparecer en medio de una charla
+            if (_requireAtStart && at != 0) continue;
+            var first = FindPhrase(phrase, words);
+            if (_minConfidence > 0 && words.Count > 0 && (first < 0 || !Confident(phrase, words, first))) continue;
+            // …ni justo después de otras palabras: Vosk corta "le dije a mi amigo | oye kroko" en dos frases
+            if (_requireAtStart && first >= 0 && SpokeRightBefore(words[first].Start)) continue;
             var after = heard[Math.Min(heard.Length, at + phrase.Length)..].Trim();
             return new WakeDetection(heard, after.Length > 0, audio);
         }
         return null;
+    }
+
+    private static int FindPhrase(string phrase, IReadOnlyList<(string Word, double Conf, double Start)> words)
+    {
+        var parts = phrase.Split(' ');
+        for (var i = 0; i + parts.Length <= words.Count; i++)
+            if (parts.Select((p, j) => words[i + j].Word == p).All(x => x)) return i;
+        return -1;
+    }
+
+    /// <summary>Cada palabra de la frase tiene que venir con seguridad suficiente.</summary>
+    private bool Confident(string phrase, IReadOnlyList<(string Word, double Conf, double Start)> words, int first) =>
+        phrase.Split(' ').Select((_, j) => words[first + j].Conf).All(c => c >= _minConfidence);
+
+    private static List<(string Word, double Conf, double Start)> Words(string json)
+    {
+        var list = new List<(string, double, double)>();
+        using var doc = JsonDocument.Parse(json);
+        if (doc.RootElement.TryGetProperty("result", out var result) && result.ValueKind == JsonValueKind.Array)
+            foreach (var w in result.EnumerateArray())
+                list.Add((Normalize(w.TryGetProperty("word", out var word) ? word.GetString() ?? "" : ""),
+                          w.TryGetProperty("conf", out var conf) && conf.TryGetDouble(out var c) ? c : 1.0,
+                          w.TryGetProperty("start", out var start) && start.TryGetDouble(out var s) ? s : 0));
+        return list;
     }
 
     internal static string Normalize(string s) => string.Join(' ',
@@ -400,7 +473,7 @@ public sealed class WakeWordService : IDisposable
                 var model = _models.Load();
                 if (model is null) continue;
                 var wake = _options.Voice.WakeWord;
-                detector ??= new WakeWordDetector(model, wake.EffectivePhrases, wake.EffectiveDecoys);
+                detector ??= new WakeWordDetector(model, wake.EffectivePhrases, wake.EffectiveDecoys, wake.RequireAtStart, wake.MinConfidence);
 
                 if (generation != current)
                 {

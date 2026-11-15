@@ -77,6 +77,53 @@ public sealed class BrainApiClient(IOptions<KrokoOptions> options) : IDisposable
             : $"Conectado · IA: {string.Join(", ", providers)} ({sources})";
     }
 
+    // ------------------------------------------------------------ panel «Kroko»: tu día, hábitos y tareas
+
+    public async Task<TodayDto?> GetTodayAsync(CancellationToken ct = default) =>
+        await _http.GetFromJsonAsync<TodayDto>("api/hoy", Json, ct);
+
+    public async Task<HabitItemDto?> AddHabitAsync(string name, int goal, string? unit, string? style)
+    {
+        using var res = await _http.PostAsJsonAsync("api/habitos", new { nombre = name, meta = goal, unidad = unit, estilo = style }, Json);
+        res.EnsureSuccessStatusCode();
+        return await res.Content.ReadFromJsonAsync<HabitItemDto>(Json);
+    }
+
+    /// <summary>Suma (o resta) a lo hecho hoy. Devuelve el hábito y si recién se cumplió la meta (para celebrar).</summary>
+    public async Task<(HabitItemDto? Habit, bool GoalReached)> AddToHabitAsync(long id, int amount = 1)
+    {
+        using var res = await _http.PostAsJsonAsync($"api/habitos/{id}/sumar", new { cantidad = amount }, Json);
+        res.EnsureSuccessStatusCode();
+        var json = await res.Content.ReadFromJsonAsync<JsonElement>(Json);
+        return (json.GetProperty("habito").Deserialize<HabitItemDto>(Json), json.GetProperty("metaCumplida").GetBoolean());
+    }
+
+    public async Task ResetHabitAsync(long id) => (await _http.PostAsync($"api/habitos/{id}/reiniciar", null)).Dispose();
+
+    public async Task DeleteHabitAsync(long id) => (await _http.DeleteAsync($"api/habitos/{id}")).Dispose();
+
+    public async Task AddTaskAsync(string text, DateOnly? due)
+    {
+        using var res = await _http.PostAsJsonAsync("api/tareas", new { texto = text, fecha = due?.ToString("yyyy-MM-dd") }, Json);
+        res.EnsureSuccessStatusCode();
+    }
+
+    public async Task CompleteTaskAsync(long id, bool done) =>
+        (await _http.PostAsJsonAsync($"api/tareas/{id}/completar", new { hecha = done }, Json)).Dispose();
+
+    public async Task DeleteTaskAsync(long id) => (await _http.DeleteAsync($"api/tareas/{id}")).Dispose();
+
+    public async Task DeleteReminderAsync(long id) => (await _http.DeleteAsync($"api/recordatorios/{id}")).Dispose();
+
+    public async Task<NoticesDto?> GetNoticesAsync(CancellationToken ct = default) =>
+        await _http.GetFromJsonAsync<NoticesDto>("api/avisos", Json, ct);
+
+    public async Task SetNoticesAsync(NoticesDto notices)
+    {
+        using var res = await _http.PutAsJsonAsync("api/avisos", notices, Json);
+        res.EnsureSuccessStatusCode();
+    }
+
     /// <summary>Gasto de IA de hoy y del mes y el tope diario (/api/uso).</summary>
     public async Task<UsageDto?> GetUsageAsync(CancellationToken ct = default) =>
         await _http.GetFromJsonAsync<UsageDto>("api/uso", Json, ct);
@@ -237,6 +284,8 @@ public sealed record SetupStatus
 {
     public bool PerfilCompleto { get; init; }
     public bool Gemini { get; init; }
+    public int GeminiClaves { get; init; }
+    public int GeminiDisponibles { get; init; }
     public bool Deepseek { get; init; }
     public bool Tavily { get; init; }
     public Dictionary<string, string> Fuentes { get; init; } = [];
@@ -279,3 +328,16 @@ public sealed record MyDayDto(string Fecha, string Saludo, MyDayWeatherDto? Clim
 public sealed record UsageTotalsDto(long Total, long Entrada, long Salida, long EnCache, int Llamadas, Dictionary<string, long> PorTipo);
 
 public sealed record UsageDto(UsageTotalsDto Hoy, UsageTotalsDto Mes, long LimiteDiario, bool ModoAhorro);
+
+public sealed record TodaySummaryDto(int HabitosHechos, int HabitosTotal, int TareasPendientes, string? ProximoAviso, string? ProximoAvisoTexto);
+
+public sealed record HabitItemDto(long Id, string Nombre, int Llevas, int Meta, string Unidad, string Estilo, bool Hecho, int Racha, bool[] Semana, string Avisos);
+
+public sealed record TaskItemDto(long Id, string Texto, string? Fecha, bool Hecha);
+
+public sealed record ReminderItemDto(long Id, string Texto, string Cuando, string Repetir);
+
+public sealed record TodayDto(string Fecha, TodaySummaryDto Resumen, List<HabitItemDto> Habitos, List<TaskItemDto> Tareas, List<ReminderItemDto> Recordatorios);
+
+/// <summary>Avisos automáticos que Kroko da sin que se los pidas (14/11/2026: por defecto, reuniones y correos importantes).</summary>
+public sealed record NoticesDto(bool Reuniones, bool Correos, bool TareasVencidas, bool ResumenDelDia);

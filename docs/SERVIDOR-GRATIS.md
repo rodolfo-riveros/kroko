@@ -117,7 +117,8 @@ Prueba en tu navegador: `https://kroko-rodolfo.duckdns.org/health` → debe deci
    - Token: el mismo `Agent__Token`
    - Apaga "Arrancar el cerebro en esta PC" → **Guardar y reiniciar Kroko**.
 2. Clic derecho → **Configurar Kroko**: tu nombre, la **clave de Gemini** (https://aistudio.google.com/apikey),
-   Gmail, Telegram y tus apps. Todo se guarda **cifrado en el servidor**, nunca en GitHub.
+   Gmail, Telegram y tus apps. La clave de Gemini se guarda **solo en tu PC** (cifrada); Gmail, Telegram y tus apps,
+   **cifrados en el servidor**. Nada va a GitHub.
 
 ## 8. Telegram (opcional)
 

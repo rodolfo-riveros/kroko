@@ -35,6 +35,9 @@ public sealed class CompanionBehavior : IDisposable
     /// <summary>Lleva HideAfterSleepMinutes dormido: la burbuja puede desaparecer.</summary>
     public event Action? LongSleep;
 
+    /// <summary>¿Algo mantiene despierto a Kroko? (panel abierto, conversación, tarjeta…). Lo pone el panel.</summary>
+    public Func<bool>? KeepAwake { get; set; }
+
     /// <summary>Se despertó (por voz, atajo, clic o un aviso): la burbuja vuelve.</summary>
     public event Action? Woke;
     private DateTime _nextDistraction;
@@ -161,6 +164,28 @@ public sealed class CompanionBehavior : IDisposable
 
     public void WakeUp() => WakeIfAsleep();
 
+    /// <summary>Hubo actividad (escribir en el panel, moverse por él…): cuenta el minuto desde ahora.</summary>
+    public void NoteActivity() => Touch();
+
+    /// <summary>«Cállate» / «descansa»: se duerme y se esconde ya (sigue atento solo a «Oye Kroko»).</summary>
+    public void RestNow()
+    {
+        Face.StopDistraction();
+        Face.SetBase("sleeping");
+        _sleepingSince = DateTime.Now;
+        if (_dozed) return;
+        _dozed = true;
+        LongSleep?.Invoke();
+    }
+
+    /// <summary>Al arrancar escondido: dormido y fuera de la pantalla hasta que lo llamen.</summary>
+    public void StartAsleepHidden()
+    {
+        Face.SetBase("sleeping");
+        _sleepingSince = DateTime.Now;
+        _dozed = true;
+    }
+
 
     // ---------------------------------------------------------------- cerebro (Brain)
 
@@ -276,6 +301,18 @@ public sealed class CompanionBehavior : IDisposable
         {
             Face.SetBase("sleeping");
             _sleepingSince = now;
+        }
+
+        // Un minuto sin actividad después de hablar: se duerme y se esconde de una vez (sigue escuchando «Oye Kroko»)
+        if (_opt.HideAfterIdleSeconds > 0 && !_dozed && !_focusMode && !_emergencyPaused && Face.BaseKey == RestingKey
+            && !Face.IsPlayingOneShot && !Face.Hover && (now - _lastInteraction).TotalSeconds >= _opt.HideAfterIdleSeconds
+            && KeepAwake?.Invoke() != true)
+        {
+            Face.StopDistraction();
+            Face.SetBase("sleeping");
+            _sleepingSince = now;
+            _dozed = true;
+            LongSleep?.Invoke();
         }
 
         // Dormido un buen rato: desaparece de la pantalla (sigue escuchando «Oye Kroko»)

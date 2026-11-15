@@ -25,7 +25,21 @@ public sealed class AbrirVentanaTool(WindowService windows) : ILocalTool
         string title;
         Action open;
 
-        if (which.Equals("configuracion", StringComparison.OrdinalIgnoreCase))
+        // El panel «Kroko» y sus partes (14/11/2026); "configuracion" sin sección abre sus Ajustes simples
+        var panelSection = which.ToLowerInvariant() switch
+        {
+            "panel" or "inicio" => "inicio",
+            "habitos" or "tareas" or "enfoque" or "mipc" => which.ToLowerInvariant(),
+            "configuracion" when string.IsNullOrWhiteSpace(args.OptionalString("seccion")) => "ajustes",
+            _ => null,
+        };
+        if (panelSection is not null)
+        {
+            Application.Current.Dispatcher.Invoke(() => windows.ShowPanel(panelSection));
+            return Task.FromResult(ToolOutcome.Success(new { abierta = panelSection == "ajustes" ? "Ajustes del panel Kroko" : $"Panel Kroko ({panelSection})" }));
+        }
+
+        if (which.Equals("configuracion", StringComparison.OrdinalIgnoreCase) || which.Equals("avanzado", StringComparison.OrdinalIgnoreCase))
         {
             var section = args.OptionalString("seccion")?.Trim();
             int? index = null;

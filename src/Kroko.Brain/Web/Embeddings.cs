@@ -45,6 +45,7 @@ public sealed class EmbeddingService(HttpClient http, IOptionsMonitor<LlmOptions
         if (!res.IsSuccessStatusCode)
         {
             log.LogWarning("Embeddings respondió {Status}", (int)res.StatusCode);
+            GeminiKeyRing.Report(key, (int)res.StatusCode);
             throw new LlmProviderException("gemini", "no se pudieron calcular los vectores", (int)res.StatusCode);
         }
         var json = await res.Content.ReadFromJsonAsync<JsonElement>(ct);

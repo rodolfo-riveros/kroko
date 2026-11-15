@@ -42,7 +42,7 @@ jobs:
       # packId KrokoApp: se instala en %LOCALAPPDATA%\KrokoApp, separado de los datos de Kroko
       # (%LOCALAPPDATA%\Kroko), así desinstalar nunca borra tu memoria ni tus ajustes.
       - name: Empaquetar
-        run: vpk pack --packId KrokoApp --packVersion ${{ steps.v.outputs.version }} --packDir publish/app --mainExe Kroko.App.exe --packTitle Kroko --outputDir Releases
+        run: vpk pack --packId KrokoApp --packVersion ${{ steps.v.outputs.version }} --packDir publish/app --mainExe Kroko.App.exe --packTitle Kroko --icon assets/kroko.ico --outputDir Releases
 
       - name: Subir a GitHub Releases
         run: vpk upload github --repoUrl https://github.com/${{ github.repository }} --publish --releaseName "Kroko ${{ steps.v.outputs.version }}" --tag ${{ github.ref_name }} --token ${{ secrets.GITHUB_TOKEN }} --outputDir Releases

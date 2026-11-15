@@ -195,8 +195,9 @@ public class DotEnvTests
             "GMAIL_ADDRESS=pol@gmail.com",
             "Email__AppPassword='abcd efgh'",
         ]);
-        Assert.Equal("AQ.clave-de-gemini-de-ejemplo", map["Llm:Gemini:ApiKey"]);
-        Assert.Equal("sk-ejemplo", map["Llm:DeepSeek:ApiKey"]);
+        // Desde el 15/11/2026 el cerebro no lee claves de IA del .env: viven en la PC y las presta la App
+        Assert.False(map.ContainsKey("Llm:Gemini:ApiKey"));
+        Assert.False(map.ContainsKey("Llm:DeepSeek:ApiKey"));
         Assert.Equal("pol@gmail.com", map["Email:Address"]);
         Assert.Equal("abcd efgh", map["Email:AppPassword"]);
     }

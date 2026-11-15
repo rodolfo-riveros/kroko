@@ -42,21 +42,19 @@ public static partial class DotEnv
             var m = Assignment().Match(line);
             if (m.Success)
             {
-                var key = m.Groups[1].Value;
-                var value = Unquote(m.Groups[2].Value);
-                result[MapKey(key)] = value;
+                var key = MapKey(m.Groups[1].Value);
+                // Las claves de IA no las tiene el cerebro: las presta la App desde la PC (15/11/2026)
+                if (SecretStore.AiKeys.Contains(key, StringComparer.OrdinalIgnoreCase)) continue;
+                result[key] = Unquote(m.Groups[2].Value);
                 continue;
             }
 
             // Clave suelta sin nombre
             var bare = Unquote(line);
             if (bare.Contains(' ')) continue;
-            if (bare.StartsWith("AIza", StringComparison.Ordinal) || bare.StartsWith("AQ.", StringComparison.Ordinal))
-                result.TryAdd("Llm:Gemini:ApiKey", bare);
-            else if (bare.StartsWith("tvly-", StringComparison.Ordinal))
+            // Las claves de IA (Gemini AIza…/AQ.…, DeepSeek sk-…) ya no se leen aquí: viven en la PC (15/11/2026)
+            if (bare.StartsWith("tvly-", StringComparison.Ordinal))
                 result.TryAdd("Web:TavilyApiKey", bare);
-            else if (bare.StartsWith("sk-", StringComparison.Ordinal))
-                result.TryAdd("Llm:DeepSeek:ApiKey", bare);
         }
         return result;
     }

@@ -9,7 +9,7 @@ namespace Kroko.App.Services;
 /// La primera vez (mientras Kroko no sepa quién es su dueño) abre solo el asistente "Configurar Kroko"
 /// en cuanto el cerebro conecta. Espera si hay un juego o vídeo a pantalla completa para no interrumpir.
 /// </summary>
-public sealed class OnboardingLauncher(BrainConnection brain, BrainApiClient api, WindowService windows,
+public sealed class OnboardingLauncher(BrainConnection brain, BrainApiClient api, WindowService windows, LocalAiKeys aiKeys,
     ILogger<OnboardingLauncher> log) : IHostedService
 {
     private int _checked;
@@ -38,10 +38,13 @@ public sealed class OnboardingLauncher(BrainConnection brain, BrainApiClient api
     {
         try
         {
+            // También si esta PC aún no tiene clave de IA (desde el 15/11/2026 viven aquí y no en el cerebro)
             var profile = await api.GetProfileAsync();
-            if (profile.Completo) return;
+            if (profile.Completo && aiKeys.Load().HasAny) return;
 
-            log.LogInformation("Kroko aún no conoce a su dueño: abriendo el asistente de bienvenida");
+            log.LogInformation(profile.Completo
+                ? "Esta PC aún no tiene clave de IA: abriendo el asistente"
+                : "Kroko aún no conoce a su dueño: abriendo el asistente de bienvenida");
             var watcher = Application.Current.Dispatcher.Invoke(() => new FullscreenWatcher(() => 0));
             while (Application.Current.Dispatcher.Invoke(watcher.IsFullscreenNow))
                 await Task.Delay(TimeSpan.FromSeconds(5));

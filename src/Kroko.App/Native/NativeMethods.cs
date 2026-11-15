@@ -13,6 +13,8 @@ public static partial class NativeMethods
 
     /// <summary>No aparece en Alt+Tab ni en la barra de tareas.</summary>
     public const long WS_EX_TOOLWINDOW = 0x00000080;
+    /// <summary>Los clics atraviesan la ventana (la de la cuenta atrás bajo Kroko).</summary>
+    public const long WS_EX_TRANSPARENT = 0x00000020;
 
     /// <summary>No roba el foco al aparecer ni al hacer clic.</summary>
     public const long WS_EX_NOACTIVATE = 0x08000000;

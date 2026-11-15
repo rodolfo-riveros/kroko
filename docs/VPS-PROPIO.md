@@ -141,8 +141,9 @@ Crea un sitio **"Reverse proxy"** para `kroko.tudominio.com` hacia `http://127.0
 1. En el navegador: `https://kroko.tudominio.com/health` → `"status":"ok"` con candado.
 2. En Kroko: clic derecho → **Ajustes → Cerebro** → dirección `https://kroko.tudominio.com` y el **token** →
    **Guardar y reiniciar Kroko**. (La App instalada te lo pide sola la primera vez.)
-3. Clic derecho → **Configurar Kroko**: tu nombre, clave de Gemini, Gmail, Telegram y tus apps (se guardan cifradas
-   en el servidor).
+3. Clic derecho → **Configurar Kroko**: tu nombre, clave de Gemini, Gmail, Telegram y tus apps. Las claves de IA
+   (Gemini, DeepSeek) se guardan **solo en tu PC**, cifradas, y la App se las presta al cerebro mientras está conectada;
+   el resto (Gmail, Telegram, apps) se guarda cifrado en el servidor.
 
 ## Si algo falla
 
@@ -208,7 +209,9 @@ sudo certbot --nginx -d ana.kroko-tunombre.duckdns.org
 1. Instala Kroko: https://github.com/rodolfo-riveros/kroko/releases/latest/download/KrokoApp-win-Setup.exe
 2. Clic derecho en Kroko → **Ajustes → Cerebro** → su dirección y su token → **Comprobar** → **Guardar y reiniciar**.
 3. Clic derecho → **Configurar Kroko** → su nombre y **su propia clave de Gemini** (https://aistudio.google.com/apikey).
-   Desde ahí también conecta su Gmail, Telegram, Google, Trello o Notion. Todo se guarda cifrado en **su** cerebro.
+   Su clave de Gemini se queda **en su PC** (cifrada; el cerebro solo la tiene en memoria mientras su App está
+   conectada). Desde ahí también conecta su Gmail, Telegram, Google, Trello o Notion, que se guardan cifrados en **su** cerebro.
+   Ojo: con su PC apagada, su Kroko no puede pensar (Telegram y automatizaciones esperan a que la abra).
 
 ### Día a día
 
