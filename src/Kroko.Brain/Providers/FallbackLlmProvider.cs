@@ -10,7 +10,8 @@ public sealed class FallbackLlmProvider(
     IEnumerable<ILlmProvider> providers,
     IOptionsMonitor<LlmOptions> options,
     ILogger<FallbackLlmProvider> log,
-    Kroko.Brain.Usage.UsageTracker? usage = null) : IConfiguredLlm
+    Kroko.Brain.Usage.UsageTracker? usage = null,
+    LocalLlmProvider? local = null) : IConfiguredLlm
 {
     private readonly ILlmProvider[] _providers = [.. providers];
 
@@ -19,6 +20,23 @@ public sealed class FallbackLlmProvider(
     public async Task<LlmResponse> ChatAsync(string systemPrompt, IReadOnlyList<ChatMessage> history,
         IReadOnlyList<ToolDefinition> tools, CancellationToken ct)
     {
+        // IA mixta (17/11/2026): lo simple lo piensa la IA de la PC; lo difícil, o si ella no puede, Gemini
+        if (local is { IsConfigured: true } && LocalLlm.IsSimple(history, options.CurrentValue.Local))
+        {
+            var localTools = tools.Where(t => LocalLlm.Allowed(t.Name, options.CurrentValue.Local)).ToList();
+            try
+            {
+                var r = await local.ChatAsync(systemPrompt, history, localTools, ct);
+                var inReach = r.ToolCalls.All(c => localTools.Any(t => t.Name == c.Name));
+                if (inReach && (r.ToolCalls.Count > 0 || r.Text.Trim().Length > 0)) return r;
+                log.LogInformation("La IA de la PC no pudo con esto; paso a la nube");
+            }
+            catch (LlmProviderException ex)
+            {
+                log.LogWarning("La IA de la PC falló ({Message}); paso a la nube", ex.Message);
+            }
+        }
+
         var candidates = Ordered().ToList();
         if (candidates.Count == 0) throw new NoLlmConfiguredException();
 

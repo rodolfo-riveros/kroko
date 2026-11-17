@@ -78,13 +78,18 @@ public sealed class SessionHandler(AgentLoop agent, Productivity.AppConnections 
 
                     case CredentialsMessage keys:
                         // Las claves de IA vienen de la PC y quedan solo en memoria mientras esta App siga conectada
-                        Providers.AppProvidedKeys.Set(transport, keys.Gemini, keys.DeepSeek);
+                        Providers.AppProvidedKeys.Set(transport, keys.Gemini, keys.DeepSeek, keys.LocalModel);
+                        if (keys.LocalModel is { } local) Providers.LocalLlm.Channels[transport] = channel;
                         log.LogInformation("La App prestó sus claves de IA ({Gemini} de Gemini, DeepSeek: {DeepSeek}); quedan solo en memoria",
                             keys.Gemini.Count, !string.IsNullOrEmpty(keys.DeepSeek));
                         break;
 
                     case ToolResultMessage r:
                         channel.Complete(r.CallId, r);
+                        break;
+
+                    case LocalLlmResultMessage l:
+                        channel.Complete(l.CallId, l);
                         break;
 
                     case ConfirmResponseMessage c:
@@ -180,6 +185,7 @@ public sealed class SessionHandler(AgentLoop agent, Productivity.AppConnections 
         {
             apps.Remove(registration);
             Providers.AppProvidedKeys.Forget(transport); // la App se fue: el cerebro olvida sus claves
+            Providers.LocalLlm.Channels.TryRemove(transport, out _);
             await CancelCurrentAsync();
             await StopLiveAsync();
             await transport.CloseAsync("adiós", CancellationToken.None);

@@ -48,15 +48,18 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
     private readonly VoiceSettings _voice; // las opciones vivas: los interruptores de voz se aplican al instante
     private readonly bool _loading;
     private readonly KrokoOptions _options;
+    private readonly LocalAiService _localAi;
     private CancellationTokenSource? _download;
 
     public SettingsViewModel(IOptions<KrokoOptions> options, BrainApiClient api, WindowService windows, MicrophoneStream mic,
-        VoskModelManager models, WakeWordService wake, DocumentIndexer documents, OnboardingViewModel account)
+        VoskModelManager models, WakeWordService wake, DocumentIndexer documents, OnboardingViewModel account, LocalAiService localAi)
     {
+        _localAi = localAi;
         _loading = true;
         Account = account;
         SelectedNav = Nav[0];
         _options = options.Value;
+        RefreshLocalAi();
         _api = api;
         _windows = windows;
         _mic = mic;
@@ -205,6 +208,93 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
     [ObservableProperty] public partial bool StartHidden { get; set; }
     [ObservableProperty] public partial bool HideAfterIdle { get; set; }
 
+
+    // ---------------------------------------------------------------- IA de tu PC (17/11/2026)
+
+    [ObservableProperty] public partial bool LocalAiOn { get; set; }
+    [ObservableProperty] public partial string LocalAiStatus { get; set; } = "";
+    [ObservableProperty] public partial double LocalAiProgress { get; set; }
+    [ObservableProperty] public partial bool LocalAiDownloading { get; set; }
+    public bool LocalAiInstalled => _localAi.IsInstalled;
+
+    private bool _loadingLocalAi;
+
+    public void RefreshLocalAi()
+    {
+        _loadingLocalAi = true;
+        LocalAiOn = _localAi.Enabled && _localAi.IsInstalled;
+        _loadingLocalAi = false;
+        LocalAiDownloading = _localAi.IsDownloading;
+        OnPropertyChanged(nameof(LocalAiInstalled));
+        LocalAiStatus = !_localAi.IsInstalled
+            ? "Sin descargar. Pesa unos 2,5 GB y se descarga una sola vez; después piensa en tu PC, gratis y sin internet."
+            : !_localAi.Enabled ? "Descargada, pero apagada: todo lo piensa Gemini."
+            : _localAi.IsReady ? $"✓ Encendida ({_localAi.ModelName}): lo simple lo piensa tu PC; internet, correo y apps, Gemini."
+            : "Encendiéndose… (tarda unos segundos en cargar el modelo)";
+    }
+
+    [RelayCommand]
+    private async Task DownloadLocalAiAsync()
+    {
+        if (_localAi.IsDownloading)
+        {
+            _localAi.CancelDownload();
+            return;
+        }
+        LocalAiDownloading = true;
+        try
+        {
+            await _localAi.DownloadAsync(new Progress<(double Value, string Text)>(p =>
+            {
+                LocalAiProgress = p.Value;
+                LocalAiStatus = p.Text;
+            }));
+            SaveLocalAiEnabled(true);
+        }
+        catch (OperationCanceledException)
+        {
+            LocalAiStatus = "Descarga en pausa. Pulsa Descargar para seguir donde quedó.";
+        }
+        catch (Exception ex) when (ex is HttpRequestException or System.IO.IOException or System.IO.InvalidDataException)
+        {
+            LocalAiStatus = "No pude descargarla: " + ex.Message;
+        }
+        finally
+        {
+            LocalAiDownloading = false;
+            if (!LocalAiStatus.StartsWith("Descarga en pausa", StringComparison.Ordinal) && !LocalAiStatus.StartsWith("No pude", StringComparison.Ordinal))
+                RefreshLocalAi();
+        }
+    }
+
+    partial void OnLocalAiOnChanged(bool value)
+    {
+        if (_loading || _loadingLocalAi) return;
+        _localAi.Enabled = value;
+        SaveLocalAiEnabled(value);
+        if (value) _ = StartLocalAiAsync();
+        else
+        {
+            _localAi.Stop();
+            RefreshLocalAi();
+        }
+    }
+
+    private async Task StartLocalAiAsync()
+    {
+        LocalAiStatus = "Encendiéndose… (tarda unos segundos en cargar el modelo)";
+        await _localAi.StartAsync();
+        RefreshLocalAi();
+    }
+
+    private static void SaveLocalAiEnabled(bool on)
+    {
+        var k = UserSettings.LoadKrokoSection();
+        var local = k["LocalAi"] as JsonObject ?? new JsonObject();
+        local["Enabled"] = on;
+        k["LocalAi"] = local.DeepClone();
+        UserSettings.SaveKrokoSection(k);
+    }
     // ---- Avisos (viven en el cerebro)
     [ObservableProperty] public partial bool NoticeMeetings { get; set; }
     [ObservableProperty] public partial bool NoticeEmails { get; set; }

@@ -99,6 +99,9 @@ public sealed class KrokoOptions
     /// <summary>Voz (sección 6).</summary>
     public VoiceSettings Voice { get; set; } = new();
 
+    /// <summary>La IA de la PC (17/11/2026, IA mixta con Gemini).</summary>
+    public LocalAiSettings LocalAi { get; set; } = new();
+
     /// <summary>Búsqueda por significado en tus documentos (índice en esta PC; los vectores los calcula el cerebro con Gemini).</summary>
     public DocumentSettings Documents { get; set; } = new();
 
@@ -241,4 +244,30 @@ public sealed class DocumentSettings
     public int MaxFilesPerPass { get; set; } = 300;
 
     public int RescanMinutes { get; set; } = 30;
+}
+
+/// <summary>
+/// Sección "Kroko:LocalAi": la IA que corre en esta PC (llama.cpp + Qwen 3 4B; decidido por Pol el 17/11/2026, como Troko
+/// Desk pero mixta: lo simple aquí, lo difícil con Gemini). Se descarga una sola vez cuando el dueño pulsa «Descargar».
+/// Versiones verificadas en las fuentes oficiales el 17/11/2026 (GitHub ggml-org/llama.cpp b12483 y Hugging Face Qwen).
+/// </summary>
+public sealed class LocalAiSettings
+{
+    /// <summary>Usar la IA de la PC para lo simple (se enciende al terminar de descargarla).</summary>
+    public bool Enabled { get; set; }
+
+    public string ModelName { get; set; } = "Qwen3-4B";
+
+    /// <summary>llama.cpp para Windows con Vulkan: funciona con tarjetas NVIDIA, AMD e Intel (y en la CPU si no hay).</summary>
+    public string ServerZipUrl { get; set; } =
+        "https://github.com/ggml-org/llama.cpp/releases/download/b12483/llama-b12483-bin-win-vulkan-x64.zip";
+
+    public string ModelUrl { get; set; } = "https://huggingface.co/Qwen/Qwen3-4B-GGUF/resolve/main/Qwen3-4B-Q4_K_M.gguf";
+
+    public int Port { get; set; } = 8131;
+
+    public int ContextSize { get; set; } = 16384;
+
+    /// <summary>Capas en la tarjeta de video (99 = todas). 0 = solo CPU.</summary>
+    public int GpuLayers { get; set; } = 99;
 }

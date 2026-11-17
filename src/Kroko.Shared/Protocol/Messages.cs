@@ -26,6 +26,8 @@ namespace Kroko.Shared.Protocol;
 [JsonDerivedType(typeof(CardMessage), MessageTypes.Card)]
 [JsonDerivedType(typeof(BadgeMessage), MessageTypes.Badge)]
 [JsonDerivedType(typeof(CredentialsMessage), MessageTypes.Credentials)]
+[JsonDerivedType(typeof(LocalLlmRequestMessage), MessageTypes.LocalLlmRequest)]
+[JsonDerivedType(typeof(LocalLlmResultMessage), MessageTypes.LocalLlmResult)]
 [JsonDerivedType(typeof(LiveStartMessage), MessageTypes.LiveStart)]
 [JsonDerivedType(typeof(LiveAudioMessage), MessageTypes.LiveAudio)]
 [JsonDerivedType(typeof(LiveStopMessage), MessageTypes.LiveStop)]
@@ -56,6 +58,8 @@ public static class MessageTypes
     public const string Card = "card";
     public const string Badge = "badge";
     public const string Credentials = "credentials";
+    public const string LocalLlmRequest = "llm.local";
+    public const string LocalLlmResult = "llm.local.result";
     public const string LiveStart = "live.start";
     public const string LiveAudio = "live.audio";
     public const string LiveStop = "live.stop";
@@ -304,6 +308,27 @@ public sealed record CredentialsMessage : KrokoMessage
 
     public string? DeepSeek { get; init; }
 
+    /// <summary>La IA de la PC está lista (nombre del modelo, p. ej. «Qwen3-4B»); null = no hay (17/11/2026).</summary>
+    public string? LocalModel { get; init; }
+
     /// <summary>Para los registros: cuántas claves trae, sin mostrarlas.</summary>
     public override string ToString() => $"credentials(gemini: {Gemini.Count}, deepseek: {(string.IsNullOrEmpty(DeepSeek) ? 0 : 1)})";
+}
+
+/// <summary>
+/// El cerebro le pide a la IA de la PC que piense (17/11/2026, IA mixta): Body es una petición de chat en formato OpenAI
+/// (mensajes y herramientas). La App la pasa a su llama.cpp local y devuelve la respuesta tal cual.
+/// </summary>
+public sealed record LocalLlmRequestMessage : KrokoMessage
+{
+    public string CallId { get; init; } = "";
+    public string Body { get; init; } = "";
+}
+
+public sealed record LocalLlmResultMessage : KrokoMessage
+{
+    public string CallId { get; init; } = "";
+    public bool Ok { get; init; }
+    public string? Body { get; init; }
+    public string? Error { get; init; }
 }

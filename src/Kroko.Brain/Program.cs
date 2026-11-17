@@ -67,6 +67,7 @@ try
     builder.Services.AddHttpClient<DeepSeekProvider>(c => c.Timeout = timeout);
     builder.Services.AddTransient<ILlmProvider>(sp => sp.GetRequiredService<GeminiProvider>());
     builder.Services.AddTransient<ILlmProvider>(sp => sp.GetRequiredService<DeepSeekProvider>());
+    builder.Services.AddSingleton<LocalLlmProvider>(); // la IA de la PC: solo la usa el router para lo simple
     builder.Services.AddTransient<IConfiguredLlm, FallbackLlmProvider>();
 
     builder.Services.AddSingleton<Kroko.Brain.Owner.OwnerProfileStore>();

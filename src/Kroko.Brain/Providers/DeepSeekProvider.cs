@@ -133,11 +133,14 @@ public sealed class DeepSeekProvider(HttpClient http, IOptionsMonitor<LlmOptions
         return request;
     }
 
-    internal LlmResponse ParseResponse(string body)
+    internal LlmResponse ParseResponse(string body) => ParseOpenAi(body, ProviderName, log);
+
+    /// <summary>Respuesta de chat en formato OpenAI (DeepSeek y la IA local de la PC con llama.cpp).</summary>
+    internal static LlmResponse ParseOpenAi(string body, string providerName, ILogger log)
     {
         using var doc = JsonDocument.Parse(body);
         if (!doc.RootElement.TryGetProperty("choices", out var choices) || choices.GetArrayLength() == 0)
-            throw new LlmProviderException(Name, "DeepSeek no devolvió respuesta");
+            throw new LlmProviderException(providerName, "La IA no devolvió respuesta");
 
         var message = choices[0].GetProperty("message");
         var text = message.TryGetProperty("content", out var c) && c.ValueKind == JsonValueKind.String
@@ -159,7 +162,7 @@ public sealed class DeepSeekProvider(HttpClient http, IOptionsMonitor<LlmOptions
                 catch (JsonException)
                 {
                     // La documentación avisa que los argumentos pueden venir mal formados: no rompemos el turno.
-                    log.LogWarning("DeepSeek devolvió argumentos inválidos para {Tool}", fn.GetProperty("name").GetString());
+                    log.LogWarning("{Provider} devolvió argumentos inválidos para {Tool}", providerName, fn.GetProperty("name").GetString());
                     args = JsonDocument.Parse("{}").RootElement.Clone();
                 }
                 calls.Add(new ToolCall(call.GetProperty("id").GetString() ?? $"call_{Guid.NewGuid():N}",
@@ -172,10 +175,10 @@ public sealed class DeepSeekProvider(HttpClient http, IOptionsMonitor<LlmOptions
             Role = ChatRole.Assistant,
             Text = text,
             ToolCalls = calls,
-            RawProvider = ProviderName,
+            RawProvider = providerName,
             Raw = message.Clone(),
         };
-        return new LlmResponse(text, calls, assistant, Name, Kroko.Brain.Usage.UsageTracker.FromOpenAi(doc.RootElement));
+        return new LlmResponse(text, calls, assistant, providerName, Kroko.Brain.Usage.UsageTracker.FromOpenAi(doc.RootElement));
     }
 
     private static string Trim(string s) => s.Length <= 400 ? s : s[..400] + "…";

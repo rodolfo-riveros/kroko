@@ -118,6 +118,7 @@ public partial class App : Application
                 services.AddSingleton<ResponsePanel>();
                 services.AddSingleton<BadgeViewModel>();
                 services.AddSingleton<BadgeWindow>();
+                services.AddSingleton<LocalAiService>();
                 services.AddSingleton<LocalAiKeys>();
                 services.AddSingleton<CompanionBehavior>();
                 services.AddSingleton<WindowService>();
@@ -193,6 +194,8 @@ public partial class App : Application
         _host.Services.GetRequiredService<BadgeWindow>(); // check verde y cuenta atrás bajo Kroko
         // Las claves de IA viven en esta PC: se le prestan al cerebro al conectarse (y ya mismo si ya estaba conectado)
         _ = _host.Services.GetRequiredService<LocalAiKeys>().SendAsync();
+        // La IA de la PC (si la descargaste y está encendida) arranca en segundo plano
+        _ = _host.Services.GetRequiredService<LocalAiService>().StartAsync();
         _host.Services.GetRequiredService<ToolExecutor>();  // escucha las herramientas que pide el Brain
         _host.Services.GetRequiredService<ForegroundTracker>(); // recuerda tu última ventana (Fase 4)
         _host.Services.GetRequiredService<AuditLog>().LoadRecent();

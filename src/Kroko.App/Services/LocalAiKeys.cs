@@ -18,11 +18,15 @@ public sealed class LocalAiKeys
     private readonly BrainConnection _brain;
     private readonly ILogger<LocalAiKeys> _log;
     private readonly Lock _lock = new();
+    private readonly LocalAiService? _localAi;
 
-    public LocalAiKeys(BrainConnection brain, ILogger<LocalAiKeys> log) : this(brain, log, DefaultPath) { }
+    public LocalAiKeys(BrainConnection brain, ILogger<LocalAiKeys> log, LocalAiService localAi) : this(brain, log, DefaultPath, localAi) { }
 
-    internal LocalAiKeys(BrainConnection brain, ILogger<LocalAiKeys> log, string path)
+    internal LocalAiKeys(BrainConnection brain, ILogger<LocalAiKeys> log, string path, LocalAiService? localAi = null)
     {
+        _localAi = localAi;
+        // Cuando la IA de la PC se enciende o se apaga, el cerebro se entera al momento
+        if (localAi is not null) localAi.StateChanged += () => _ = SendAsync();
         _brain = brain;
         _log = log;
         FilePath = path;
@@ -89,8 +93,9 @@ public sealed class LocalAiKeys
     public async Task<bool> SendAsync()
     {
         var keys = Load();
-        if (!keys.HasAny || !_brain.IsConnected) return false;
-        var sent = await _brain.SendAsync(new CredentialsMessage { Gemini = keys.Gemini, DeepSeek = keys.DeepSeek });
+        var local = _localAi is { IsReady: true } ai ? ai.ModelName : null;
+        if ((!keys.HasAny && local is null) || !_brain.IsConnected) return false;
+        var sent = await _brain.SendAsync(new CredentialsMessage { Gemini = keys.Gemini, DeepSeek = keys.DeepSeek, LocalModel = local });
         if (sent) _log.LogInformation("Claves de IA prestadas al cerebro ({Gemini} de Gemini)", keys.Gemini.Count);
         return sent;
     }

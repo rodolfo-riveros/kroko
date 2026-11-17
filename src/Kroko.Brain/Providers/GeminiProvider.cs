@@ -164,7 +164,9 @@ public sealed class GeminiProvider(HttpClient http, IOptionsMonitor<LlmOptions> 
                         ["args"] = JsonNode.Parse(c.Arguments.GetRawText()),
                     };
                     if (IsRealId(c.Id)) call["id"] = c.Id;
-                    parts.Add(new JsonObject { ["functionCall"] = call });
+                    // Pasos que hizo otra IA (la de la PC o DeepSeek): Gemini 3 pide una firma; esta es la que acepta para
+                    // llamadas que no generó él (documentación oficial de thought signatures)
+                    parts.Add(new JsonObject { ["functionCall"] = call, ["thoughtSignature"] = "skip_thought_signature_validator" });
                 }
                 if (parts.Count == 0) parts.Add(new JsonObject { ["text"] = "" });
                 contents.Add(new JsonObject { ["role"] = "model", ["parts"] = parts });

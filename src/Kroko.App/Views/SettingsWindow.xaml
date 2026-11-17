@@ -825,7 +825,38 @@
 
                     <!-- ============================ 6 · Claves de IA ============================ -->
                     <TabItem>
-                        <ScrollViewer>
+                        <ScrollViewer><StackPanel>
+                            <StackPanel Style="{StaticResource Page}">
+                                <!-- IA de tu PC (17/11/2026): lo simple lo piensa tu PC, lo difícil Gemini -->
+                                <TextBlock Text="IA de tu PC" Style="{StaticResource CardTitle}" Margin="4,2,0,8" />
+                                <Border Style="{StaticResource Card}">
+                                    <StackPanel>
+                                        <DockPanel Style="{StaticResource Row}">
+                                            <CheckBox IsChecked="{Binding LocalAiOn}" Style="{StaticResource Toggle}" IsEnabled="{Binding LocalAiInstalled}" />
+                                            <StackPanel Style="{StaticResource Text}">
+                                                <TextBlock Text="Pensar en mi PC lo simple (Qwen 3 4B)" Style="{StaticResource Label}" />
+                                                <TextBlock Text="{Binding LocalAiStatus}" Style="{StaticResource Sub}" />
+                                            </StackPanel>
+                                        </DockPanel>
+                                        <StackPanel Margin="14,0,14,12" Visibility="{Binding LocalAiInstalled, Converter={StaticResource BoolToVisible}, ConverterParameter=invert}">
+                                            <ProgressBar Style="{StaticResource Kroko.Progress}" Maximum="1" Value="{Binding LocalAiProgress}" Margin="0,0,0,10"
+                                                         Visibility="{Binding LocalAiDownloading, Converter={StaticResource BoolToVisible}}" />
+                                            <Button HorizontalAlignment="Left" Command="{Binding DownloadLocalAiCommand}" Margin="0">
+                                                <Button.Style>
+                                                    <Style TargetType="Button" BasedOn="{StaticResource Kroko.PrimaryButton}">
+                                                        <Setter Property="Content" Value="Descargar la IA de mi PC (2,5 GB)" />
+                                                        <Style.Triggers>
+                                                            <DataTrigger Binding="{Binding LocalAiDownloading}" Value="True"><Setter Property="Content" Value="Pausar descarga" /></DataTrigger>
+                                                        </Style.Triggers>
+                                                    </Style>
+                                                </Button.Style>
+                                            </Button>
+                                        </StackPanel>
+                                    </StackPanel>
+                                </Border>
+                                <TextBlock Style="{StaticResource Foot}"
+                                           Text="Tareas, hábitos, recordatorios, abrir programas y charlar los piensa tu PC: gratis, privado y sin internet. Buscar en internet, correo, Notion o ver tu pantalla siguen con Gemini, y si la IA de tu PC no puede con algo, Gemini la reemplaza. Se descarga de los sitios oficiales de llama.cpp (GitHub) y Qwen (Hugging Face)." />
+                            </StackPanel>
                             <StackPanel Style="{StaticResource Page}" DataContext="{Binding Account}">
                                 <TextBlock Text="Gemini: cada clave tiene su trabajo" Style="{StaticResource CardTitle}" Margin="4,2,0,8" />
                                 <Border Style="{StaticResource Card}">
@@ -892,7 +923,7 @@
                                 <TextBlock Style="{StaticResource Foot}" Margin="4,14,4,0"
                                            Text="Las claves de Gemini y DeepSeek se guardan solo en esta PC, cifradas. El cerebro las usa mientras Kroko está abierto y las olvida al cerrarlo." />
                             </StackPanel>
-                        </ScrollViewer>
+                        </StackPanel></ScrollViewer>
                     </TabItem>
 
                     <!-- ============================ 7 · Gasto de IA ============================ -->

@@ -11,6 +11,19 @@ public static class AppProvidedKeys
     private static IReadOnlyList<string> _gemini = [];
     private static string? _deepSeek;
     private static object? _owner;
+    private static string? _localModel;
+
+    /// <summary>La IA de la PC que presta la App (nombre del modelo), o null si no tiene (17/11/2026).</summary>
+    public static string? LocalModel
+    {
+        get { lock (Gate) return _localModel; }
+    }
+
+    /// <summary>Quién prestó las claves (la conexión de la App): por ahí se le pide a su IA local que piense.</summary>
+    public static object? Owner
+    {
+        get { lock (Gate) return _owner; }
+    }
 
     public static IReadOnlyList<string> Gemini
     {
@@ -29,11 +42,12 @@ public static class AppProvidedKeys
     }
 
     /// <summary>La App (owner = su conexión) presta sus claves; reemplazan a las anteriores.</summary>
-    public static void Set(object owner, IEnumerable<string> gemini, string? deepSeek)
+    public static void Set(object owner, IEnumerable<string> gemini, string? deepSeek, string? localModel = null)
     {
         lock (Gate)
         {
             _owner = owner;
+            _localModel = string.IsNullOrWhiteSpace(localModel) ? null : localModel.Trim();
             _gemini = [.. gemini.Where(k => !string.IsNullOrWhiteSpace(k)).Select(k => k.Trim()).Distinct().Take(4)];
             _deepSeek = string.IsNullOrWhiteSpace(deepSeek) ? null : deepSeek.Trim();
         }
@@ -48,6 +62,7 @@ public static class AppProvidedKeys
             _owner = null;
             _gemini = [];
             _deepSeek = null;
+            _localModel = null;
         }
     }
 
@@ -58,6 +73,7 @@ public static class AppProvidedKeys
             _owner = null;
             _gemini = [];
             _deepSeek = null;
+            _localModel = null;
         }
     }
 }

@@ -17,6 +17,8 @@ public sealed class LlmOptions
 
     public GeminiOptions Gemini { get; set; } = new();
     public DeepSeekOptions DeepSeek { get; set; } = new();
+    /// <summary>La IA de la PC (17/11/2026): para lo simple, sin gastar Gemini.</summary>
+    public LocalLlmOptions Local { get; set; } = new();
 }
 
 public sealed class GeminiOptions
