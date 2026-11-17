@@ -1,9 +1,15 @@
 # Kroko
 
-Compañero de escritorio para Windows: una burbuja con cara expresiva a la que le hablas («Oye Kroko») y que
-controla tu PC, tus tareas, tu correo, tu calendario y tus apps. El cerebro vive en un servidor y la App en tu PC.
+Compañero de escritorio para Windows: vive en una isla arriba de tu pantalla, con cara expresiva. Le hablas («Oye Kroko»)
+y controla tu PC, tus tareas, tu correo, tu calendario y tus apps. El cerebro vive en un servidor y la App en tu PC.
 
-![Panel](docs/panel.png)
+![La isla de Kroko](docs/isla.png)
+
+| Su panel | Configuración |
+|---|---|
+| ![Panel Kroko](docs/panel-kroko.png) | ![Configuración](docs/configuracion.png) |
+
+![Sus caras](docs/expresiones.png)
 
 ## Descargar Kroko (Windows 10/11)
 
