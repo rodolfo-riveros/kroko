@@ -98,7 +98,13 @@ public static class SettingsWindowSnapshot
         var visual = new DrawingVisual();
         using (var dc = visual.RenderOpen())
         {
-            dc.DrawRectangle(window.AllowsTransparency ? (Brush)Application.Current.Resources["Kroko.Window"] : window.Background, null, new Rect(0, 0, W, H));
+            // Detrás, un escritorio de colores (el peor caso para el contraste del vidrio): el acrílico de Windows lo
+            // desenfoca y oscurece aún más, así que si aquí se lee bien, en la pantalla también
+            var desk = new LinearGradientBrush(new GradientStopCollection
+            {
+                new(Color.FromRgb(0x2D, 0x6C, 0xDF), 0), new(Color.FromRgb(0xB0, 0x4C, 0xD8), 0.5), new(Color.FromRgb(0xF2, 0x9B, 0x38), 1),
+            }, new Point(0, 0), new Point(1, 1));
+            dc.DrawRectangle(desk, null, new Rect(0, 0, W, H));
             dc.DrawRectangle(new VisualBrush(content) { Stretch = Stretch.None, AlignmentX = AlignmentX.Left, AlignmentY = AlignmentY.Top }, null,
                 new Rect(0, 0, content.ActualWidth, content.ActualHeight));
         }

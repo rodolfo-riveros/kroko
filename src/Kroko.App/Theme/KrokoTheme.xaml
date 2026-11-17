@@ -1,5 +1,6 @@
 <ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:v="clr-namespace:Kroko.App.Views">
 
     <!--
         Paleta de Kroko (estilo Troko: ojos blancos sobre pantalla negra, acentos lima).
@@ -17,7 +18,7 @@
     <Color x:Key="Kroko.PurpleColor">#A85FF7</Color>
     <Color x:Key="Kroko.PanelColor">#EB0F0F0F</Color>
     <Color x:Key="Kroko.TextColor">#FFFFFF</Color>
-    <Color x:Key="Kroko.TextMutedColor">#BDBDC2</Color>
+    <Color x:Key="Kroko.TextMutedColor">#D1D1D6</Color>
 
     <SolidColorBrush x:Key="Kroko.Body" Color="{StaticResource Kroko.BodyColor}" />
     <SolidColorBrush x:Key="Kroko.BodyEdge" Color="{StaticResource Kroko.BodyEdgeColor}" />
@@ -36,8 +37,16 @@
     <FontFamily x:Key="Kroko.Font">Segoe UI Variable Text, Segoe UI</FontFamily>
 
     <SolidColorBrush x:Key="Kroko.Window" Color="#121212" />
-    <SolidColorBrush x:Key="Kroko.Surface" Color="#1E1E20" />
-    <SolidColorBrush x:Key="Kroko.SurfaceHover" Color="#2A2A2D" />
+    <!-- Liquid Glass (17/11/2026): superficies de vidrio blanco translúcido sobre el tinte oscuro de la ventana -->
+    <SolidColorBrush x:Key="Kroko.Surface" Color="#17FFFFFF" />
+    <SolidColorBrush x:Key="Kroko.SurfaceHover" Color="#26FFFFFF" />
+    <!-- Tinte sobre el vidrio del sistema: deja ver el escritorio desenfocado y mantiene las letras blancas legibles -->
+    <SolidColorBrush x:Key="Kroko.GlassTint" Color="#C2101012" />
+    <!-- Brillo del borde del vidrio: más claro arriba, como la luz sobre un cristal -->
+    <LinearGradientBrush x:Key="Kroko.GlassEdge" StartPoint="0,0" EndPoint="0,1">
+        <GradientStop Color="#40FFFFFF" Offset="0" />
+        <GradientStop Color="#14FFFFFF" Offset="1" />
+    </LinearGradientBrush>
     <SolidColorBrush x:Key="Kroko.Line" Color="#2EFFFFFF" />
     <SolidColorBrush x:Key="Kroko.OnAccent" Color="#0F0F0F" />
 
@@ -303,7 +312,7 @@
                                           ContentTemplate="{TemplateBinding SelectionBoxItemTemplate}" />
                         <Popup IsOpen="{TemplateBinding IsDropDownOpen}" Placement="Bottom" AllowsTransparency="True"
                                Focusable="False" PopupAnimation="Fade">
-                            <Border Background="{StaticResource Kroko.Surface}" BorderBrush="{StaticResource Kroko.Line}" BorderThickness="1"
+                            <Border Background="#252528" BorderBrush="{StaticResource Kroko.Line}" BorderThickness="1"
                                     CornerRadius="6" Margin="0,2,0,0" MaxHeight="280"
                                     MinWidth="{Binding ActualWidth, RelativeSource={RelativeSource TemplatedParent}}">
                                 <ScrollViewer>
@@ -600,7 +609,9 @@
 
     <Style x:Key="Kroko.MacWindow" TargetType="Window">
         <Setter Property="WindowStyle" Value="None" />
-        <Setter Property="AllowsTransparency" Value="True" />
+        <!-- Sin transparencia por píxel: así Windows 11 puede poner su vidrio acrílico detrás (Glass.cs) -->
+        <Setter Property="AllowsTransparency" Value="False" />
+        <Setter Property="v:Glass.Enabled" Value="True" />
         <Setter Property="Background" Value="Transparent" />
         <Setter Property="ResizeMode" Value="CanResize" />
         <Setter Property="Foreground" Value="{StaticResource Kroko.Text}" />
@@ -608,13 +619,13 @@
         <Setter Property="FontSize" Value="13" />
         <Setter Property="WindowChrome.WindowChrome">
             <Setter.Value>
-                <WindowChrome CaptionHeight="44" ResizeBorderThickness="6" GlassFrameThickness="0" CornerRadius="12" UseAeroCaptionButtons="False" />
+                <WindowChrome CaptionHeight="44" ResizeBorderThickness="6" GlassFrameThickness="-1" CornerRadius="0" UseAeroCaptionButtons="False" />
             </Setter.Value>
         </Setter>
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="Window">
-                    <Border CornerRadius="12" Background="{StaticResource Kroko.Window}" BorderBrush="#3A3A3C" BorderThickness="1" ClipToBounds="True">
+                    <Border Background="{DynamicResource Kroko.GlassTint}">
                         <DockPanel>
                             <Grid DockPanel.Dock="Top" Height="44">
                                 <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="16,0,0,0">

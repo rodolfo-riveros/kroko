@@ -5,7 +5,8 @@
         Title="Configuración de Kroko"
         Width="980" Height="700" MinWidth="820" MinHeight="560"
         WindowStartupLocation="CenterScreen"
-        WindowStyle="None" AllowsTransparency="True" Background="Transparent" ResizeMode="CanResize"
+        WindowStyle="None" AllowsTransparency="False" Background="Transparent" ResizeMode="CanResize"
+        v:Glass.Enabled="True"
         Foreground="{StaticResource Kroko.Text}"
         FontFamily="{StaticResource Kroko.Font}"
         FontSize="13">
@@ -15,25 +16,25 @@
         agrupados en orden de uso (Kroko → Tú → Inteligencia → Seguridad), tarjetas con filas y todo se guarda solo.
     -->
     <WindowChrome.WindowChrome>
-        <WindowChrome CaptionHeight="0" ResizeBorderThickness="6" GlassFrameThickness="0" CornerRadius="12" />
+        <WindowChrome CaptionHeight="0" ResizeBorderThickness="6" GlassFrameThickness="-1" CornerRadius="0" />
     </WindowChrome.WindowChrome>
 
     <Window.Resources>
         <v:BoolToVisibleConverter x:Key="BoolToVisible" />
         <v:EmptyToCollapsedConverter x:Key="EmptyToCollapsed" />
 
-        <SolidColorBrush x:Key="Mac.Window" Color="#1E1E1E" />
-        <SolidColorBrush x:Key="Mac.Sidebar" Color="#262626" />
-        <SolidColorBrush x:Key="Mac.Card" Color="#2B2B2D" />
-        <SolidColorBrush x:Key="Mac.Line" Color="#3A3A3C" />
-        <SolidColorBrush x:Key="Mac.Muted" Color="#B4B4BA" />
+        <SolidColorBrush x:Key="Mac.Window" Color="Transparent" />
+        <SolidColorBrush x:Key="Mac.Sidebar" Color="#14FFFFFF" />
+        <SolidColorBrush x:Key="Mac.Card" Color="#17FFFFFF" />
+        <SolidColorBrush x:Key="Mac.Line" Color="#24FFFFFF" />
+        <SolidColorBrush x:Key="Mac.Muted" Color="#CDCDD2" />
 
         <!-- Tarjeta agrupada (inset grouped) -->
         <Style x:Key="Card" TargetType="Border">
             <Setter Property="Background" Value="{StaticResource Mac.Card}" />
-            <Setter Property="BorderBrush" Value="#333335" />
+            <Setter Property="BorderBrush" Value="{StaticResource Kroko.GlassEdge}" />
             <Setter Property="BorderThickness" Value="1" />
-            <Setter Property="CornerRadius" Value="10" />
+            <Setter Property="CornerRadius" Value="14" />
             <Setter Property="Margin" Value="0,0,0,6" />
         </Style>
         <!-- Título de grupo encima de la tarjeta -->
@@ -178,7 +179,7 @@
         </Style>
     </Window.Resources>
 
-    <Border CornerRadius="12" Background="{StaticResource Mac.Window}" BorderBrush="#3C3C3E" BorderThickness="1" ClipToBounds="True">
+    <Border Background="{DynamicResource Kroko.GlassTint}">
         <Grid>
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="250" />
@@ -186,7 +187,7 @@
             </Grid.ColumnDefinitions>
 
             <!-- ============================ barra lateral ============================ -->
-            <Border Background="{StaticResource Mac.Sidebar}" CornerRadius="12,0,0,12" BorderBrush="#323234" BorderThickness="0,0,1,0">
+            <Border Background="{StaticResource Mac.Sidebar}" CornerRadius="16" BorderBrush="{StaticResource Kroko.GlassEdge}" BorderThickness="1" Margin="8,8,0,8">
                 <DockPanel Margin="10,0,10,12">
                     <!-- Semáforo + zona para arrastrar la ventana -->
                     <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Height="46" Margin="6,0,0,0"
@@ -197,7 +198,7 @@
                     </StackPanel>
 
                     <!-- Buscar -->
-                    <Border DockPanel.Dock="Top" CornerRadius="7" Background="#1A1A1A" BorderBrush="#3A3A3C" BorderThickness="1" Margin="4,0,4,12" Height="30">
+                    <Border DockPanel.Dock="Top" CornerRadius="9" Background="#1FFFFFFF" BorderBrush="#24FFFFFF" BorderThickness="1" Margin="4,0,4,12" Height="30">
                         <DockPanel Margin="8,0">
                             <TextBlock DockPanel.Dock="Left" Text="&#xE721;" FontFamily="{StaticResource Kroko.Icons}" FontSize="12"
                                        Foreground="{StaticResource Mac.Muted}" VerticalAlignment="Center" Margin="0,0,6,0" />
@@ -264,7 +265,7 @@
                 </Border>
 
                 <!-- Aviso de reinicio y problemas al guardar (abajo) -->
-                <Border DockPanel.Dock="Bottom" Background="#262628" BorderBrush="{StaticResource Mac.Line}" BorderThickness="0,1,0,0" Padding="28,10">
+                <Border DockPanel.Dock="Bottom" Background="#1AFFFFFF" BorderBrush="{StaticResource Mac.Line}" BorderThickness="0,1,0,0" Padding="28,10">
                     <Border.Style>
                         <Style TargetType="Border">
                             <Setter Property="Visibility" Value="Collapsed" />
