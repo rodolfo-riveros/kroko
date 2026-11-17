@@ -210,6 +210,7 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
     [ObservableProperty] public partial bool NoticeEmails { get; set; }
     [ObservableProperty] public partial bool NoticeOverdue { get; set; }
     [ObservableProperty] public partial bool NoticeSummary { get; set; }
+    [ObservableProperty] public partial bool NoticeCoach { get; set; }
     [ObservableProperty] public partial string NoticesStatus { get; set; } = "";
 
     /// <summary>Algún cambio guardado necesita reiniciar Kroko para notarse.</summary>
@@ -475,6 +476,7 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
             NoticeEmails = n.Correos;
             NoticeOverdue = n.TareasVencidas;
             NoticeSummary = n.ResumenDelDia;
+            NoticeCoach = n.Asistente ?? false;
             NoticesStatus = "";
         }
         catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException or System.Text.Json.JsonException)
@@ -493,13 +495,14 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
     partial void OnNoticeEmailsChanged(bool value) => _ = SaveNoticesAsync();
     partial void OnNoticeOverdueChanged(bool value) => _ = SaveNoticesAsync();
     partial void OnNoticeSummaryChanged(bool value) => _ = SaveNoticesAsync();
+    partial void OnNoticeCoachChanged(bool value) => _ = SaveNoticesAsync();
 
     private async Task SaveNoticesAsync()
     {
         if (_loading || _loadingNotices) return;
         try
         {
-            await _api.SetNoticesAsync(new NoticesDto(NoticeMeetings, NoticeEmails, NoticeOverdue, NoticeSummary));
+            await _api.SetNoticesAsync(new NoticesDto(NoticeMeetings, NoticeEmails, NoticeOverdue, NoticeSummary, NoticeCoach));
             NoticesStatus = "";
         }
         catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException)

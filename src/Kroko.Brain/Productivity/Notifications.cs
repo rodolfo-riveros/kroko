@@ -18,6 +18,9 @@ public sealed class ProductivityOptions
     /// <remarks>Apagado por defecto (decidido por Pol, 14/11/2026): solo si él lo pide («todos los días a las 8 dime…» crea una automatización).</remarks>
     public int DailySummaryHour { get; set; } = -1;
 
+    /// <summary>Mensajes del asistente proactivo (plan, seguimiento, hábitos) como máximo al día (Pol, 17/11/2026: 3). 0 = sin límite.</summary>
+    public int MaxProactivePerDay { get; set; } = 3;
+
     /// <summary>Decir los recordatorios en voz alta (además de mostrarlos).</summary>
     public bool SpeakNotifications { get; set; } = true;
 }

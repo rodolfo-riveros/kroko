@@ -29,6 +29,7 @@ public partial class KrokoPanelWindow : Window
 
         };
         Activated += async (_, _) => await viewModel.RefreshAsync();
+        viewModel.ChatUpdated += () => Dispatcher.BeginInvoke(() => ChatScroll.ScrollToEnd()); // el chat siempre muestra lo último
     }
 
     public KrokoPanelViewModel ViewModel => (KrokoPanelViewModel)DataContext;

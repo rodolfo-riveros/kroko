@@ -320,3 +320,60 @@ public sealed class TeclasTool(UiAutomationSession ui) : ILocalTool
         return keys.Count > 0 ? [.. keys] : throw new ToolException("Falta el atajo.");
     }
 }
+
+/// <summary>
+/// Llena varios campos de un formulario de un solo paso en la ventana que el dueño tiene delante (pedido por Pol,
+/// 17/11/2026: «llename este formulario»). Nunca lo envía: el botón Enviar se pulsa después con <c>clic</c> e
+/// irreversible=true, que pide permiso. Nunca escribe contraseñas ni números de tarjeta.
+/// </summary>
+public sealed class LlenarFormularioTool(UiAutomationSession ui) : ILocalTool
+{
+    public string Name => "llenar_formulario";
+
+    public async Task<ToolOutcome> RunAsync(ToolArgs args, CancellationToken ct)
+    {
+        if (!args.Raw.TryGetProperty("campos", out var fields) || fields.ValueKind != System.Text.Json.JsonValueKind.Array)
+            return ToolOutcome.Fail("Falta la lista de campos (número de elemento y texto).");
+        var items = fields.EnumerateArray()
+            .Select(f => (Number: ToolCatalog.Int(f, "elemento"), Text: ToolCatalog.Str(f, "texto")))
+            .Where(f => f.Number > 0 && f.Text.Length > 0).ToList();
+        if (items.Count == 0) return ToolOutcome.Fail("No hay campos que llenar.");
+
+        var done = new List<object>();
+        var skipped = new List<string>();
+        await ui.RunAsync(() =>
+        {
+            ui.BringToFront();
+            foreach (var (number, text) in items)
+            {
+                if (System.Text.RegularExpressions.Regex.IsMatch(text, @"(?:\d[ -]?){13,19}"))
+                {
+                    skipped.Add($"#{number}: parece un número de tarjeta, no lo escribo");
+                    continue;
+                }
+                var element = ui.Find(number, null);
+                if (UiAutomationSession.IsPassword(element))
+                {
+                    skipped.Add($"#{number}: es un campo de contraseña");
+                    continue;
+                }
+                element.Focus();
+                Thread.Sleep(80);
+                Keyboard.TypeSimultaneously(VirtualKeyShort.CONTROL, VirtualKeyShort.KEY_A); // reemplaza lo que hubiera
+                Keyboard.Type(text);
+                Thread.Sleep(60);
+                done.Add(new { elemento = number, texto = text.Length > 40 ? text[..40] + "…" : text });
+            }
+            return true;
+        }, ct);
+
+        var after = await ui.RunAsync(ui.Read, ct);
+        return ToolOutcome.Success(new
+        {
+            llenados = done,
+            saltados = skipped,
+            aviso = "No envié el formulario. Revisa que esté bien; para enviarlo usa clic en el botón con irreversible=true (pide permiso).",
+            elementosDespues = after.Elementos.Take(40),
+        });
+    }
+}

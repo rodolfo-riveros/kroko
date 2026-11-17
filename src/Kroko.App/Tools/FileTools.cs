@@ -387,3 +387,71 @@ internal static class FileSizes
         _ => $"{bytes / (1024.0 * 1024 * 1024):0.##} GB",
     };
 }
+
+/// <summary>
+/// Deshace el último orden de carpeta (pedido por Pol, 17/11/2026, como en Troko Desk: «Devolví 116 archivos a su sitio»).
+/// Lee el registro que dejó ordenar_carpeta, devuelve cada archivo a donde estaba (si sigue ahí y su sitio está libre),
+/// borra las carpetas de categoría que quedaron vacías y marca el registro como deshecho para no repetirlo.
+/// </summary>
+public static class OrderUndo
+{
+    public static string LogDir => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Kroko", "ordenes");
+
+    public sealed record Result(int Devueltos, int NoSePudo, string Carpeta);
+
+    /// <summary>El último orden que se puede deshacer (null = ninguno).</summary>
+    public static string? LastLog() =>
+        Directory.Exists(LogDir)
+            ? Directory.EnumerateFiles(LogDir, "orden-*.json").Where(f => !f.EndsWith(".deshecho.json", StringComparison.Ordinal))
+                .OrderByDescending(f => f, StringComparer.Ordinal).FirstOrDefault()
+            : null;
+
+    public static Result? UndoLast()
+    {
+        if (LastLog() is not { } log) return null;
+        using var doc = JsonDocument.Parse(File.ReadAllText(log));
+        var folder = doc.RootElement.GetProperty("carpeta").GetString() ?? "";
+        int back = 0, failed = 0;
+        var touched = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var m in doc.RootElement.GetProperty("movimientos").EnumerateArray())
+        {
+            var from = m.GetProperty("desde").GetString();
+            var to = m.GetProperty("hacia").GetString();
+            if (from is null || to is null) continue;
+            try
+            {
+                if (File.Exists(to) && !File.Exists(from))
+                {
+                    File.Move(to, from);
+                    back++;
+                    touched.Add(Path.GetDirectoryName(to)!);
+                }
+                else failed++;
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+            {
+                failed++;
+            }
+        }
+        foreach (var dir in touched)
+        {
+            try
+            {
+                if (Directory.Exists(dir) && !Directory.EnumerateFileSystemEntries(dir).Any()) Directory.Delete(dir);
+            }
+            catch (IOException) { }
+        }
+        File.Move(log, Path.ChangeExtension(log, null) + ".deshecho.json", overwrite: true);
+        return new Result(back, failed, folder);
+    }
+}
+
+public sealed class DeshacerOrdenTool : ILocalTool
+{
+    public string Name => "deshacer_orden";
+
+    public Task<ToolOutcome> RunAsync(ToolArgs args, CancellationToken ct) => Task.Run(() =>
+        OrderUndo.UndoLast() is { } r
+            ? ToolOutcome.Success(new { devueltos = r.Devueltos, noSePudo = r.NoSePudo, carpeta = r.Carpeta })
+            : ToolOutcome.Fail("No hay ningún orden reciente que deshacer."), ct);
+}

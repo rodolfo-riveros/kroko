@@ -34,6 +34,26 @@ public static class MemoryApi
         group.MapDelete("/mejoras/{id:long}", (long id, SuggestionStore suggestions) =>
             suggestions.Delete(id) ? Results.NoContent() : Results.NotFound());
 
+        // La conversación para la sección «Chat» del panel (17/11/2026, como en Troko Desk): lo que dijiste, lo que
+        // respondió y lo que hizo (con la misma palabra del check: «Anotado», «Agendado»…). Sin resultados internos.
+        group.MapGet("/conversacion/{sessionId}", (string sessionId, Kroko.Brain.Agent.ConversationStore conversations) =>
+        {
+            var items = new List<object>();
+            foreach (var m in conversations.Get(sessionId).Snapshot())
+            {
+                if (m.Role == Kroko.Brain.Providers.ChatRole.User && !m.Text.StartsWith("[Automatización", StringComparison.Ordinal))
+                    items.Add(new { quien = "tu", texto = m.Text });
+                else if (m.Role == Kroko.Brain.Providers.ChatRole.Assistant)
+                {
+                    foreach (var call in m.ToolCalls)
+                        if (Kroko.Brain.Agent.Badges.For(call.Name) is { } done) items.Add(new { quien = "accion", texto = done });
+                    var said = Kroko.Shared.Protocol.Reactions.StripTags(m.Text);
+                    if (said.Length > 0) items.Add(new { quien = "kroko", texto = said });
+                }
+            }
+            return Results.Ok(new { mensajes = items.TakeLast(80) });
+        });
+
         group.MapDelete("/conversacion", (Kroko.Brain.Agent.ConversationStore conversations) =>
         {
             conversations.ClearAll();

@@ -121,15 +121,27 @@ public static class ToolCatalog
         },
         new()
         {
+            // 17/11/2026 (pedido por Pol): mandar un WhatsApp desde la PC, siempre con su permiso (tarjeta)
+            Name = "whatsapp_enviar",
+            Description = "Envía un mensaje de WhatsApp desde la PC de tu dueño (WhatsApp de escritorio o WhatsApp Web). " +
+                          "Necesitas el número con código de país (Perú: 51 + 9 dígitos). Si te da un nombre, búscalo antes con " +
+                          "google_contactos_buscar o en tu memoria; si no lo encuentras o hay varios, pregúntale. Escribe el mensaje " +
+                          "como él lo diría. Siempre se le pide permiso antes de enviar.",
+            Parameters = """{"type":"object","properties":{"numero":{"type":"string","description":"Número con código de país, solo dígitos (ej. 51987654321)"},"nombre":{"type":"string","description":"A quién (para la tarjeta de permiso)"},"mensaje":{"type":"string"}},"required":["numero","mensaje"]}""",
+            Risk = ToolRisk.Dangerous,
+            Describe = a => $"Enviar por WhatsApp a {(Str(a, "nombre") is { Length: > 0 } n ? $"{n} ({Str(a, "numero")})" : Str(a, "numero"))}: «{Str(a, "mensaje")}»",
+        },
+        new()
+        {
             Name = "abrir_ventana",
             Description = "Abre en la PC una de tus propias ventanas para que tu dueño siga configurándote o revise algo. " +
-                          "panel = el panel Kroko (tu día); habitos, tareas, enfoque (pomodoro) y mipc = esa parte del panel; " +
+                          "panel = el panel Kroko (tu día); chat, habitos, tareas, enfoque (pomodoro), correo y mipc = esa parte del panel; " +
                           "configuracion = la ventana de Configuración (\"abre tu configuración\"; con seccion para ir directo: general, voz, personalidad, " +
                           "avisos, perfil, cuentas, claves, gasto, cerebro, permisos o privacidad); avanzado = lo mismo; asistente = \"Configurar Kroko\" (sus datos y TODAS sus claves y cuentas: IA, Tavily, Gmail, Telegram y " +
                           "vincular apps: Google, Trello, Notion, Todoist); conectores = conectar o desconectar Notion, Todoist y el " +
                           "navegador; memoria = \"Lo que sabe de ti\" (recuerdos, rutinas, buzón de mejoras); registro = acciones " +
                           "que hiciste; galeria = tus caras; mi_dia = agenda, tareas y clima de hoy.",
-            Parameters = """{"type":"object","properties":{"ventana":{"type":"string","enum":["panel","habitos","tareas","enfoque","mipc","configuracion","avanzado","asistente","conectores","memoria","registro","galeria","mi_dia"]},"seccion":{"type":"string","enum":["general","voz","personalidad","avisos","perfil","cuentas","claves","gasto","cerebro","permisos","privacidad"],"description":"Solo con configuracion: la sección que se abre"}},"required":["ventana"]}""",
+            Parameters = """{"type":"object","properties":{"ventana":{"type":"string","enum":["panel","chat","habitos","tareas","enfoque","correo","mipc","configuracion","avanzado","asistente","conectores","memoria","registro","galeria","mi_dia"]},"seccion":{"type":"string","enum":["general","voz","personalidad","avisos","perfil","cuentas","claves","gasto","cerebro","permisos","privacidad"],"description":"Solo con configuracion: la sección que se abre"}},"required":["ventana"]}""",
             Risk = ToolRisk.Read,
         },
         new()
@@ -290,6 +302,17 @@ public static class ToolCatalog
         },
         new()
         {
+            // 17/11/2026 (pedido por Pol): «llename este formulario» en la ventana que tiene delante
+            Name = "llenar_formulario",
+            Description = "Llena varios campos de un formulario en la ventana que tu dueño tiene delante, de un solo paso. Antes usa " +
+                          "leer_ventana_activa para ver los campos y sus números; llénalos con sus datos (perfil y memoria) o lo que te " +
+                          "dijo; si falta un dato, pregúntale. Nunca lo envía: para enviarlo usa clic en el botón con irreversible=true " +
+                          "(pide permiso). Nunca escribe contraseñas ni números de tarjeta.",
+            Parameters = """{"type":"object","properties":{"campos":{"type":"array","items":{"type":"object","properties":{"elemento":{"type":"integer","description":"Número del campo según leer_ventana_activa"},"texto":{"type":"string"}},"required":["elemento","texto"]}}},"required":["campos"]}""",
+            Risk = ToolRisk.Write,
+        },
+        new()
+        {
             Name = "escribir",
             Description = "Escribe texto en la ventana activa (en el elemento indicado o donde esté el cursor). Nunca en campos de contraseña.",
             Parameters = """{"type":"object","properties":{"texto":{"type":"string"},"elemento":{"type":"integer"}},"required":["texto"]}""",
@@ -357,6 +380,15 @@ public static class ToolCatalog
             Parameters = """{"type":"object","properties":{"rutas":{"type":"array","items":{"type":"string"}}},"required":["rutas"]}""",
             Risk = ToolRisk.Dangerous,
             Describe = a => $"Enviar a la Papelera {Count(a, "rutas")} elemento(s):\n{List(a, "rutas")}",
+        },
+        new()
+        {
+            // 17/11/2026: como en Troko Desk, ordenar se puede deshacer
+            Name = "deshacer_orden",
+            Description = "Deshace el último orden de carpeta (ordenar_carpeta): devuelve los archivos a donde estaban. " +
+                          "Úsala con «deshazlo», «devuelve todo como estaba», «deshaz el orden del escritorio».",
+            Parameters = NoParams,
+            Risk = ToolRisk.Write,
         },
         new()
         {

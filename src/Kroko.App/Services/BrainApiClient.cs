@@ -77,6 +77,14 @@ public sealed class BrainApiClient(IOptions<KrokoOptions> options) : IDisposable
             : $"Conectado · IA: {string.Join(", ", providers)} ({sources})";
     }
 
+    // ------------------------------------------------------------ panel: Chat y Correo (17/11/2026)
+
+    public async Task<ChatHistoryDto?> GetConversationAsync(string sessionId, CancellationToken ct = default) =>
+        await _http.GetFromJsonAsync<ChatHistoryDto>($"api/memoria/conversacion/{Uri.EscapeDataString(sessionId)}", Json, ct);
+
+    public async Task<MailListDto?> GetImportantMailAsync(CancellationToken ct = default) =>
+        await _http.GetFromJsonAsync<MailListDto>("api/correo/importantes", Json, ct);
+
     // ------------------------------------------------------------ panel «Kroko»: tu día, hábitos y tareas
 
     public async Task<TodayDto?> GetTodayAsync(CancellationToken ct = default) =>
@@ -340,4 +348,9 @@ public sealed record ReminderItemDto(long Id, string Texto, string Cuando, strin
 public sealed record TodayDto(string Fecha, TodaySummaryDto Resumen, List<HabitItemDto> Habitos, List<TaskItemDto> Tareas, List<ReminderItemDto> Recordatorios);
 
 /// <summary>Avisos automáticos que Kroko da sin que se los pidas (14/11/2026: por defecto, reuniones y correos importantes).</summary>
-public sealed record NoticesDto(bool Reuniones, bool Correos, bool TareasVencidas, bool ResumenDelDia);
+public sealed record NoticesDto(bool Reuniones, bool Correos, bool TareasVencidas, bool ResumenDelDia, bool? Asistente = null);
+
+public sealed record ChatLineDto(string Quien, string Texto);
+public sealed record ChatHistoryDto(List<ChatLineDto> Mensajes);
+public sealed record MailItemDto(string Id, string De, string Asunto, string Fecha);
+public sealed record MailListDto(bool Conectado, List<MailItemDto> Correos, string? Error = null);

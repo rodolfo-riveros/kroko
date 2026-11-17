@@ -146,7 +146,8 @@ public sealed class AutomationRunner(
     TelegramBot telegram,
     IOptionsMonitor<ProductivityOptions> productivity,
     TimeProvider time,
-    ILogger<AutomationRunner> log)
+    ILogger<AutomationRunner> log,
+    Productivity.ProductivityStore? productivityStore = null)
 {
     private readonly ConcurrentDictionary<long, bool> _running = new();
 
@@ -171,7 +172,23 @@ public sealed class AutomationRunner(
             }
 
             var text = channel.Reply ?? "No pude completar la automatización esta vez.";
-            await DeliverAsync(a, ExpressionTag.Extract(text).Text, channel.Cards, ct);
+            var clean = ExpressionTag.Extract(text).Text;
+            // Asistente proactivo (17/11/2026): si no hay nada útil se calla, y nunca pasa del tope diario
+            if (productivityStore is not null && Productivity.Coach.IsCoach(productivityStore, a.Id))
+            {
+                if (Productivity.Coach.SaysNothing(clean))
+                {
+                    log.LogInformation("«{Name}»: nada que contar hoy, no se envía", a.Name);
+                    return clean;
+                }
+                if (!Productivity.Coach.TakeBudget(productivityStore, DateOnly.FromDateTime(time.GetLocalNow().DateTime),
+                        productivity.CurrentValue.MaxProactivePerDay))
+                {
+                    log.LogInformation("«{Name}»: ya se mandaron los mensajes de hoy, no se envía", a.Name);
+                    return clean;
+                }
+            }
+            await DeliverAsync(a, clean, channel.Cards, ct);
             return text;
         }
         finally

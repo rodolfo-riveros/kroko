@@ -70,21 +70,23 @@ public static class PanelApi
 
         // ---------------------------------------------------------------- avisos automáticos (panel → Ajustes)
 
-        api.MapGet("/avisos", (ProductivityStore store, IOptionsMonitor<ProactiveOptions> proactive, IOptionsMonitor<ProductivityOptions> productivity) =>
-            Results.Ok(Notices(store, proactive.CurrentValue, productivity.CurrentValue)));
-
-        api.MapPut("/avisos", (NoticesDto body, ProductivityStore store, IOptionsMonitor<ProactiveOptions> proactive,
+        api.MapGet("/avisos", (ProductivityStore store, Automation.AutomationStore automations, IOptionsMonitor<ProactiveOptions> proactive,
             IOptionsMonitor<ProductivityOptions> productivity) =>
+            Results.Ok(Notices(store, proactive.CurrentValue, productivity.CurrentValue) with { Asistente = Coach.IsOn(automations, store) }));
+
+        api.MapPut("/avisos", (NoticesDto body, ProductivityStore store, Automation.AutomationStore automations,
+            IOptionsMonitor<ProactiveOptions> proactive, IOptionsMonitor<ProductivityOptions> productivity) =>
         {
+            if (body.Asistente is { } coachOn) Coach.SetOn(automations, store, coachOn);
             NoticePreferences.Set(store, "reuniones", body.Reuniones);
             NoticePreferences.Set(store, "correos", body.Correos);
             NoticePreferences.Set(store, "vencidas", body.TareasVencidas);
             NoticePreferences.Set(store, "resumen", body.ResumenDelDia);
-            return Results.Ok(Notices(store, proactive.CurrentValue, productivity.CurrentValue));
+            return Results.Ok(Notices(store, proactive.CurrentValue, productivity.CurrentValue) with { Asistente = Coach.IsOn(automations, store) });
         });
     }
 
-    public sealed record NoticesDto(bool Reuniones, bool Correos, bool TareasVencidas, bool ResumenDelDia);
+    public sealed record NoticesDto(bool Reuniones, bool Correos, bool TareasVencidas, bool ResumenDelDia, bool? Asistente = null);
 
     private static NoticesDto Notices(ProductivityStore s, ProactiveOptions p, ProductivityOptions o) => new(
         NoticePreferences.MeetingMinutes(s, p) > 0,

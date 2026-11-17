@@ -73,7 +73,7 @@ public sealed record StatBar(string Name, string Value, double Fraction);
 /// </summary>
 public sealed partial class KrokoPanelViewModel : ObservableObject, IDisposable
 {
-    public static readonly string[] Sections = ["inicio", "tareas", "habitos", "enfoque", "mipc"];
+    public static readonly string[] Sections = ["inicio", "chat", "tareas", "habitos", "enfoque", "correo", "mipc"];
 
     private readonly BrainApiClient _api;
     private readonly CompanionBehavior _behavior;
@@ -82,10 +82,14 @@ public sealed partial class KrokoPanelViewModel : ObservableObject, IDisposable
     private readonly WindowService _windows;
     private readonly KrokoOptions _opt;
     private readonly DispatcherTimer _refresh;
+    private readonly BrainConnection _brain;
 
     public KrokoPanelViewModel(BrainApiClient api, CompanionBehavior behavior, PanelViewModel chat, VoiceController voice,
-        WindowService windows, TimerService timers, IOptions<KrokoOptions> options)
+        WindowService windows, TimerService timers, IOptions<KrokoOptions> options, BrainConnection brain)
     {
+        _brain = brain;
+        // Cuando Kroko responde, la sección Chat se pone al día sola
+        brain.MessageReceived += OnBrainMessage;
         _api = api;
         _behavior = behavior;
         _chat = chat;
@@ -143,7 +147,12 @@ public sealed partial class KrokoPanelViewModel : ObservableObject, IDisposable
 
     partial void OnSelectedSectionChanged(int value)
     {
-        if (Sections.ElementAtOrDefault(value) == "mipc") _ = LoadPcAsync();
+        switch (Sections.ElementAtOrDefault(value))
+        {
+            case "mipc": _ = LoadPcAsync(); break;
+            case "chat": _ = LoadChatAsync(); break;
+            case "correo": _ = LoadMailAsync(); break;
+        }
     }
 
     // ------------------------------------------------------------------ cargar el día
@@ -193,6 +202,14 @@ public sealed partial class KrokoPanelViewModel : ObservableObject, IDisposable
     /// <summary>Solo para las capturas (--snapshot): un día de ejemplo, sin cerebro.</summary>
     internal void ShowSample()
     {
+        ChatLines.Add(new ChatLine("tu", "Configura un hábito de tomar agua, 8 vasos al día"));
+        ChatLines.Add(new ChatLine("accion", "Hábito creado"));
+        ChatLines.Add(new ChatLine("kroko", "¡Listo! Te recuerdo cada hora y media. Dime «tomé un vaso» y lo sumo."));
+        ChatLines.Add(new ChatLine("tu", "Ordena mi escritorio"));
+        ChatLines.Add(new ChatLine("accion", "Ordenado"));
+        ChatLines.Add(new ChatLine("kroko", "Listo: ordené 117 archivos en carpetas por tipo. Si no te gusta, dime «deshazlo»."));
+        Mails.Add(new MailItemDto("1", "Ana Quispe", "Notas del curso de Programación — revisión final", "17/11 09:12"));
+        Mails.Add(new MailItemDto("2", "Instituto La Salle", "Inventario: fecha de entrega", "16/11 18:40"));
         _refresh.Stop();
         DateText = "domingo 15 de noviembre";
         Greeting = "Buenos días";
@@ -376,6 +393,23 @@ public sealed partial class KrokoPanelViewModel : ObservableObject, IDisposable
     [RelayCommand]
     private void OpenDownloads() => Example("Abre la carpeta de descargas");
 
+    /// <summary>Lo que dijo el último «Deshacer» (o que no hay nada que deshacer).</summary>
+    [ObservableProperty] public partial string UndoStatus { get; set; } = "";
+
+    /// <summary>Devuelve a su sitio los archivos del último orden (17/11/2026, como en Troko Desk).</summary>
+    [RelayCommand]
+    private async Task UndoTidyAsync()
+    {
+        var r = await Task.Run(Kroko.App.Tools.OrderUndo.UndoLast);
+        UndoStatus = r is null ? "No hay ningún orden reciente que deshacer."
+            : r.NoSePudo == 0 ? $"Listo: devolví {r.Devueltos} archivos a su sitio."
+            : $"Devolví {r.Devueltos} archivos a su sitio; {r.NoSePudo} ya no estaban o tenían otro archivo en su lugar.";
+    }
+
+    /// <summary>«Salir de Kroko» de la barra lateral.</summary>
+    [RelayCommand]
+    private static void QuitKroko() => System.Windows.Application.Current.Shutdown();
+
     [RelayCommand] private void OpenOnboarding() => _windows.ShowOnboarding();
     [RelayCommand] private void OpenConnectors() => _windows.ShowConnectors();
     [RelayCommand] private void OpenMemory() => _windows.ShowMemory();
@@ -429,5 +463,89 @@ public sealed partial class KrokoPanelViewModel : ObservableObject, IDisposable
         return (day == today ? "hoy" : day == today.AddDays(1) ? "mañana" : t.ToString("dd/MM")) + $" · {t:HH:mm}";
     }
 
-    public void Dispose() => _refresh.Stop();
+
+    // ------------------------------------------------------------------ Chat y Correo (17/11/2026, como en Troko Desk)
+
+    /// <summary>Una línea del chat: tú, Kroko o algo que hizo («Anotado», «Agendado»…).</summary>
+    public sealed record ChatLine(string Who, string Text)
+    {
+        public bool IsMine => Who == "tu";
+        public bool IsAction => Who == "accion";
+        public bool IsKroko => Who == "kroko";
+    }
+
+    public ObservableCollection<ChatLine> ChatLines { get; } = [];
+    [ObservableProperty] public partial string ChatStatus { get; set; } = "";
+
+    public ObservableCollection<MailItemDto> Mails { get; } = [];
+    [ObservableProperty] public partial string MailStatus { get; set; } = "";
+
+    /// <summary>Se avisa a la vista para bajar hasta el último mensaje.</summary>
+    public event Action? ChatUpdated;
+
+    private void OnBrainMessage(Kroko.Shared.Protocol.KrokoMessage m)
+    {
+        if (m is not (Kroko.Shared.Protocol.ReplyMessage or Kroko.Shared.Protocol.TranscriptMessage)) return;
+        if (Sections.ElementAtOrDefault(SelectedSection) != "chat") return;
+        System.Windows.Application.Current?.Dispatcher.BeginInvoke(async () =>
+        {
+            await Task.Delay(400); // que el cerebro termine de guardar el turno
+            await LoadChatAsync();
+        });
+    }
+
+    [RelayCommand]
+    public async Task LoadChatAsync()
+    {
+        try
+        {
+            var history = await _api.GetConversationAsync(_brain.SessionId);
+            ChatLines.Clear();
+            foreach (var l in history?.Mensajes ?? []) ChatLines.Add(new ChatLine(l.Quien, l.Texto));
+            ChatStatus = ChatLines.Count == 0 ? "Aún no hemos hablado. Escríbeme o dime «Oye Kroko»." : "";
+            ChatUpdated?.Invoke();
+        }
+        catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException or JsonException)
+        {
+            ChatStatus = "No pude traer la conversación: el cerebro no responde.";
+        }
+    }
+
+    [RelayCommand]
+    public async Task LoadMailAsync()
+    {
+        try
+        {
+            var list = await _api.GetImportantMailAsync();
+            Mails.Clear();
+            foreach (var m in list?.Correos ?? []) Mails.Add(m);
+            MailStatus = list is null ? "No pude leer tu correo."
+                : !list.Conectado ? "Conecta tu Gmail en Configuración → Cuentas y apps y aquí verás tus correos importantes."
+                : list.Error ?? (Mails.Count == 0 ? "No tienes correos importantes sin leer. ¡Bien!" : "");
+        }
+        catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException or JsonException)
+        {
+            MailStatus = "No pude leer tu correo: el cerebro no responde.";
+        }
+    }
+
+    /// <summary>Kroko redacta la respuesta; antes de enviarla siempre te la muestra y pide permiso.</summary>
+    [RelayCommand]
+    private void ReplyMail(MailItemDto? mail)
+    {
+        if (mail is null) return;
+        Example($"Lee el correo de {mail.De} con asunto «{mail.Asunto}» y redáctame una respuesta. Muéstramela antes de enviarla.");
+    }
+
+    [RelayCommand]
+    private void SummarizeMail(MailItemDto? mail)
+    {
+        if (mail is null) return;
+        Example($"Resúmeme el correo de {mail.De} con asunto «{mail.Asunto}».");
+    }
+    public void Dispose()
+    {
+        _refresh.Stop();
+        _brain.MessageReceived -= OnBrainMessage;
+    }
 }

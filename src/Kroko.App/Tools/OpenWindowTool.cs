@@ -29,7 +29,7 @@ public sealed class AbrirVentanaTool(WindowService windows) : ILocalTool
         var panelSection = which.ToLowerInvariant() switch
         {
             "panel" or "inicio" => "inicio",
-            "habitos" or "tareas" or "enfoque" or "mipc" => which.ToLowerInvariant(),
+            "habitos" or "tareas" or "enfoque" or "mipc" or "chat" or "correo" => which.ToLowerInvariant(),
             _ => null,
         };
         if (panelSection is not null)

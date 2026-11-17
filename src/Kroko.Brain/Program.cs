@@ -115,6 +115,7 @@ try
 
     builder.Services.AddSingleton<Kroko.Brain.Automation.AutomationStore>();
     builder.Services.AddSingleton<Kroko.Brain.Automation.AutomationRunner>();
+    builder.Services.AddHostedService<Kroko.Brain.Productivity.CoachSeeder>();
     builder.Services.AddHostedService<Kroko.Brain.Automation.AutomationScheduler>();
     builder.Services.AddSingleton<IBrainTool, Kroko.Brain.Automation.AutomatizacionCrearTool>();
     builder.Services.AddSingleton<IBrainTool, Kroko.Brain.Automation.AutomatizacionesListarTool>();
@@ -213,6 +214,7 @@ try
     }));
 
     app.MapMemoryApi();
+    app.MapMailApi();
     app.MapConnectorsApi();
     app.MapSetupApi();
     Kroko.Brain.Usage.UsageApi.MapUsageApi(app);
