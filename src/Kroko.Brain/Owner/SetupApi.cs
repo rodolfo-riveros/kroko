@@ -1,4 +1,5 @@
 using System.Net.Http.Headers;
+using System.Net.Http.Json;
 using Kroko.Brain.Agent;
 using Kroko.Brain.Config;
 using Kroko.Brain.Email;
@@ -168,22 +169,61 @@ public static class SetupApi
         var keys = opt.AllApiKeys();
         if (keys.Count == 0) return new(false, "Falta la API key de Gemini.");
 
-        // Con varias claves se prueban todas y se dice cuántas responden
+        // Cada clave hace una pregunta real y diminuta con el modelo que usa Kroko (17/11/2026: antes solo se miraba si
+        // Google conocía la clave, y una clave sin saldo o sin cuota «funcionaba» en la prueba pero no podía pensar).
+        string[] jobs = ["pensar", "entender tu voz", "hablar", "buscar"];
+        var lines = new List<string>();
         var ok = 0;
-        TestResult? lastFailure = null;
-        foreach (var key in keys)
+        for (var i = 0; i < keys.Count; i++)
         {
-            using var req = new HttpRequestMessage(HttpMethod.Get, $"{opt.BaseUrl.TrimEnd('/')}/v1beta/models?pageSize=1");
-            req.Headers.Add("x-goog-api-key", key);
-            var result = await SendAsync(sp, req, "Gemini responde: la clave funciona.", ct);
-            if (result.Ok) ok++;
-            else lastFailure = result;
+            using var req = new HttpRequestMessage(HttpMethod.Post,
+                $"{opt.BaseUrl.TrimEnd('/')}/v1beta/models/{Uri.EscapeDataString(opt.Model)}:generateContent")
+            {
+                Content = JsonContent.Create(new
+                {
+                    contents = new[] { new { role = "user", parts = new[] { new { text = "Responde solo: ok" } } } },
+                    generationConfig = new { maxOutputTokens = 16 },
+                }),
+            };
+            req.Headers.Add("x-goog-api-key", keys[i]);
+            var who = keys.Count == 1 ? "Tu clave" : $"Clave {i + 1} ({jobs[Math.Min(i, 3)]})";
+            try
+            {
+                using var res = await sp.GetRequiredService<IHttpClientFactory>().CreateClient().SendAsync(req, ct);
+                var body = await res.Content.ReadAsStringAsync(ct);
+                var status = (int)res.StatusCode;
+                if (res.IsSuccessStatusCode)
+                {
+                    ok++;
+                    lines.Add($"✓ {who}: funciona.");
+                    continue;
+                }
+                GeminiKeyRing.Report(keys[i], status, body);
+                lines.Add($"✗ {who}: {KeyProblem(status, body)}");
+            }
+            catch (HttpRequestException)
+            {
+                lines.Add($"✗ {who}: el cerebro no logra comunicarse con Google.");
+            }
         }
-        if (keys.Count == 1) return lastFailure ?? new(true, "Gemini responde: la clave funciona.");
-        return ok == keys.Count
-            ? new(true, $"Gemini responde: las {keys.Count} claves funcionan y se turnan si una se agota.")
-            : new(ok > 0, $"Funcionan {ok} de {keys.Count} claves de Gemini. {lastFailure?.Mensaje}");
+        var head = ok == keys.Count
+            ? (keys.Count == 1 ? "Gemini responde: tu clave funciona." : $"Las {keys.Count} claves funcionan, cada una con su trabajo.")
+            : $"Funcionan {ok} de {keys.Count} claves.";
+        return new(ok > 0, keys.Count == 1 && ok == 1 ? head : head + "\n" + string.Join("\n", lines));
     }
+
+    /// <summary>El motivo, en palabras simples.</summary>
+    internal static string KeyProblem(int status, string body) => status switch
+    {
+        402 => "se acabó su saldo (ai.studio/projects → Facturación).",
+        _ when GeminiKeyRing.IsBadKey(status, body) => "Google no la acepta (no es válida, venció o la API está desactivada en su proyecto).",
+        429 when body.Contains("limit: 0", StringComparison.OrdinalIgnoreCase) =>
+            "su proyecto no tiene cuota para este modelo (en el plan gratis puede no estar disponible).",
+        429 => "llegó a su límite de uso por ahora; vuelve sola en un rato.",
+        404 => "el modelo no está disponible para esta clave.",
+        >= 500 => "Gemini está saturado; prueba en un momento.",
+        _ => $"Google respondió {status}.",
+    };
 
     private static async Task<TestResult> TestDeepSeekAsync(IServiceProvider sp, CancellationToken ct)
     {

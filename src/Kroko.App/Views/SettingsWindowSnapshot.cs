@@ -93,10 +93,12 @@ public static class SettingsWindowSnapshot
     /// <summary>El contenido con el fondo de la ventana detrás (como se ve en pantalla).</summary>
     private static RenderTargetBitmap Capture(Window window, FrameworkElement content)
     {
+        // La ventana entera con su marco (semáforo y título) si lo tiene
+        if (VisualTreeHelper.GetChildrenCount(window) > 0 && VisualTreeHelper.GetChild(window, 0) is FrameworkElement root) content = root;
         var visual = new DrawingVisual();
         using (var dc = visual.RenderOpen())
         {
-            dc.DrawRectangle(window.AllowsTransparency ? new SolidColorBrush(Color.FromRgb(0x3B, 0x4C, 0x7A)) : window.Background, null, new Rect(0, 0, W, H));
+            dc.DrawRectangle(window.AllowsTransparency ? (Brush)Application.Current.Resources["Kroko.Window"] : window.Background, null, new Rect(0, 0, W, H));
             dc.DrawRectangle(new VisualBrush(content) { Stretch = Stretch.None, AlignmentX = AlignmentX.Left, AlignmentY = AlignmentY.Top }, null,
                 new Rect(0, 0, content.ActualWidth, content.ActualHeight));
         }

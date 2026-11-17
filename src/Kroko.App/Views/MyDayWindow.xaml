@@ -5,7 +5,7 @@
         Title="Kroko — Mi día"
         Width="820" Height="640" MinWidth="680" MinHeight="480"
         WindowStartupLocation="CenterScreen"
-        Background="{StaticResource Kroko.Window}"
+        Style="{StaticResource Kroko.MacWindow}"
         Foreground="{StaticResource Kroko.Text}"
         FontFamily="{StaticResource Kroko.Font}"
         FontSize="13">

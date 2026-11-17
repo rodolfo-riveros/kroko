@@ -22,6 +22,9 @@ public sealed class LlmOptions
 public sealed class GeminiOptions
 {
     public string Model { get; set; } = "gemini-3.6-flash";
+
+    /// <summary>Si el modelo principal no está disponible para tus claves, se prueban estos (17/11/2026).</summary>
+    public List<string> FallbackModels { get; set; } = ["gemini-3.5-flash", "gemini-flash-latest"];
     public string BaseUrl { get; set; } = "https://generativelanguage.googleapis.com";
 
     /// <summary>MINIMAL, LOW, MEDIUM o HIGH (vacío = el del modelo). LOW = respuestas rápidas.</summary>

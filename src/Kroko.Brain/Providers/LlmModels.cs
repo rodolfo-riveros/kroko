@@ -82,9 +82,21 @@ public sealed class LlmProviderException(string provider, string message, int? s
     public string? OwnerMessage => StatusCode switch
     {
         402 => $"Se acabó el saldo de tu cuenta de {ProviderName}. Recárgalo (Gemini: ai.studio/projects → Facturación) o pon otra " +
-               "clave en Configurar Kroko. Mientras tanto no puedo pensar ni hablar con mi voz de siempre.",
+               "clave en Configuración → Claves de IA. Mientras tanto no puedo pensar ni hablar con mi voz de siempre.",
         429 => $"{ProviderName} me pide esperar: llegaste al límite de uso por ahora. Inténtalo en un minuto, o pon una clave de " +
-               "respaldo (DeepSeek) en Configurar Kroko.",
+               "respaldo (DeepSeek) en Configuración → Claves de IA.",
+        // Desde el 17/11/2026: el motivo real en vez de «revisa el internet o la API key»
+        _ when GeminiKeyRing.IsBadKey(StatusCode, Message) =>
+            $"Google no acepta tus claves de {ProviderName}: no son válidas, vencieron o la API está desactivada en su proyecto. " +
+            "Revísalas en Configuración → Claves de IA → «Guardar y probar» (te dice cuál falla).",
+        404 or 400 when Message.Contains("model", StringComparison.OrdinalIgnoreCase) =>
+            $"El modelo de IA que uso no está disponible para tus claves de {ProviderName}. Avísale a quien te instaló Kroko " +
+            "(se cambia en Llm:Gemini:Model del cerebro).",
+        500 or 502 or 503 or 504 => $"{ProviderName} está saturado ahora mismo. Inténtalo en un momento.",
+        null when Message.Contains("tardó", StringComparison.OrdinalIgnoreCase) =>
+            $"{ProviderName} tardó demasiado en responder. Inténtalo otra vez.",
+        null when Message.Contains("conectar", StringComparison.OrdinalIgnoreCase) =>
+            $"El cerebro no logra comunicarse con {ProviderName} (¿internet del servidor?). Inténtalo en un momento.",
         _ => null,
     };
 

@@ -5,7 +5,7 @@
         Title="Kroko — Conectores"
         Width="640" Height="520" MinWidth="480" MinHeight="360"
         WindowStartupLocation="CenterScreen"
-        Background="{StaticResource Kroko.Window}"
+        Style="{StaticResource Kroko.MacWindow}"
         Foreground="{StaticResource Kroko.Text}"
         FontFamily="{StaticResource Kroko.Font}"
         FontSize="13">

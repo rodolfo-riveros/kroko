@@ -142,7 +142,7 @@ public sealed class AgentLoop(
         {
             log.LogError(ex, "Ningún proveedor de IA respondió");
             await FinishAsync(channel, speak,
-                ex.OwnerMessage ?? "No me pude conectar con mi cerebro de IA. Revisa el internet o la API key y lo intento de nuevo.",
+                ex.OwnerMessage ?? $"No pude pensar ahora: {(ex.Message.Length > 160 ? ex.Message[..160] + "…" : ex.Message)}. Si me lo repites, lo intento de nuevo.",
                 "sad", true, ct, audioLater);
         }
     }

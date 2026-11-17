@@ -1,6 +1,7 @@
 ﻿using System.IO;
 using System.Windows;
 using System.Windows.Threading;
+using System.Windows.Input;
 using Kroko.App.Audio;
 using Kroko.App.Face;
 using Kroko.App.Services;
@@ -128,6 +129,19 @@ public partial class App : Application
             .Build();
 
         DispatcherUnhandledException += OnDispatcherUnhandledException;
+
+        // Semáforo de las ventanas estilo macOS (Kroko.MacWindow): cerrar, minimizar y agrandar
+        CommandManager.RegisterClassCommandBinding(typeof(Window), new CommandBinding(SystemCommands.CloseWindowCommand,
+            (s, _) => SystemCommands.CloseWindow((Window)s)));
+        CommandManager.RegisterClassCommandBinding(typeof(Window), new CommandBinding(SystemCommands.MinimizeWindowCommand,
+            (s, _) => SystemCommands.MinimizeWindow((Window)s)));
+        CommandManager.RegisterClassCommandBinding(typeof(Window), new CommandBinding(SystemCommands.MaximizeWindowCommand,
+            (s, _) =>
+            {
+                var w = (Window)s;
+                if (w.WindowState == WindowState.Maximized) SystemCommands.RestoreWindow(w);
+                else SystemCommands.MaximizeWindow(w);
+            }));
 
         // Todas las ventanas de Kroko con barra de título oscura (17/11/2026: la blanca no cuadraba con el fondo negro)
         EventManager.RegisterClassHandler(typeof(Window), FrameworkElement.LoadedEvent, new RoutedEventHandler((s, _) =>

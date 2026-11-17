@@ -26,7 +26,7 @@
         <SolidColorBrush x:Key="Mac.Sidebar" Color="#262626" />
         <SolidColorBrush x:Key="Mac.Card" Color="#2B2B2D" />
         <SolidColorBrush x:Key="Mac.Line" Color="#3A3A3C" />
-        <SolidColorBrush x:Key="Mac.Muted" Color="#9A9A9F" />
+        <SolidColorBrush x:Key="Mac.Muted" Color="#B4B4BA" />
 
         <!-- Tarjeta agrupada (inset grouped) -->
         <Style x:Key="Card" TargetType="Border">

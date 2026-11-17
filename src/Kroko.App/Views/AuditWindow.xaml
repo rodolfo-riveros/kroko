@@ -4,7 +4,7 @@
         Title="Kroko — Registro de acciones"
         Width="900" Height="560" MinWidth="640" MinHeight="360"
         WindowStartupLocation="CenterScreen"
-        Background="{StaticResource Kroko.Window}"
+        Style="{StaticResource Kroko.MacWindow}"
         Foreground="{StaticResource Kroko.Text}"
         FontFamily="{StaticResource Kroko.Font}"
         FontSize="12.5">

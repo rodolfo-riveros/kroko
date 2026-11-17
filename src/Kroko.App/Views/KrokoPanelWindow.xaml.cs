@@ -1,5 +1,7 @@
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Documents;
+using System.Windows.Shell;
 using System.Windows.Input;
 using System.Windows.Interop;
 using System.Windows.Media;
@@ -42,6 +44,11 @@ public partial class KrokoPanelWindow : Window
     public void AttachToIsland(BubbleGeometry geometry)
     {
         _attached = true;
+        // Sin el marco macOS de ventana normal: aquí cuelga de la isla, sin título ni semáforo
+        var bare = new FrameworkElementFactory(typeof(AdornerDecorator));
+        bare.AppendChild(new FrameworkElementFactory(typeof(ContentPresenter)));
+        Template = new ControlTemplate(typeof(Window)) { VisualTree = bare };
+        WindowChrome.SetWindowChrome(this, null);
         WindowStyle = WindowStyle.None;
         AllowsTransparency = true;
         ResizeMode = ResizeMode.NoResize;
@@ -53,7 +60,7 @@ public partial class KrokoPanelWindow : Window
         MinWidth = 0;
         MinHeight = 0;
 
-        var surface = Background;
+        var surface = (Brush)FindResource("Kroko.Window");
         Background = Brushes.Transparent;
         var content = (UIElement)Content;
         Content = null;

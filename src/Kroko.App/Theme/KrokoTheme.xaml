@@ -16,8 +16,8 @@
     <Color x:Key="Kroko.TearColor">#4DA3FF</Color>
     <Color x:Key="Kroko.PurpleColor">#A85FF7</Color>
     <Color x:Key="Kroko.PanelColor">#EB0F0F0F</Color>
-    <Color x:Key="Kroko.TextColor">#F5F1E9</Color>
-    <Color x:Key="Kroko.TextMutedColor">#B9B5AA</Color>
+    <Color x:Key="Kroko.TextColor">#FFFFFF</Color>
+    <Color x:Key="Kroko.TextMutedColor">#BDBDC2</Color>
 
     <SolidColorBrush x:Key="Kroko.Body" Color="{StaticResource Kroko.BodyColor}" />
     <SolidColorBrush x:Key="Kroko.BodyEdge" Color="{StaticResource Kroko.BodyEdgeColor}" />
@@ -35,10 +35,10 @@
 
     <FontFamily x:Key="Kroko.Font">Segoe UI Variable Text, Segoe UI</FontFamily>
 
-    <SolidColorBrush x:Key="Kroko.Window" Color="#0F0F0F" />
-    <SolidColorBrush x:Key="Kroko.Surface" Color="#1A1A1A" />
-    <SolidColorBrush x:Key="Kroko.SurfaceHover" Color="#232323" />
-    <SolidColorBrush x:Key="Kroko.Line" Color="#24F5F1E9" />
+    <SolidColorBrush x:Key="Kroko.Window" Color="#121212" />
+    <SolidColorBrush x:Key="Kroko.Surface" Color="#1E1E20" />
+    <SolidColorBrush x:Key="Kroko.SurfaceHover" Color="#2A2A2D" />
+    <SolidColorBrush x:Key="Kroko.Line" Color="#2EFFFFFF" />
     <SolidColorBrush x:Key="Kroko.OnAccent" Color="#0F0F0F" />
 
     <!-- Tarjeta con borde fino -->
@@ -567,4 +567,74 @@
         <Setter Property="Background" Value="Transparent" />
     </Style>
     <Style TargetType="TabControl"><Setter Property="Foreground" Value="{StaticResource Kroko.Text}" /></Style>
+
+    <!--
+        Ventana estilo macOS para TODAS las ventanas de Kroko (17/11/2026, pedido por Pol): sin el marco de Windows,
+        esquinas de 12 px, semáforo rojo/amarillo/verde, título centrado y letras blancas sobre fondo negro.
+        Uso: Style="{StaticResource Kroko.MacWindow}". Los botones usan SystemCommands (enlazados en App.xaml.cs).
+    -->
+    <Style x:Key="Kroko.MacLight" TargetType="Button">
+        <Setter Property="Width" Value="12" />
+        <Setter Property="Height" Value="12" />
+        <Setter Property="Margin" Value="0,0,8,0" />
+        <Setter Property="Cursor" Value="Hand" />
+        <Setter Property="Focusable" Value="False" />
+        <Setter Property="WindowChrome.IsHitTestVisibleInChrome" Value="True" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Button">
+                    <Grid Background="Transparent">
+                        <Ellipse Fill="{TemplateBinding Background}" Stroke="#30000000" StrokeThickness="0.5" />
+                        <TextBlock x:Name="Glyph" Text="{TemplateBinding Content}" FontSize="9" FontWeight="Bold" Foreground="#99000000"
+                                   HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,-1,0,0" Visibility="Hidden" />
+                    </Grid>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="Glyph" Property="Visibility" Value="Visible" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <Style x:Key="Kroko.MacWindow" TargetType="Window">
+        <Setter Property="WindowStyle" Value="None" />
+        <Setter Property="AllowsTransparency" Value="True" />
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="ResizeMode" Value="CanResize" />
+        <Setter Property="Foreground" Value="{StaticResource Kroko.Text}" />
+        <Setter Property="FontFamily" Value="{StaticResource Kroko.Font}" />
+        <Setter Property="FontSize" Value="13" />
+        <Setter Property="WindowChrome.WindowChrome">
+            <Setter.Value>
+                <WindowChrome CaptionHeight="44" ResizeBorderThickness="6" GlassFrameThickness="0" CornerRadius="12" UseAeroCaptionButtons="False" />
+            </Setter.Value>
+        </Setter>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Window">
+                    <Border CornerRadius="12" Background="{StaticResource Kroko.Window}" BorderBrush="#3A3A3C" BorderThickness="1" ClipToBounds="True">
+                        <DockPanel>
+                            <Grid DockPanel.Dock="Top" Height="44">
+                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="16,0,0,0">
+                                    <Button Style="{StaticResource Kroko.MacLight}" Background="#FF5F57" Content="×" ToolTip="Cerrar"
+                                            Command="{x:Static SystemCommands.CloseWindowCommand}" CommandTarget="{Binding RelativeSource={RelativeSource TemplatedParent}}" />
+                                    <Button Style="{StaticResource Kroko.MacLight}" Background="#FEBC2E" Content="–" ToolTip="Minimizar"
+                                            Command="{x:Static SystemCommands.MinimizeWindowCommand}" CommandTarget="{Binding RelativeSource={RelativeSource TemplatedParent}}" />
+                                    <Button Style="{StaticResource Kroko.MacLight}" Background="#28C840" Content="+" ToolTip="Agrandar"
+                                            Command="{x:Static SystemCommands.MaximizeWindowCommand}" CommandTarget="{Binding RelativeSource={RelativeSource TemplatedParent}}" />
+                                </StackPanel>
+                                <TextBlock Text="{TemplateBinding Title}" HorizontalAlignment="Center" VerticalAlignment="Center"
+                                           FontWeight="SemiBold" FontSize="13" Foreground="{StaticResource Kroko.Text}" />
+                            </Grid>
+                            <AdornerDecorator>
+                                <ContentPresenter />
+                            </AdornerDecorator>
+                        </DockPanel>
+                    </Border>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
 </ResourceDictionary>

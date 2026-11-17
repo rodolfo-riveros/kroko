@@ -4,7 +4,7 @@
         Title="Kroko — Lo que sabe de ti"
         Width="760" Height="720" MinWidth="560" MinHeight="420"
         WindowStartupLocation="CenterScreen"
-        Background="{StaticResource Kroko.Window}"
+        Style="{StaticResource Kroko.MacWindow}"
         Foreground="{StaticResource Kroko.Text}"
         FontFamily="{StaticResource Kroko.Font}"
         FontSize="13">

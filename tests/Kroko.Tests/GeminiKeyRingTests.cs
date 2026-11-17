@@ -130,6 +130,68 @@ public class GeminiKeyRingTests
         Assert.Equal(2, gemini.KeysUsed.Count);
     }
 
+    private sealed class FakeGoogle(Func<string, string, (HttpStatusCode, string)> answer) : HttpMessageHandler
+    {
+        public readonly List<string> Calls = [];
+
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken ct)
+        {
+            var key = request.Headers.GetValues("x-goog-api-key").Single();
+            var model = request.RequestUri!.AbsolutePath.Split('/').Last().Split(':')[0];
+            Calls.Add($"{key}@{model}");
+            var (status, body) = answer(key, model);
+            return Task.FromResult(new HttpResponseMessage(status) { Content = new StringContent(body, Encoding.UTF8, "application/json") });
+        }
+    }
+
+    private const string Ok = """{"candidates":[{"content":{"parts":[{"text":"Hola"}]}}]}""";
+
+    private static GeminiProvider Provider(HttpMessageHandler h, params string[] keys) => new(new HttpClient(h),
+        new JarvisToolTests.StaticMonitor<LlmOptions>(new LlmOptions
+        {
+            Gemini = new GeminiOptions
+            {
+                KeysFromAppOnly = false, BaseUrl = "https://gemini.test", Model = "principal", FallbackModels = ["respaldo"],
+                ApiKey = keys.ElementAtOrDefault(0), ApiKey2 = keys.ElementAtOrDefault(1),
+            },
+        }), NullLogger<GeminiProvider>.Instance);
+
+    [Fact]
+    public async Task Una_clave_invalida_no_frena_a_las_demas()
+    {
+        // Lo de Pol el 17/11/2026: una clave mala hacía fallar todo, aunque las otras funcionaran
+        var google = new FakeGoogle((key, _) => key == "mala"
+            ? (HttpStatusCode.BadRequest, """{"error":{"code":400,"message":"API key not valid. Please pass a valid API key.","status":"INVALID_ARGUMENT","details":[{"reason":"API_KEY_INVALID"}]}}""")
+            : (HttpStatusCode.OK, Ok));
+        var reply = await Provider(google, "mala", "buena").ChatAsync("s", [ChatMessage.User("hola")], [], default);
+        Assert.Equal("Hola", reply.Text);
+
+        // La mala queda apartada: la siguiente orden va directo con la buena
+        google.Calls.Clear();
+        await Provider(google, "mala", "buena").ChatAsync("s", [ChatMessage.User("otra")], [], default);
+        Assert.Equal(["buena@principal"], google.Calls);
+    }
+
+    [Fact]
+    public async Task Si_el_modelo_no_esta_disponible_usa_el_de_respaldo()
+    {
+        var google = new FakeGoogle((_, model) => model == "principal"
+            ? (HttpStatusCode.NotFound, """{"error":{"code":404,"message":"models/principal is not found for API version v1beta"}}""")
+            : (HttpStatusCode.OK, Ok));
+        var reply = await Provider(google, "k").ChatAsync("s", [ChatMessage.User("hola")], [], default);
+        Assert.Equal("Hola", reply.Text);
+        Assert.Equal(["k@principal", "k@respaldo"], google.Calls);
+    }
+
+    [Fact]
+    public async Task Si_ninguna_sirve_explica_el_motivo_real()
+    {
+        var google = new FakeGoogle((_, _) => (HttpStatusCode.Forbidden, """{"error":{"code":403,"message":"Generative Language API has not been used in project 123 before or it is disabled."}}"""));
+        var ex = await Assert.ThrowsAsync<LlmProviderException>(() => Provider(google, "a", "b").ChatAsync("s", [ChatMessage.User("hola")], [], default));
+        Assert.Contains("no acepta tus claves", ex.OwnerMessage);
+        Assert.Equal(2, google.Calls.Count); // probó las dos
+    }
+
     [Fact]
     public void Las_claves_repetidas_o_vacias_no_cuentan()
     {

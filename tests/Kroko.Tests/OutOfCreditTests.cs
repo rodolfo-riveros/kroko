@@ -66,6 +66,10 @@ public class OutOfCreditTests
     }
 
     [Fact]
-    public void Otros_errores_siguen_con_el_mensaje_de_siempre() =>
-        Assert.Null(new LlmProviderException("gemini", "falla", 503).OwnerMessage);
+    public void Cada_error_explica_su_motivo()
+    {
+        Assert.Contains("saturado", new LlmProviderException("gemini", "falla", 503).OwnerMessage);
+        Assert.Contains("no acepta tus claves", new LlmProviderException("gemini", "API key not valid", 400).OwnerMessage);
+        Assert.Null(new LlmProviderException("gemini", "falla rara", 418).OwnerMessage); // lo desconocido: mensaje general
+    }
 }

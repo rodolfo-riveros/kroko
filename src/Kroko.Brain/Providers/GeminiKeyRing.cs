@@ -18,7 +18,7 @@ public enum GeminiUse
 /// los trabajos se reparten en ronda. Así los límites por minuto de una clave no frenan a los otros trabajos.
 ///
 /// Si una clave falla, se aparta y ese trabajo usa la siguiente:
-///  · 402 / sin créditos → la clave queda apartada 12 h para TODO (no tiene saldo).
+///  · 402 / sin créditos, clave inválida o bloqueada (400 API_KEY_INVALID, 401, 403) → apartada 12 h para TODO.
 ///  · 429 → solo para ese trabajo (la cuota es por modelo): 12 h si es la del día, 2 min si es la del minuto.
 ///  · 500/503/504 (Gemini saturado) → 30 s solo para ese trabajo, y se reintenta en el acto con otra.
 /// </summary>
@@ -74,7 +74,8 @@ public static class GeminiKeyRing
     public static bool Report(string? key, int? status, string? message = null, GeminiUse use = GeminiUse.Chat)
     {
         if (string.IsNullOrEmpty(key) || status is null) return false;
-        var credits = status == 402 || (message?.Contains("credits", StringComparison.OrdinalIgnoreCase) ?? false);
+        var credits = status == 402 || (message?.Contains("credits", StringComparison.OrdinalIgnoreCase) ?? false)
+                      || IsBadKey(status, message); // clave inválida, vencida o bloqueada: no sirve para nada
         TimeSpan rest;
         GeminiUse? scope = use;
         if (credits)
@@ -95,6 +96,14 @@ public static class GeminiKeyRing
         lock (Gate) Resting[(key, scope)] = Now() + rest;
         return true;
     }
+
+    /// <summary>La clave no es válida, venció o Google la bloquea (API desactivada, restricciones): ninguna llamada va a funcionar.</summary>
+    internal static bool IsBadKey(int? status, string? message) =>
+        status is 401 or 403
+        || (status == 400 && message is not null
+            && (message.Contains("API_KEY_INVALID", StringComparison.OrdinalIgnoreCase)
+                || message.Contains("API key not valid", StringComparison.OrdinalIgnoreCase)
+                || message.Contains("API key expired", StringComparison.OrdinalIgnoreCase)));
 
     /// <summary>Cuántas claves pueden pensar (chat) ahora mismo (para Ajustes).</summary>
     public static int Available(IReadOnlyList<string> keys, GeminiUse use = GeminiUse.Chat)

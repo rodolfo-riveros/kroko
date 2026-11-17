@@ -6,7 +6,7 @@
         Title="Configurar Kroko"
         Width="880" Height="700" MinWidth="760" MinHeight="580"
         WindowStartupLocation="CenterScreen"
-        Background="{StaticResource Kroko.Window}"
+        Style="{StaticResource Kroko.MacWindow}"
         Foreground="{StaticResource Kroko.Text}"
         FontFamily="{StaticResource Kroko.Font}"
         FontSize="13">

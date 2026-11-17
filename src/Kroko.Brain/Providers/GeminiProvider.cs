@@ -28,31 +28,66 @@ public sealed class GeminiProvider(HttpClient http, IOptionsMonitor<LlmOptions> 
         var opt = options.CurrentValue;
         var keys = opt.Gemini.AllApiKeys();
         if (keys.Count == 0) throw new NoLlmConfiguredException();
-
-        var url = $"{opt.Gemini.BaseUrl.TrimEnd('/')}/v1beta/models/{Uri.EscapeDataString(opt.Gemini.Model)}:generateContent";
         var body = BuildRequest(systemPrompt, history, tools, opt).ToJsonString();
 
-        // Varias claves: el chat usa la suya; si se quedó sin saldo, sin cuota o Gemini está saturado, se prueba otra
+        // Primero el modelo principal; si no está disponible para estas claves, los de respaldo (17/11/2026)
+        var models = new[] { opt.Gemini.Model }.Concat(opt.Gemini.FallbackModels)
+            .Where(m => !string.IsNullOrWhiteSpace(m)).Distinct().ToList();
         LlmProviderException? last = null;
-        for (var attempt = 0; attempt < keys.Count; attempt++)
+        foreach (var model in models)
         {
-            var key = GeminiKeyRing.Pick(keys, GeminiUse.Chat)!;
-            using var req = new HttpRequestMessage(HttpMethod.Post, url)
+            var url = $"{opt.Gemini.BaseUrl.TrimEnd('/')}/v1beta/models/{Uri.EscapeDataString(model)}:generateContent";
+
+            // Varias claves: el chat usa la suya; si falla por algo de esa clave (saldo, cuota, clave inválida o
+            // bloqueada, Gemini saturado, sin conexión), se prueba otra en el acto.
+            for (var attempt = 0; attempt < Math.Max(2, keys.Count); attempt++) // con una sola clave, un reintento si falla la red
             {
-                Content = new StringContent(body, System.Text.Encoding.UTF8, "application/json"),
-            };
-            req.Headers.Add("x-goog-api-key", key);
+                var key = GeminiKeyRing.Pick(keys, GeminiUse.Chat)!;
+                using var req = new HttpRequestMessage(HttpMethod.Post, url)
+                {
+                    Content = new StringContent(body, System.Text.Encoding.UTF8, "application/json"),
+                };
+                req.Headers.Add("x-goog-api-key", key);
 
-            using var res = await SendAsync(req, ct);
-            var text = await res.Content.ReadAsStringAsync(ct);
-            if (res.IsSuccessStatusCode) return ParseResponse(text);
+                HttpResponseMessage res;
+                try
+                {
+                    res = await SendAsync(req, ct);
+                }
+                catch (LlmProviderException ex)
+                {
+                    last = ex; // red o tiempo de espera: con otra clave puede ir
+                    log.LogWarning("Gemini no respondió ({Message}); pruebo otra vez", ex.Message);
+                    continue;
+                }
+                using (res)
+                {
+                    var text = await res.Content.ReadAsStringAsync(ct);
+                    if (res.IsSuccessStatusCode) return ParseResponse(text);
 
-            last = new LlmProviderException(Name, $"Gemini respondió {(int)res.StatusCode}: {Trim(text)}", (int)res.StatusCode);
-            if (!GeminiKeyRing.Report(key, (int)res.StatusCode, text, GeminiUse.Chat) || keys.Count == 1) break;
-            log.LogWarning("Una clave de Gemini no pudo ({Status}); pruebo con la siguiente", (int)res.StatusCode);
+                    var status = (int)res.StatusCode;
+                    last = new LlmProviderException(Name, $"Gemini respondió {status}: {Trim(text)}", status);
+                    if (IsModelUnavailable(status, text))
+                    {
+                        log.LogWarning("El modelo {Model} no está disponible ({Status}); pruebo el de respaldo", model, status);
+                        break; // siguiente modelo
+                    }
+                    if (!GeminiKeyRing.Report(key, status, text, GeminiUse.Chat) || keys.Count == 1) throw last;
+                    log.LogWarning("Una clave de Gemini no pudo ({Status}); pruebo con la siguiente", status);
+                }
+            }
+            if (last is { StatusCode: not (404 or 400) }) break; // problema de claves o de red: otro modelo no lo arregla
         }
-        throw last!;
+        throw last ?? new LlmProviderException(Name, "Gemini no respondió");
     }
+
+    /// <summary>El modelo no existe o no está habilitado para esa clave (otro modelo sí puede funcionar).</summary>
+    internal static bool IsModelUnavailable(int status, string body) =>
+        status == 404
+        || (status == 400 && (body.Contains("model", StringComparison.OrdinalIgnoreCase)
+                              && (body.Contains("not found", StringComparison.OrdinalIgnoreCase)
+                                  || body.Contains("not supported", StringComparison.OrdinalIgnoreCase)
+                                  || body.Contains("is not available", StringComparison.OrdinalIgnoreCase))));
 
     private async Task<HttpResponseMessage> SendAsync(HttpRequestMessage req, CancellationToken ct)
     {
