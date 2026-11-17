@@ -97,6 +97,8 @@ public sealed partial class KrokoPanelViewModel : ObservableObject, IDisposable
         _windows = windows;
         _opt = options.Value;
         Timers = timers;
+        timers.History.Changed += () => System.Windows.Application.Current?.Dispatcher.BeginInvoke(RefreshFocusWeek);
+        RefreshFocusWeek();
         _refresh = new DispatcherTimer { Interval = TimeSpan.FromSeconds(30) };
         _refresh.Tick += async (_, _) => await RefreshAsync();
         _refresh.Start();
@@ -361,6 +363,34 @@ public sealed partial class KrokoPanelViewModel : ObservableObject, IDisposable
 
     [RelayCommand]
     private void StopFocus() => Timers.Cancel();
+
+    // ---- Enfoque estilo Troko (17/11/2026): pausar, +5 min, terminar y la semana en barras
+
+    /// <summary>Una barra de la semana: letra del día, alto (0..1) y si es hoy.</summary>
+    public sealed record FocusBar(string Day, double Height, bool IsToday, string Tip);
+
+    public ObservableCollection<FocusBar> FocusBars { get; } = [];
+    [ObservableProperty] public partial string TodayFocusText { get; set; } = "";
+
+    public void RefreshFocusWeek()
+    {
+        string[] letters = ["D", "L", "M", "X", "J", "V", "S"];
+        var days = Enumerable.Range(0, 7).Select(i => DateTime.Today.AddDays(i - 6)).ToList();
+        var max = Math.Max(25, days.Max(d => Timers.History.On(d).Minutes));
+        FocusBars.Clear();
+        foreach (var d in days)
+        {
+            var (minutes, _) = Timers.History.On(d);
+            FocusBars.Add(new FocusBar(letters[(int)d.DayOfWeek], Math.Max(0.06, minutes / (double)max), d == DateTime.Today, $"{minutes} min"));
+        }
+        var (todayMin, todayBlocks) = Timers.History.On(DateTime.Today);
+        TodayFocusText = todayBlocks == 0 && todayMin == 0 ? "Aún no te enfocas hoy"
+            : $"{todayBlocks} {(todayBlocks == 1 ? "bloque" : "bloques")} · {todayMin} min";
+    }
+
+    [RelayCommand] private void PauseFocus() => Timers.PauseOrResume();
+    [RelayCommand] private void AddFiveMinutes() => Timers.AddMinutes(5);
+    [RelayCommand] private void FinishFocus() => Timers.FinishNow();
 
     // ------------------------------------------------------------------ mi PC
 

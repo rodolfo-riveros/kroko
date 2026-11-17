@@ -15,6 +15,7 @@
         <v:BoolToVisibleConverter x:Key="BoolToVisible" />
         <v:EmptyToCollapsedConverter x:Key="EmptyToCollapsed" />
         <v:ProgressToDashConverter x:Key="ProgressToDash" />
+        <v:FractionConverter x:Key="Fraction" />
 
         <Style x:Key="Field" TargetType="TextBox" BasedOn="{StaticResource Kroko.Field}">
             <Setter Property="VerticalContentAlignment" Value="Center" />
@@ -524,48 +525,119 @@
             <ScrollViewer>
                 <StackPanel>
                     <TextBlock Text="Enfoque" Style="{StaticResource PageTitle}" />
-                    <TextBlock Text="Bloques de concentración con descansos. Mientras corre, silencio tus notificaciones y la cuenta atrás se ve junto a mí." Style="{StaticResource Sub}" Margin="0,2,0,18" />
-                    <Border Style="{StaticResource Kroko.Card}" Padding="24">
+                    <TextBlock Text="Bloques de concentración con descansos. Mientras corre, silencio tus notificaciones y la cuenta atrás se ve en la isla." Style="{StaticResource Sub}" Margin="0,2,0,18" />
+
+                    <!-- Tarjeta con resplandor verde (estilo Troko, 17/11/2026) -->
+                    <Border Style="{StaticResource Kroko.GlowCard}" Padding="26">
                         <DockPanel>
-                            <Grid Width="180" Height="180" DockPanel.Dock="Left" Margin="0,0,30,0">
-                                <Ellipse Stroke="{StaticResource Kroko.Line}" StrokeThickness="12" />
-                                <Grid Visibility="{Binding Timers.IsActive, Converter={StaticResource BoolToVisible}}">
-                                    <Ellipse Stroke="{StaticResource Kroko.Accent}" StrokeThickness="12" StrokeDashCap="Round"
-                                             StrokeDashArray="{Binding Timers.Progress, Converter={StaticResource ProgressToDash}, ConverterParameter='180,12'}"
-                                             RenderTransformOrigin="0.5,0.5">
-                                        <Ellipse.RenderTransform><RotateTransform Angle="-90" /></Ellipse.RenderTransform>
-                                    </Ellipse>
-                                    <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
-                                        <TextBlock Text="{Binding Timers.RemainingText}" FontSize="34" FontWeight="SemiBold" HorizontalAlignment="Center" />
-                                        <TextBlock Text="{Binding Timers.Label}" Style="{StaticResource Sub}" HorizontalAlignment="Center" />
-                                    </StackPanel>
-                                </Grid>
-                                <!-- Sin nada en marcha -->
+                            <Grid Width="190" Height="190" DockPanel.Dock="Left" Margin="0,0,30,0">
+                                <Ellipse Stroke="{StaticResource Kroko.Inset}" StrokeThickness="12" />
+                                <Ellipse Stroke="{StaticResource Kroko.Accent}" StrokeThickness="12" StrokeDashCap="Round"
+                                         Visibility="{Binding Timers.IsActive, Converter={StaticResource BoolToVisible}}"
+                                         StrokeDashArray="{Binding Timers.Progress, Converter={StaticResource ProgressToDash}, ConverterParameter='190,12'}"
+                                         RenderTransformOrigin="0.5,0.5">
+                                    <Ellipse.RenderTransform><RotateTransform Angle="-90" /></Ellipse.RenderTransform>
+                                </Ellipse>
                                 <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
+                                    <TextBlock Text="ENFOQUE" Style="{StaticResource Kroko.Label}" Margin="0" HorizontalAlignment="Center" />
+                                    <TextBlock FontSize="40" FontWeight="Bold" HorizontalAlignment="Center">
+                                        <TextBlock.Style>
+                                            <Style TargetType="TextBlock">
+                                                <Setter Property="Text" Value="{Binding Timers.RemainingText}" />
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding Timers.IsActive}" Value="False">
+                                                        <Setter Property="Text" Value="25:00" />
+                                                        <Setter Property="Foreground" Value="{StaticResource Kroko.TextMuted}" />
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </TextBlock.Style>
+                                    </TextBlock>
+                                    <TextBlock HorizontalAlignment="Center">
+                                        <TextBlock.Style>
+                                            <Style TargetType="TextBlock" BasedOn="{StaticResource Sub}">
+                                                <Setter Property="Text" Value="{Binding Timers.Label}" />
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding Timers.IsActive}" Value="False"><Setter Property="Text" Value="Listo para enfocarte" /></DataTrigger>
+                                                    <DataTrigger Binding="{Binding Timers.IsPaused}" Value="True"><Setter Property="Text" Value="En pausa" /></DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </TextBlock.Style>
+                                    </TextBlock>
+                                </StackPanel>
+                            </Grid>
+
+                            <StackPanel VerticalAlignment="Center">
+                                <!-- Sin nada en marcha: empezar -->
+                                <StackPanel>
                                     <StackPanel.Style>
                                         <Style TargetType="StackPanel">
                                             <Style.Triggers>
-                                                <DataTrigger Binding="{Binding Timers.IsActive}" Value="True">
-                                                    <Setter Property="Visibility" Value="Collapsed" />
-                                                </DataTrigger>
+                                                <DataTrigger Binding="{Binding Timers.IsActive}" Value="True"><Setter Property="Visibility" Value="Collapsed" /></DataTrigger>
                                             </Style.Triggers>
                                         </Style>
                                     </StackPanel.Style>
-                                    <TextBlock Text="25:00" FontSize="34" FontWeight="SemiBold" HorizontalAlignment="Center" Foreground="{StaticResource Kroko.TextMuted}" />
-                                    <TextBlock Text="Listo para enfocarte" Style="{StaticResource Sub}" HorizontalAlignment="Center" />
+                                    <TextBlock Text="EMPEZAR" Style="{StaticResource Kroko.Label}" Margin="0,0,0,10" />
+                                    <WrapPanel>
+                                        <Button Content="25 min" Command="{Binding StartFocusCommand}" CommandParameter="25" Style="{StaticResource Kroko.PrimaryButton}" Margin="0,0,8,8" />
+                                        <Button Content="50 min" Command="{Binding StartFocusCommand}" CommandParameter="50" Style="{StaticResource Kroko.Button}" Margin="0,0,8,8" />
+                                        <Button Content="Descanso 5 min" Command="{Binding StartBreakCommand}" Style="{StaticResource Kroko.Button}" Margin="0,0,8,8" />
+                                    </WrapPanel>
                                 </StackPanel>
-                            </Grid>
-                            <StackPanel VerticalAlignment="Center">
-                                <TextBlock Text="Empezar" FontWeight="SemiBold" Margin="0,0,0,8" />
-                                <WrapPanel>
-                                    <Button Content="25 min" Command="{Binding StartFocusCommand}" CommandParameter="25" Style="{StaticResource Kroko.PrimaryButton}" Margin="0,0,8,8" />
-                                    <Button Content="50 min" Command="{Binding StartFocusCommand}" CommandParameter="50" Style="{StaticResource Kroko.Button}" Margin="0,0,8,8" />
-                                    <Button Content="Descanso 5 min" Command="{Binding StartBreakCommand}" Style="{StaticResource Kroko.Button}" Margin="0,0,8,8" />
-                                </WrapPanel>
-                                <Button Content="Detener" Command="{Binding StopFocusCommand}" Style="{StaticResource Kroko.Button}" HorizontalAlignment="Left"
-                                        Visibility="{Binding Timers.IsActive, Converter={StaticResource BoolToVisible}}" />
+                                <!-- En marcha: pausar, +5 min, terminar y detener -->
+                                <StackPanel Visibility="{Binding Timers.IsActive, Converter={StaticResource BoolToVisible}}">
+                                    <WrapPanel>
+                                        <Button Command="{Binding PauseFocusCommand}" Margin="0,0,8,8">
+                                            <Button.Style>
+                                                <Style TargetType="Button" BasedOn="{StaticResource Kroko.Button}">
+                                                    <Setter Property="Content" Value="Pausar" />
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding Timers.IsPaused}" Value="True"><Setter Property="Content" Value="Seguir" /></DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </Button.Style>
+                                        </Button>
+                                        <Button Content="+5 min" Command="{Binding AddFiveMinutesCommand}" Style="{StaticResource Kroko.Button}" Margin="0,0,8,8" />
+                                        <Button Content="Terminar" Command="{Binding FinishFocusCommand}" Style="{StaticResource Kroko.Button}" Margin="0,0,8,8" />
+                                    </WrapPanel>
+                                    <Button Content="Detener" Command="{Binding StopFocusCommand}" Style="{StaticResource Kroko.TextButton}" HorizontalAlignment="Left" Margin="-8,0,0,0" />
+                                </StackPanel>
                                 <TextBlock Margin="0,12,0,0" Style="{StaticResource Sub}" Text="Por voz: «enfócate 25 minutos para estudiar», «descansa»." />
                             </StackPanel>
+                        </DockPanel>
+                    </Border>
+
+                    <!-- HOY y la semana: barras moradas, la de hoy en verde -->
+                    <Border Style="{StaticResource Kroko.Card}" Margin="0,14,0,0" Padding="22,18">
+                        <DockPanel>
+                            <StackPanel DockPanel.Dock="Left" VerticalAlignment="Center" Margin="0,0,30,0">
+                                <TextBlock Text="HOY" Style="{StaticResource Kroko.Label}" Margin="0,0,0,4" />
+                                <TextBlock Text="{Binding TodayFocusText}" FontSize="16" FontWeight="SemiBold" />
+                            </StackPanel>
+                            <ItemsControl ItemsSource="{Binding FocusBars}" HorizontalAlignment="Right">
+                                <ItemsControl.ItemsPanel>
+                                    <ItemsPanelTemplate><StackPanel Orientation="Horizontal" /></ItemsPanelTemplate>
+                                </ItemsControl.ItemsPanel>
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <StackPanel Margin="6,0" ToolTip="{Binding Tip}">
+                                            <Grid Height="56" Width="14">
+                                                <Border VerticalAlignment="Bottom" CornerRadius="5" Height="{Binding Height, Converter={StaticResource Fraction}, ConverterParameter=56}">
+                                                    <Border.Style>
+                                                        <Style TargetType="Border">
+                                                            <Setter Property="Background" Value="{StaticResource Kroko.Violet}" />
+                                                            <Style.Triggers>
+                                                                <DataTrigger Binding="{Binding IsToday}" Value="True"><Setter Property="Background" Value="{StaticResource Kroko.Accent}" /></DataTrigger>
+                                                            </Style.Triggers>
+                                                        </Style>
+                                                    </Border.Style>
+                                                </Border>
+                                            </Grid>
+                                            <TextBlock Text="{Binding Day}" FontSize="11" Foreground="{StaticResource Kroko.TextMuted}" HorizontalAlignment="Center" Margin="0,6,0,0" />
+                                        </StackPanel>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
                         </DockPanel>
                     </Border>
                 </StackPanel>

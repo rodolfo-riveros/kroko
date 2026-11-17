@@ -100,3 +100,13 @@ public sealed class NotNullToVisibleConverter : IValueConverter
     public object ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture) =>
         throw new NotSupportedException();
 }
+
+/// <summary>Fracción 0..1 → píxeles (parámetro = alto total). Para barras como las de la semana de Enfoque.</summary>
+public sealed class FractionConverter : IValueConverter
+{
+    public object Convert(object? value, Type targetType, object? parameter, CultureInfo culture) =>
+        (value is double f ? Math.Clamp(f, 0, 1) : 0) * double.Parse(parameter as string ?? "1", CultureInfo.InvariantCulture);
+
+    public object ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture) =>
+        throw new NotSupportedException();
+}

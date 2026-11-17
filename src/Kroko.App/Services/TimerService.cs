@@ -51,6 +51,54 @@ public sealed partial class TimerService : ObservableObject
     public bool IsPomodoro { get; private set; }
     public bool IsWorkPhase { get; private set; }
 
+    /// <summary>En pausa (el tiempo no corre).</summary>
+    [ObservableProperty]
+    public partial bool IsPaused { get; set; }
+
+    private TimeSpan _pausedLeft;
+    private DateTime _workStarted;
+
+    /// <summary>Minutos de enfoque por día (para «HOY» y las barras de la semana).</summary>
+    public FocusHistory History { get; } = new();
+
+    public void PauseOrResume()
+    {
+        if (!IsActive) return;
+        if (IsPaused)
+        {
+            _endsAt = DateTime.Now + _pausedLeft;
+            IsPaused = false;
+            _tick.Start();
+        }
+        else
+        {
+            _pausedLeft = _endsAt - DateTime.Now;
+            IsPaused = true;
+            _tick.Stop();
+        }
+    }
+
+    /// <summary>«Terminar»: da por hecho el bloque de enfoque (cuenta como bloque) y para.</summary>
+    public void FinishNow()
+    {
+        if (!IsActive) return;
+        if (IsPomodoro && IsWorkPhase) History.Add(_total - (IsPaused ? _pausedLeft : _endsAt - DateTime.Now), block: true);
+        IsPomodoro = false; // así Cancel no lo vuelve a contar
+        Cancel();
+        PomodoroPhaseChanged?.Invoke(null);
+    }
+
+    /// <summary>«+5 min»: alarga lo que está corriendo.</summary>
+    public void AddMinutes(int minutes)
+    {
+        if (!IsActive) return;
+        var extra = TimeSpan.FromMinutes(minutes);
+        _total += extra;
+        if (IsPaused) _pausedLeft += extra;
+        else _endsAt += extra;
+        Tick();
+    }
+
     public void StartTimer(TimeSpan duration, string label)
     {
         IsPomodoro = false;
@@ -70,6 +118,8 @@ public sealed partial class TimerService : ObservableObject
     public void Cancel()
     {
         if (!IsActive) return;
+        if (IsPomodoro && IsWorkPhase) History.Add(_total - (IsPaused ? _pausedLeft : _endsAt - DateTime.Now), block: false); // lo que alcanzó a enfocarse
+        IsPaused = false;
         _tick.Stop();
         IsActive = false;
         if (IsPomodoro) PomodoroPhaseChanged?.Invoke(null);
@@ -81,6 +131,7 @@ public sealed partial class TimerService : ObservableObject
     private void StartWork()
     {
         IsWorkPhase = true;
+        _workStarted = DateTime.Now;
         PomodoroPhaseChanged?.Invoke(true);
         Begin(TimeSpan.FromMinutes(_workMinutes), $"Pomodoro · trabajo {_completedBlocks + 1}");
     }
@@ -132,6 +183,7 @@ public sealed partial class TimerService : ObservableObject
         if (IsWorkPhase)
         {
             _completedBlocks++;
+            History.Add(_total, block: true);
             Finished?.Invoke("Pomodoro", $"¡Buen trabajo! Bloque {_completedBlocks} terminado. Toca descansar.", "success");
             StartBreak();
         }
@@ -193,4 +245,60 @@ public sealed class FocusService(ILogger<FocusService> log) : IDisposable
 
     /// <summary>Al cerrar Kroko, nunca dejar las notificaciones apagadas.</summary>
     public void Dispose() => Deactivate();
+}
+
+/// <summary>
+/// Minutos de enfoque de cada día (17/11/2026, pantalla Enfoque estilo Troko: «HOY · 3 bloques · 75 min» y las barras de
+/// la semana). Se guarda en %LOCALAPPDATA%\Kroko\enfoque.json; solo se conservan los últimos 60 días.
+/// </summary>
+public sealed class FocusHistory
+{
+    private readonly string _path;
+    private readonly Dictionary<string, (int Minutes, int Blocks)> _days;
+
+    public FocusHistory(string? path = null)
+    {
+        _path = path ?? System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Kroko", "enfoque.json");
+        _days = Load();
+    }
+
+    public event Action? Changed;
+
+    public void Add(TimeSpan worked, bool block)
+    {
+        if (worked < TimeSpan.FromMinutes(1)) return;
+        var key = DateTime.Today.ToString("yyyy-MM-dd");
+        var (m, b) = _days.GetValueOrDefault(key);
+        _days[key] = (m + (int)Math.Round(worked.TotalMinutes), b + (block ? 1 : 0));
+        foreach (var old in _days.Keys.Where(k => string.CompareOrdinal(k, DateTime.Today.AddDays(-60).ToString("yyyy-MM-dd")) < 0).ToList())
+            _days.Remove(old);
+        Save();
+        Changed?.Invoke();
+    }
+
+    public (int Minutes, int Blocks) On(DateTime day) => _days.GetValueOrDefault(day.ToString("yyyy-MM-dd"));
+
+    private Dictionary<string, (int, int)> Load()
+    {
+        try
+        {
+            if (!System.IO.File.Exists(_path)) return [];
+            var raw = System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, int[]>>(System.IO.File.ReadAllText(_path)) ?? [];
+            return raw.Where(p => p.Value.Length == 2).ToDictionary(p => p.Key, p => (p.Value[0], p.Value[1]));
+        }
+        catch (Exception ex) when (ex is System.IO.IOException or System.Text.Json.JsonException or UnauthorizedAccessException)
+        {
+            return [];
+        }
+    }
+
+    private void Save()
+    {
+        try
+        {
+            System.IO.Directory.CreateDirectory(System.IO.Path.GetDirectoryName(_path)!);
+            System.IO.File.WriteAllText(_path, System.Text.Json.JsonSerializer.Serialize(_days.ToDictionary(p => p.Key, p => new[] { p.Value.Minutes, p.Value.Blocks })));
+        }
+        catch (Exception ex) when (ex is System.IO.IOException or UnauthorizedAccessException) { }
+    }
 }
