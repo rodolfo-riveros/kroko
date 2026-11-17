@@ -212,7 +212,7 @@
                     </Border>
 
                     <!-- Tu perfil (como la cuenta en macOS): lleva a «Tu perfil» -->
-                    <Button DockPanel.Dock="Top" Click="Profile_Click" Cursor="Hand" Margin="0,0,0,6">
+                    <Button DockPanel.Dock="Top" Click="Profile_Click" Cursor="Hand" Margin="0,0,0,6" Foreground="{StaticResource Kroko.Text}">
                         <Button.Template>
                             <ControlTemplate TargetType="Button">
                                 <Border x:Name="Bd" CornerRadius="8" Padding="8,8" Background="Transparent">
@@ -284,7 +284,11 @@
 
                 <TabControl SelectedIndex="{Binding SelectedSection}" Background="Transparent" BorderThickness="0" Padding="0">
                     <TabControl.ItemContainerStyle>
-                        <Style TargetType="TabItem"><Setter Property="Visibility" Value="Collapsed" /></Style>
+                        <Style TargetType="TabItem">
+                            <Setter Property="Visibility" Value="Collapsed" />
+                            <!-- El contenido de cada página hereda las letras de su pestaña: blancas, no el negro de Windows -->
+                            <Setter Property="Foreground" Value="{StaticResource Kroko.Text}" />
+                        </Style>
                     </TabControl.ItemContainerStyle>
                     <TabControl.Template>
                         <ControlTemplate TargetType="TabControl">

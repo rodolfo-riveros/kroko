@@ -576,6 +576,8 @@
         <Setter Property="Background" Value="Transparent" />
     </Style>
     <Style TargetType="TabControl"><Setter Property="Foreground" Value="{StaticResource Kroko.Text}" /></Style>
+    <Style TargetType="TabItem"><Setter Property="Foreground" Value="{StaticResource Kroko.Text}" /></Style>
+    <Style TargetType="Button"><Setter Property="Foreground" Value="{StaticResource Kroko.Text}" /></Style>
 
     <!--
         Ventana estilo macOS para TODAS las ventanas de Kroko (17/11/2026, pedido por Pol): sin el marco de Windows,
