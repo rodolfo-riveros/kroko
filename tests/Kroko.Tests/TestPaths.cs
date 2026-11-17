@@ -17,6 +17,18 @@ internal static class TestPaths
             Path.Combine(Path.GetTempPath(), "kroko-brain-tests", "secretos-" + Guid.NewGuid().ToString("N") + ".dat"));
     }
 
+    /// <summary>La carpeta del repositorio (donde está Kroko.slnx).</summary>
+    public static string RepoRoot => FindRoot();
+
+    private static string FindRoot([System.Runtime.CompilerServices.CallerFilePath] string here = "")
+    {
+        {
+            var dir = new DirectoryInfo(Path.GetDirectoryName(here)!);
+            while (dir is not null && !File.Exists(Path.Combine(dir.FullName, "Kroko.slnx"))) dir = dir.Parent;
+            return dir?.FullName ?? throw new DirectoryNotFoundException("No encontré Kroko.slnx");
+        }
+    }
+
     public static Dictionary<string, string?> IsolatedMemory()
     {
         var dir = Path.Combine(Path.GetTempPath(), "kroko-brain-tests", Guid.NewGuid().ToString("N"));

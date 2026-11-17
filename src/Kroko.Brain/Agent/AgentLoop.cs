@@ -106,7 +106,7 @@ public sealed class AgentLoop(
                         response.Provider, step, thinking.ElapsedMilliseconds, expression ?? "(ninguna)");
                     await FinishAsync(channel, speak,
                         string.IsNullOrWhiteSpace(clean) ? "Mmm, me quedé sin palabras. ¿Me lo repites?" : clean,
-                        expression ?? (string.IsNullOrWhiteSpace(clean) ? "confused" : null),
+                        expression ?? (string.IsNullOrWhiteSpace(clean) ? "confused" : Reactions.Guess(clean)),
                         isError: false, ct, audioLater);
                     return;
                 }

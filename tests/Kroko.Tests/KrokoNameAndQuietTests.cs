@@ -64,3 +64,24 @@ public class QuietCommandBrainTests
             where TResponse : Kroko.Shared.Protocol.KrokoMessage => Task.FromResult<TResponse?>(null);
     }
 }
+
+public class AllFacesTests
+{
+    [Fact]
+    public void Kroko_puede_usar_todas_sus_caras_y_existen_en_la_App()
+    {
+        var json = File.ReadAllText(Path.Combine(TestPaths.RepoRoot, "src", "Kroko.App", "Face", "expressions.json"));
+        foreach (var key in Kroko.Shared.Protocol.Reactions.All.Keys)
+            Assert.Contains($"\"key\": \"{key}\"", json);
+        Assert.True(Kroko.Shared.Protocol.Reactions.All.Count >= 27);
+    }
+
+    [Theory]
+    [InlineData("¡Listo! Ya anoté tu tarea.", "success")]
+    [InlineData("Jaja, buena esa.", "laugh")]
+    [InlineData("Lo siento, no pude abrir el archivo.", "sad")]
+    [InlineData("De nada, para eso estoy.", "love")]
+    [InlineData("Son las 3 de la tarde.", null)]
+    public void En_voz_en_tiempo_real_la_cara_sale_de_lo_que_dice(string said, string? face) =>
+        Assert.Equal(face, Kroko.Shared.Protocol.Reactions.Guess(said));
+}

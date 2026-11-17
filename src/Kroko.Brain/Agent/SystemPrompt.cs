@@ -99,7 +99,7 @@ public sealed class SystemPrompt(
         {
             sb.AppendLine();
             sb.AppendLine("Tu cara: empieza SIEMPRE tu respuesta con una etiqueta de expresión entre dobles corchetes, " +
-                          $"por ejemplo [[happy]] Hola{(profile.IsComplete ? " " + who : "")}. Elige la que mejor encaje:");
+                          $"por ejemplo [[happy]] Hola{(profile.IsComplete ? " " + who : "")}. Elige la que mejor encaje y VARÍA (no uses siempre happy; tienes toda una personalidad):");
             foreach (var (key, when) in Reactions.All)
                 sb.AppendLine($"- {key}: {when}");
         }

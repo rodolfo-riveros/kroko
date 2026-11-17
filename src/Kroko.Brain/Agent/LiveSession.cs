@@ -198,6 +198,7 @@ public sealed class LiveSession : IAsyncDisposable
             _krokoTurn.Append(said);
             // Si aun así coló una etiqueta [[happy]], no se muestra: se convierte en la cara que pedía
             var (clean, expression) = ExpressionTag.Extract(Kroko.Shared.KrokoName.Fix(_krokoTurn.ToString()));
+            expression ??= Reactions.Guess(said); // en tiempo real no hay etiquetas: la cara sale de lo que dice
             if (expression is not null && expression != _lastExpression)
             {
                 _lastExpression = expression;
