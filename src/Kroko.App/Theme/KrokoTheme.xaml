@@ -9,12 +9,12 @@
     <Color x:Key="Kroko.BodyColor">#0F0F0F</Color>
     <Color x:Key="Kroko.BodyEdgeColor">#2A2A2A</Color>
     <Color x:Key="Kroko.EyeColor">#FFFFFF</Color>
-    <Color x:Key="Kroko.AccentColor">#A3FF6A</Color>
+    <Color x:Key="Kroko.AccentColor">#B6F23A</Color>
     <Color x:Key="Kroko.EyeAlertColor">#FFB547</Color>
     <Color x:Key="Kroko.EyeErrorColor">#FF5C6C</Color>
     <Color x:Key="Kroko.EyeLoveColor">#FF7EB6</Color>
     <Color x:Key="Kroko.BlushColor">#73FF7EB6</Color>
-    <Color x:Key="Kroko.TearColor">#4DA3FF</Color>
+    <Color x:Key="Kroko.TearColor">#5AB4FF</Color>
     <Color x:Key="Kroko.PurpleColor">#A85FF7</Color>
     <Color x:Key="Kroko.PanelColor">#EB0F0F0F</Color>
     <Color x:Key="Kroko.TextColor">#FFFFFF</Color>
@@ -36,7 +36,7 @@
 
     <FontFamily x:Key="Kroko.Font">Segoe UI Variable Text, Segoe UI</FontFamily>
 
-    <SolidColorBrush x:Key="Kroko.Window" Color="#121212" />
+    <SolidColorBrush x:Key="Kroko.Window" Color="#0E0E0E" />
     <!-- Liquid Glass (17/11/2026): superficies de vidrio blanco translúcido sobre el tinte oscuro de la ventana -->
     <SolidColorBrush x:Key="Kroko.Surface" Color="#17FFFFFF" />
     <SolidColorBrush x:Key="Kroko.SurfaceHover" Color="#26FFFFFF" />
@@ -50,6 +50,20 @@
     <SolidColorBrush x:Key="Kroko.Line" Color="#2EFFFFFF" />
     <SolidColorBrush x:Key="Kroko.OnAccent" Color="#0F0F0F" />
 
+    <!-- Tema Troko (17/11/2026, colores medidos de sus capturas): isla negra pura, cajas internas, píldora de estado,
+         resplandor verde en tarjetas y morado de gráficos -->
+    <SolidColorBrush x:Key="Kroko.Island" Color="#000000" />
+    <SolidColorBrush x:Key="Kroko.Inset" Color="#141414" />
+    <SolidColorBrush x:Key="Kroko.Pill" Color="#1C1C20" />
+    <SolidColorBrush x:Key="Kroko.Violet" Color="#6445B2" />
+    <SolidColorBrush x:Key="Kroko.VioletIcon" Color="#835BEC" />
+    <SolidColorBrush x:Key="Kroko.AccentSoft" Color="#26B6F23A" />
+    <RadialGradientBrush x:Key="Kroko.GlowGreen" Center="0,0" GradientOrigin="0,0" RadiusX="0.9" RadiusY="0.9">
+        <GradientStop Color="#2E3A12" Offset="0" />
+        <GradientStop Color="#151A0A" Offset="0.35" />
+        <GradientStop Color="#000E0E0E" Offset="1" />
+    </RadialGradientBrush>
+
     <!-- Tarjeta con borde fino -->
     <Style x:Key="Kroko.Card" TargetType="Border">
         <Setter Property="Background" Value="{StaticResource Kroko.Surface}" />
@@ -60,8 +74,10 @@
     </Style>
 
     <!-- Etiqueta de sección estilo "mono" -->
+    <!-- Etiqueta pequeña en MAYÚSCULAS, verde (estilo Troko: «ENFOQUE», «HOY») -->
     <Style x:Key="Kroko.Label" TargetType="TextBlock">
-        <Setter Property="FontFamily" Value="Consolas" />
+        <Setter Property="FontFamily" Value="{StaticResource Kroko.Font}" />
+        <Setter Property="FontWeight" Value="Bold" />
         <Setter Property="FontSize" Value="11" />
         <Setter Property="Foreground" Value="{StaticResource Kroko.Accent}" />
         <Setter Property="Margin" Value="0,18,0,8" />
@@ -87,10 +103,10 @@
                 <ControlTemplate TargetType="Button">
                     <Grid>
                         <Border x:Name="Bd" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}"
-                                BorderThickness="1" CornerRadius="6" />
+                                BorderThickness="1" CornerRadius="17" />
                         <!-- Capa para oscurecer/aclarar al pasar el ratón sin cambiar el color base -->
-                        <Border x:Name="Tint" CornerRadius="6" Background="Transparent" />
-                        <Border x:Name="Focus" CornerRadius="7" BorderThickness="2" BorderBrush="{StaticResource Kroko.Text}"
+                        <Border x:Name="Tint" CornerRadius="17" Background="Transparent" />
+                        <Border x:Name="Focus" CornerRadius="19" BorderThickness="2" BorderBrush="{StaticResource Kroko.Text}"
                                 Margin="-3" Visibility="Collapsed" />
                         <ContentPresenter x:Name="Content" Margin="{TemplateBinding Padding}" HorizontalAlignment="Center"
                                           VerticalAlignment="Center" RecognizesAccessKey="True" />
@@ -116,6 +132,40 @@
     </Style>
 
     <!-- Acción principal (lima) -->
+
+    <!-- Botón solo de texto verde (estilo Troko: «Detener», «Descartar», «Editar») -->
+    <Style x:Key="Kroko.TextButton" TargetType="Button">
+        <Setter Property="Foreground" Value="{StaticResource Kroko.Accent}" />
+        <Setter Property="FontWeight" Value="SemiBold" />
+        <Setter Property="Cursor" Value="Hand" />
+        <Setter Property="Padding" Value="8,4" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Button">
+                    <Border x:Name="Bd" Background="Transparent" CornerRadius="14" Padding="{TemplateBinding Padding}">
+                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="Bd" Property="Background" Value="{StaticResource Kroko.AccentSoft}" />
+                        </Trigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter Property="Opacity" Value="0.45" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- Tarjeta con resplandor verde arriba a la izquierda (estilo Troko) -->
+    <Style x:Key="Kroko.GlowCard" TargetType="Border">
+        <Setter Property="Background" Value="{StaticResource Kroko.GlowGreen}" />
+        <Setter Property="BorderBrush" Value="{StaticResource Kroko.GlassEdge}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="CornerRadius" Value="20" />
+        <Setter Property="Padding" Value="20" />
+    </Style>
     <Style x:Key="Kroko.PrimaryButton" TargetType="Button" BasedOn="{StaticResource Kroko.Button}">
         <Setter Property="Foreground" Value="{StaticResource Kroko.OnAccent}" />
         <Setter Property="Background" Value="{StaticResource Kroko.Accent}" />
@@ -233,7 +283,7 @@
                     </Grid>
                     <ControlTemplate.Triggers>
                         <Trigger Property="IsChecked" Value="True">
-                            <Setter TargetName="Track" Property="Background" Value="#34C759" />
+                            <Setter TargetName="Track" Property="Background" Value="{StaticResource Kroko.Accent}" />
                             <Setter TargetName="Knob" Property="HorizontalAlignment" Value="Right" />
                             <Setter TargetName="Knob" Property="Margin" Value="0,0,2,0" />
                         </Trigger>

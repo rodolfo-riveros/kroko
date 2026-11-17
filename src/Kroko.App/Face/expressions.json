@@ -175,7 +175,7 @@
       "keyframes": [
         { "atMs": 220, "face": { "eyes": { "shape": "Normal", "w": 20, "h": 12, "upper": 0.3 } } },
         { "atMs": 330, "face": { "eyes": { "shape": "Line" } } },
-        { "atMs": 440, "face": { "eyes": { "shape": "Normal", "h": 24, "upper": 0 }, "antennaColor": "#A3FF6A", "antennaGlow": 0.8 } },
+        { "atMs": 440, "face": { "eyes": { "shape": "Normal", "h": 24, "upper": 0 }, "antennaColor": "#B6F23A", "antennaGlow": 0.8 } },
         { "atMs": 540, "face": { "eyes": { "shape": "Line" } } },
         { "atMs": 640, "face": { "eyes": { "shape": "Normal" }, "gazeFollow": 0.6 } },
         { "atMs": 900, "face": { "bodySquash": 0.1, "bodyScale": 1.04, "bodyY": -2 } },

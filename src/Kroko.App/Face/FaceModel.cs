@@ -158,9 +158,9 @@ public static class Palette
 {
     public static readonly Color Body = Color.FromRgb(0x0F, 0x0F, 0x0F);
     public static readonly Color BodyEdge = Color.FromRgb(0x2A, 0x2A, 0x2A);
-    public static readonly Color Accent = Color.FromRgb(0xA3, 0xFF, 0x6A);
+    public static readonly Color Accent = Color.FromRgb(0xB6, 0xF2, 0x3A); // verde Troko (17/11/2026)
     public static readonly Color Love = Color.FromRgb(0xFF, 0x7E, 0xB6);
-    public static readonly Color Tear = Color.FromRgb(0x4D, 0xA3, 0xFF);
+    public static readonly Color Tear = Color.FromRgb(0x5A, 0xB4, 0xFF);
     public static readonly Color Alert = Color.FromRgb(0xFF, 0xB5, 0x47);
     public static readonly Color Error = Color.FromRgb(0xFF, 0x5C, 0x6C);
 }

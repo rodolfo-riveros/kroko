@@ -12,7 +12,7 @@
         <v:BoolToVisibleConverter x:Key="BoolToVisible" />
     </UserControl.Resources>
 
-    <Border CornerRadius="0,0,17,17" Background="#0B0B0B" BorderBrush="#262626" BorderThickness="1,0,1,1">
+    <Border CornerRadius="0,0,17,17" Background="{StaticResource Kroko.Island}" BorderBrush="#262626" BorderThickness="1,0,1,1">
         <Grid Margin="10,0,14,0" ClipToBounds="True">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="Auto" />
