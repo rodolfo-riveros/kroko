@@ -25,18 +25,17 @@ public sealed class AbrirVentanaTool(WindowService windows) : ILocalTool
         string title;
         Action open;
 
-        // El panel «Kroko» y sus partes (14/11/2026); "configuracion" sin sección abre sus Ajustes simples
+        // El panel «Kroko» y sus partes (14/11/2026); "configuracion" abre la ventana de Configuración (17/11/2026)
         var panelSection = which.ToLowerInvariant() switch
         {
             "panel" or "inicio" => "inicio",
             "habitos" or "tareas" or "enfoque" or "mipc" => which.ToLowerInvariant(),
-            "configuracion" when string.IsNullOrWhiteSpace(args.OptionalString("seccion")) => "ajustes",
             _ => null,
         };
         if (panelSection is not null)
         {
             Application.Current.Dispatcher.Invoke(() => windows.ShowPanel(panelSection));
-            return Task.FromResult(ToolOutcome.Success(new { abierta = panelSection == "ajustes" ? "Ajustes del panel Kroko" : $"Panel Kroko ({panelSection})" }));
+            return Task.FromResult(ToolOutcome.Success(new { abierta = $"Panel Kroko ({panelSection})" }));
         }
 
         if (which.Equals("configuracion", StringComparison.OrdinalIgnoreCase) || which.Equals("avanzado", StringComparison.OrdinalIgnoreCase))
@@ -45,11 +44,11 @@ public sealed class AbrirVentanaTool(WindowService windows) : ILocalTool
             int? index = null;
             if (!string.IsNullOrEmpty(section))
             {
-                var i = Array.FindIndex(SettingsViewModel.Sections, s => s.Equals(section, StringComparison.OrdinalIgnoreCase));
+                var i = SettingsViewModel.FindSection(section) ?? -1;
                 if (i < 0) throw new ToolException($"No tengo la sección \"{section}\". Hay: {string.Join(", ", SettingsViewModel.Sections)}.");
                 index = i;
             }
-            title = index is { } n ? $"Ajustes ({SettingsViewModel.Sections[n]})" : "Ajustes";
+            title = index is { } n ? $"Configuración ({SettingsViewModel.AllNav[n].Title})" : "Configuración";
             open = () => windows.ShowSettings(index);
         }
         else if (Windows.TryGetValue(which, out var entry))

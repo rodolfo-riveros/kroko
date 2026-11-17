@@ -131,6 +131,12 @@ public partial class ResponsePanel : Window
         var left = body.Right + shadowMargin - me.Width;
         var top = body.Top - antenna - gap - me.Height + shadowMargin;
         if (top < work.Top) top = body.Bottom + gap - shadowMargin;
+        if (_geometry.IsIsland)
+        {
+            // Isla de arriba: el panel cuelga de ella, centrado
+            left = (body.Left + body.Right) / 2 - me.Width / 2;
+            top = body.Bottom + gap - shadowMargin;
+        }
 
         left = Math.Clamp(left, work.Left, Math.Max(work.Left, work.Right - me.Width));
         top = Math.Clamp(top, work.Top, Math.Max(work.Top, work.Bottom - me.Height));

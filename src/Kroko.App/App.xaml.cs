@@ -129,6 +129,13 @@ public partial class App : Application
 
         DispatcherUnhandledException += OnDispatcherUnhandledException;
 
+        // Todas las ventanas de Kroko con barra de título oscura (17/11/2026: la blanca no cuadraba con el fondo negro)
+        EventManager.RegisterClassHandler(typeof(Window), FrameworkElement.LoadedEvent, new RoutedEventHandler((s, _) =>
+        {
+            if (s is Window { WindowStyle: not WindowStyle.None } w)
+                Kroko.App.Native.NativeMethods.UseDarkTitleBar(new System.Windows.Interop.WindowInteropHelper(w).Handle);
+        }));
+
         await _host.StartAsync();
         Log.Information("Kroko.App arrancando");
 
@@ -144,6 +151,7 @@ public partial class App : Application
             foreach (var t in times)
                 Log.Information("Captura guardada en {Path}", FaceSnapshot.RenderSheet(lib, dir, t));
             Log.Information("Captura guardada en {Path}", PanelSnapshot.Render(dir));
+            Log.Information("Captura guardada en {Path}", IslandSnapshot.Render(lib, dir));
             Log.Information("Captura guardada en {Path}", MemoryWindowSnapshot.Render(dir));
             Log.Information("Captura guardada en {Path}", ConnectorsWindowSnapshot.Render(dir));
             Log.Information("Captura guardada en {Path}", MyDayWindowSnapshot.Render(dir));

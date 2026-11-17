@@ -89,6 +89,22 @@ public class NotionNotebookTests
     }
 
     [Fact]
+    public async Task La_misma_nota_pedida_dos_veces_seguidas_se_guarda_una_sola_vez()
+    {
+        var notion = new FakeNotion();
+        var notebook = Notebook(notion, Db());
+        var nota = new NotionNote("Presentación de notas", "Presentar las notas", "Agenda", "2026-11-17T09:30", []);
+
+        await Task.WhenAll(notebook.SaveAsync(nota, default), notebook.SaveAsync(nota with { Type = "Reunión" }, default));
+        await notebook.SaveAsync(nota with { Title = "presentacion de notas " }, default);
+        Assert.Single(notion.Calls, c => c.Tool == "notion-create-pages");
+
+        // Otra fecha sí es otra nota
+        await notebook.SaveAsync(nota with { Date = "2026-11-24T09:30" }, default);
+        Assert.Equal(2, notion.Calls.Count(c => c.Tool == "notion-create-pages"));
+    }
+
+    [Fact]
     public async Task Despues_recuerda_la_base_y_no_la_vuelve_a_buscar_ni_crear()
     {
         var notion = new FakeNotion();

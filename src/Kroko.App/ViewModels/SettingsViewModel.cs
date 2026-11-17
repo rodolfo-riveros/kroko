@@ -23,6 +23,16 @@ public sealed partial class ToolToggle(string name, string description, string r
     public partial bool Enabled { get; set; } = enabled;
 }
 
+
+/// <summary>Una entrada de la barra lateral de Configuración (estilo macOS): icono en un cuadrito de color.</summary>
+public sealed record SettingsNavItem(int Index, string Key, string Title, string Glyph, string Color, string? Group, string Keywords)
+{
+    /// <summary>Glifo oscuro sobre colores claros (amarillo), blanco sobre el resto.</summary>
+    public string GlyphColor => Color is "#FFD60A" ? "#1C1C1E" : "#FFFFFF";
+
+    /// <summary>Glyph es el código del icono de Segoe Fluent (p. ej. "E713").</summary>
+    public string GlyphText => ((char)Convert.ToInt32(Glyph, 16)).ToString();
+}
 /// <summary>
 /// Ventana de Ajustes (sección 10). Guarda en %LOCALAPPDATA%\Kroko\settings.json, que se aplica
 /// por encima de appsettings.json. Algunos cambios necesitan reiniciar Kroko (botón incluido).
@@ -37,12 +47,16 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
     private readonly WakeWordService _wake;
     private readonly VoiceSettings _voice; // las opciones vivas: los interruptores de voz se aplican al instante
     private readonly bool _loading;
+    private readonly KrokoOptions _options;
     private CancellationTokenSource? _download;
 
     public SettingsViewModel(IOptions<KrokoOptions> options, BrainApiClient api, WindowService windows, MicrophoneStream mic,
-        VoskModelManager models, WakeWordService wake, DocumentIndexer documents)
+        VoskModelManager models, WakeWordService wake, DocumentIndexer documents, OnboardingViewModel account)
     {
         _loading = true;
+        Account = account;
+        SelectedNav = Nav[0];
+        _options = options.Value;
         _api = api;
         _windows = windows;
         _mic = mic;
@@ -57,6 +71,10 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
         SoundsEnabled = o.SoundsEnabled;
         SoundVolume = o.SoundVolume;
         HideOnFullscreen = o.HideOnFullscreen;
+        IslandLook = o.IsIsland;
+        IslandAutoHide = o.IslandAutoHide;
+        StartHidden = o.StartHidden;
+        HideAfterIdle = o.HideAfterIdleSeconds > 0;
 
         Hotkey = o.Voice.Hotkey;
         PushToTalk = string.Equals(o.Voice.Mode, "PushToTalk", StringComparison.OrdinalIgnoreCase);
@@ -89,15 +107,113 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
 
         foreach (var t in ToolCatalog.All)
             Tools.Add(new ToolToggle(t.Name, t.Description, RiskLabel(t.Risk), !o.DisabledTools.Contains(t.Name, StringComparer.OrdinalIgnoreCase)));
+        foreach (var tool in Tools)
+            tool.PropertyChanged += (_, _) =>
+            {
+                _restartPending = true;
+                SaveSoon();
+            };
         AliasesText = string.Join(Environment.NewLine, o.ProgramAliases.Select(kv => $"{kv.Key} = {kv.Value}"));
         ScriptsText = string.Join(Environment.NewLine, o.ScriptWhitelist.Select(kv => $"{kv.Key} = {kv.Value}"));
         _loading = false;
     }
 
-    /// <summary>Pestaña abierta: 0 General, 1 Voz, 2 Cerebro, 3 Personalidad, 4 Herramientas, 5 Cuentas y apps.</summary>
-    [ObservableProperty] public partial int SelectedSection { get; set; } = 1;
+    /// <summary>
+    /// Sección abierta, en el orden de la barra lateral (17/11/2026, estilo macOS y en orden de uso): Kroko (general,
+    /// voz, personalidad, avisos) · Tú (perfil, cuentas) · Inteligencia (claves, gasto, cerebro) · Seguridad (permisos,
+    /// privacidad).
+    /// </summary>
+    [ObservableProperty] public partial int SelectedSection { get; set; }
 
-    public static readonly string[] Sections = ["general", "voz", "cerebro", "personalidad", "herramientas", "cuentas"];
+    public static readonly string[] Sections =
+        ["general", "voz", "personalidad", "avisos", "perfil", "cuentas", "claves", "gasto", "cerebro", "permisos", "privacidad"];
+
+    /// <summary>Nombres viejos de secciones (la IA o enlaces antiguos) → los nuevos.</summary>
+    public static int? FindSection(string? name)
+    {
+        var key = name?.Trim().ToLowerInvariant() switch
+        {
+            "herramientas" => "permisos",
+            "apps" or "cuentas y apps" => "cuentas",
+            "ia" or "claves de ia" => "claves",
+            "memoria" or "datos" => "privacidad",
+            var k => k,
+        };
+        var i = Array.IndexOf(Sections, key);
+        return i >= 0 ? i : null;
+    }
+
+    /// <summary>Perfil, claves de IA y cuentas: los mismos datos del asistente «Configurar Kroko».</summary>
+    public OnboardingViewModel Account { get; }
+
+    /// <summary>La barra lateral, en orden de uso.</summary>
+    public static readonly SettingsNavItem[] AllNav =
+    [
+        new(0, "general", "General", "E713", "#8E8E93", "Kroko", "isla burbuja escondido inicio windows sonidos tamaño pantalla completa"),
+        new(1, "voz", "Voz y conversación", "E720", "#FF453A", null, "oye kroko micrófono atajo tiempo real subtítulos responder"),
+        new(2, "personalidad", "Personalidad", "E76E", "#BF5AF2", null, "sueño noche distracciones dormir"),
+        new(3, "avisos", "Avisos", "EA8F", "#FF9F0A", null, "reuniones correos tareas vencidas resumen notificaciones"),
+        new(4, "perfil", "Tu perfil", "E77B", "#0A84FF", "Tú", "nombre ciudad país zona horaria acento sobre mí"),
+        new(5, "cuentas", "Cuentas y apps", "E71B", "#30B0C7", null, "gmail correo telegram google calendar trello notion todoist conectores"),
+        new(6, "claves", "Claves de IA", "E8D7", "#FFD60A", "Inteligencia", "gemini deepseek tavily api key clave"),
+        new(7, "gasto", "Gasto de IA", "E9D2", "#30D158", null, "tokens tope consumo ahorro"),
+        new(8, "cerebro", "Conexión al cerebro", "E968", "#5E5CE6", null, "servidor dirección token localhost conexión"),
+        new(9, "permisos", "Permisos", "EA18", "#636366", "Seguridad", "herramientas alias scripts documentos permisos"),
+        new(10, "privacidad", "Privacidad y datos", "E72E", "#0A84FF", null, "memoria recuerdos registro auditoría galería datos"),
+    ];
+
+    public ObservableCollection<SettingsNavItem> Nav { get; } = new(AllNav);
+
+    [ObservableProperty] public partial string SearchText { get; set; } = "";
+
+    [ObservableProperty] public partial SettingsNavItem? SelectedNav { get; set; }
+
+    /// <summary>Título de la página abierta (arriba, como en macOS).</summary>
+    public string PageTitle => AllNav.ElementAtOrDefault(SelectedSection)?.Title ?? "Configuración";
+
+    partial void OnSearchTextChanged(string value)
+    {
+        var q = value.Trim();
+        var match = AllNav.Where(n => q.Length == 0
+            || n.Title.Contains(q, StringComparison.CurrentCultureIgnoreCase)
+            || n.Keywords.Contains(q, StringComparison.CurrentCultureIgnoreCase)).ToList();
+        Nav.Clear();
+        foreach (var n in match) Nav.Add(q.Length == 0 ? n : n with { Group = null });
+        if (Nav.FirstOrDefault(n => n.Index == SelectedSection) is { } keep) SelectedNav = keep;
+        else if (Nav.Count > 0) SelectedNav = Nav[0];
+    }
+
+    partial void OnSelectedNavChanged(SettingsNavItem? value)
+    {
+        if (value is not null && value.Index != SelectedSection) SelectedSection = value.Index;
+    }
+
+    partial void OnSelectedSectionChanged(int value)
+    {
+        if (SelectedNav?.Index != value) SelectedNav = Nav.FirstOrDefault(n => n.Index == value);
+        OnPropertyChanged(nameof(PageTitle));
+    }
+
+    // ---- Dónde vive y cuándo aparece
+    [ObservableProperty] public partial bool IslandLook { get; set; }
+
+    /// <summary>El tamaño de la burbuja solo importa si Kroko vive en la esquina.</summary>
+    public bool BubbleOptionsEnabled => !IslandLook;
+
+    partial void OnIslandLookChanged(bool value) => OnPropertyChanged(nameof(BubbleOptionsEnabled));
+    [ObservableProperty] public partial bool IslandAutoHide { get; set; }
+    [ObservableProperty] public partial bool StartHidden { get; set; }
+    [ObservableProperty] public partial bool HideAfterIdle { get; set; }
+
+    // ---- Avisos (viven en el cerebro)
+    [ObservableProperty] public partial bool NoticeMeetings { get; set; }
+    [ObservableProperty] public partial bool NoticeEmails { get; set; }
+    [ObservableProperty] public partial bool NoticeOverdue { get; set; }
+    [ObservableProperty] public partial bool NoticeSummary { get; set; }
+    [ObservableProperty] public partial string NoticesStatus { get; set; } = "";
+
+    /// <summary>Algún cambio guardado necesita reiniciar Kroko para notarse.</summary>
+    [ObservableProperty] public partial bool NeedsRestart { get; set; }
 
     // ---- General
     [ObservableProperty] public partial bool StartWithWindowsEnabled { get; set; }
@@ -226,37 +342,96 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
         BrainStatus = message;
     }
 
-    [RelayCommand]
-    private void Save()
-    {
-        if (!VoiceController.TryParseHotkey(Hotkey, out _, out _))
-        {
-            SaveStatus = $"El atajo \"{Hotkey}\" no es válido (ejemplos: Ctrl+Space, Ctrl+Alt+J).";
-            return;
-        }
-        var address = BrainAddress.Normalize(BrainUrl);
-        if (!address.Ok)
-        {
-            SaveStatus = address.Error!;
-            return;
-        }
-        BrainUrl = address.Url; // se ve tal como se guarda
+    // ---------------------------------------------------------------- se guarda solo (17/11/2026, como en macOS)
 
+    /// <summary>Lo que se guarda en settings.json al cambiar.</summary>
+    private static readonly HashSet<string> Persisted =
+    [
+        nameof(BubbleScale), nameof(SoundsEnabled), nameof(SoundVolume), nameof(HideOnFullscreen),
+        nameof(IslandLook), nameof(StartHidden), nameof(HideAfterIdle), nameof(IslandAutoHide),
+        nameof(BrainUrl), nameof(BrainToken), nameof(LaunchLocalBrain),
+        nameof(DistractionsEnabled), nameof(SleepAfterMinutes), nameof(NightSleepAfterMinutes), nameof(HideAfterSleepMinutes),
+        nameof(NightStartHour), nameof(NightEndHour),
+        nameof(Hotkey), nameof(PushToTalk), nameof(LocalTtsFallback), nameof(MicrophoneIndex),
+        nameof(AliasesText), nameof(ScriptsText), nameof(DocumentsEnabled), nameof(DocumentFoldersText),
+    ];
+
+    /// <summary>Lo que solo se nota al reiniciar Kroko.</summary>
+    private static readonly HashSet<string> NeedRestart =
+    [
+        nameof(BubbleScale), nameof(IslandLook), nameof(BrainUrl), nameof(BrainToken), nameof(LaunchLocalBrain),
+        nameof(DistractionsEnabled), nameof(SleepAfterMinutes), nameof(NightSleepAfterMinutes), nameof(HideAfterSleepMinutes),
+        nameof(NightStartHour), nameof(NightEndHour), nameof(Hotkey), nameof(PushToTalk), nameof(MicrophoneIndex),
+        nameof(AliasesText), nameof(ScriptsText), nameof(DocumentsEnabled), nameof(DocumentFoldersText), "Tools",
+    ];
+
+    private System.Windows.Threading.DispatcherTimer? _saveSoon;
+
+    protected override void OnPropertyChanged(System.ComponentModel.PropertyChangedEventArgs e)
+    {
+        base.OnPropertyChanged(e);
+        if (_loading || e.PropertyName is null || !Persisted.Contains(e.PropertyName)) return;
+        if (NeedRestart.Contains(e.PropertyName)) _restartPending = true;
+        SaveSoon();
+    }
+
+    private bool _restartPending;
+
+    /// <summary>Espera un momento (por si sigues escribiendo) y guarda.</summary>
+    private void SaveSoon()
+    {
+        if (_saveSoon is null)
+        {
+            _saveSoon = new System.Windows.Threading.DispatcherTimer { Interval = TimeSpan.FromMilliseconds(700) };
+            _saveSoon.Tick += (_, _) =>
+            {
+                _saveSoon.Stop();
+                SaveNow();
+            };
+        }
+        _saveSoon.Stop();
+        _saveSoon.Start();
+    }
+
+    /// <summary>
+    /// Guarda todo en settings.json. Lo que está mal escrito (un atajo o una dirección inválidos) no se guarda y se
+    /// avisa; lo demás sí. Lo que se puede aplicar en vivo se aplica ya.
+    /// </summary>
+    public void SaveNow()
+    {
+        _saveSoon?.Stop();
+        var problems = new List<string>();
         var k = UserSettings.LoadKrokoSection();
+
+        k["Look"] = IslandLook ? "isla" : "burbuja";
+        k["IslandAutoHide"] = IslandAutoHide;
+        k["StartHidden"] = StartHidden;
+        k["HideAfterIdleSeconds"] = HideAfterIdle ? 60 : 0;
         k["BubbleScale"] = Math.Round(Math.Clamp(BubbleScale, 0.75, 1.5), 2);
         k["SoundsEnabled"] = SoundsEnabled;
         k["SoundVolume"] = Math.Round(Math.Clamp(SoundVolume, 0, 1), 2);
         k["HideOnFullscreen"] = HideOnFullscreen;
-        k["BrainUrl"] = BrainUrl.Trim();
+
+        var address = BrainAddress.Normalize(BrainUrl);
+        if (address.Ok) k["BrainUrl"] = address.Url;
+        else problems.Add(address.Error!);
         k["BrainToken"] = BrainToken.Trim();
         k["LaunchLocalBrain"] = LaunchLocalBrain;
+
         k["DistractionsEnabled"] = DistractionsEnabled;
         k["SleepAfterMinutes"] = Math.Max(1, SleepAfterMinutes);
         k["NightSleepAfterMinutes"] = Math.Max(1, NightSleepAfterMinutes);
         k["HideAfterSleepMinutes"] = Math.Max(0, HideAfterSleepMinutes);
         k["NightStartHour"] = Math.Clamp(NightStartHour, 0, 23);
         k["NightEndHour"] = Math.Clamp(NightEndHour, 0, 23);
-        k["Voice"] = BuildVoiceJson();
+
+        var voice = BuildVoiceJson();
+        if (!VoiceController.TryParseHotkey(Hotkey, out _, out _))
+        {
+            problems.Add($"El atajo «{Hotkey}» no es válido (ejemplos: Ctrl+Space, Ctrl+Alt+J); dejo el anterior.");
+            voice["Hotkey"] = (k["Voice"] as JsonObject)?["Hotkey"]?.DeepClone() ?? _options.Voice.Hotkey;
+        }
+        k["Voice"] = voice;
         k["DisabledTools"] = new JsonArray([.. Tools.Where(t => !t.Enabled).Select(t => (JsonNode?)t.Name)]);
         k["ProgramAliases"] = ParsePairs(AliasesText);
         k["ScriptWhitelist"] = ParsePairs(ScriptsText);
@@ -266,14 +441,71 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
             ["Folders"] = new JsonArray([.. DocumentFoldersText.Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).Select(f => (JsonNode?)f)]),
         };
         UserSettings.SaveKrokoSection(k);
-        SaveStatus = "Guardado. Reinicia Kroko para aplicar todos los cambios.";
+
+        // En vivo (sin reiniciar)
+        _options.IslandAutoHide = IslandAutoHide; // la isla lo nota al instante
+        _options.StartHidden = StartHidden;
+        _options.HideAfterIdleSeconds = HideAfterIdle ? 60 : 0;
+        _options.SoundsEnabled = SoundsEnabled;
+        _options.SoundVolume = Math.Clamp(SoundVolume, 0, 1);
+        _options.HideOnFullscreen = HideOnFullscreen;
+        _voice.LocalTtsFallback = LocalTtsFallback;
+
+        if (_restartPending) NeedsRestart = true;
+        SaveStatus = problems.Count > 0 ? string.Join(" ", problems) : "";
     }
 
     [RelayCommand]
-    private void SaveAndRestart()
+    private void Restart()
     {
-        Save();
-        if (SaveStatus.StartsWith("Guardado", StringComparison.Ordinal)) AppRestart.Now();
+        SaveNow();
+        AppRestart.Now();
+    }
+
+    // ---- Avisos
+
+    [RelayCommand]
+    public async Task LoadNoticesAsync()
+    {
+        try
+        {
+            if (await _api.GetNoticesAsync() is not { } n) return;
+            _loadingNotices = true;
+            NoticeMeetings = n.Reuniones;
+            NoticeEmails = n.Correos;
+            NoticeOverdue = n.TareasVencidas;
+            NoticeSummary = n.ResumenDelDia;
+            NoticesStatus = "";
+        }
+        catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException or System.Text.Json.JsonException)
+        {
+            NoticesStatus = "No pude leer los avisos: el cerebro no responde.";
+        }
+        finally
+        {
+            _loadingNotices = false;
+        }
+    }
+
+    private bool _loadingNotices;
+
+    partial void OnNoticeMeetingsChanged(bool value) => _ = SaveNoticesAsync();
+    partial void OnNoticeEmailsChanged(bool value) => _ = SaveNoticesAsync();
+    partial void OnNoticeOverdueChanged(bool value) => _ = SaveNoticesAsync();
+    partial void OnNoticeSummaryChanged(bool value) => _ = SaveNoticesAsync();
+
+    private async Task SaveNoticesAsync()
+    {
+        if (_loading || _loadingNotices) return;
+        try
+        {
+            await _api.SetNoticesAsync(new NoticesDto(NoticeMeetings, NoticeEmails, NoticeOverdue, NoticeSummary));
+            NoticesStatus = "";
+        }
+        catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException)
+        {
+            NoticesStatus = "No pude guardar los avisos: el cerebro no responde.";
+        }
     }
 
     [RelayCommand] private void OpenConnectors() => _windows.ShowConnectors();
@@ -358,7 +590,7 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
             ? "Falta el modelo de voz en español (40 MB, se descarga una sola vez del sitio oficial de Vosk)."
             : !WakeWordEnabled ? "Modelo instalado. La frase de activación está apagada."
             : !MicrophoneStream.HasMicrophone ? "Modelo instalado. Conecta un micrófono y empezaré a escuchar."
-            : _wake.IsListening ? "✓ Escuchando «Oye Kroko» y «Hola Kroko». Todo se procesa en esta PC."
+            : _wake.IsListening ? "✓ Escuchando «Oye Kroko». Todo se procesa en esta PC."
             : _wake.UserPaused ? "En pausa desde la bandeja."
             : "Modelo instalado. Esperando el micrófono…";
     }
@@ -423,6 +655,7 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
 
     public void Dispose()
     {
+        if (_saveSoon?.IsEnabled == true) SaveNow(); // lo último que escribiste no se pierde al cerrar
         _download?.Cancel();
         if (MicTesting) MicTesting = false;
     }

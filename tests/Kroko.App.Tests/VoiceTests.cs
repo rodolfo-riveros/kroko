@@ -71,7 +71,12 @@ public class OpenWindowTests
         var tool = Assert.Single(Kroko.Shared.Tools.ToolCatalog.All, t => t.Name == "abrir_ventana");
         foreach (var s in Kroko.App.ViewModels.SettingsViewModel.Sections)
             Assert.Contains($"\"{s}\"", tool.Parameters);
-        Assert.Equal(6, Kroko.App.ViewModels.SettingsViewModel.Sections.Length);
+        Assert.Equal(11, Kroko.App.ViewModels.SettingsViewModel.Sections.Length);
+        // La barra lateral sigue el mismo orden que las secciones, y los nombres viejos siguen funcionando
+        Assert.Equal(Kroko.App.ViewModels.SettingsViewModel.Sections,
+            Kroko.App.ViewModels.SettingsViewModel.AllNav.Select(n => n.Key));
+        Assert.Equal(Array.IndexOf(Kroko.App.ViewModels.SettingsViewModel.Sections, "permisos"),
+            Kroko.App.ViewModels.SettingsViewModel.FindSection("herramientas"));
     }
 }
 
@@ -148,6 +153,6 @@ public class KrokoPanelTests
         var tool = Assert.Single(Kroko.Shared.Tools.ToolCatalog.All, t => t.Name == "abrir_ventana");
         foreach (var s in new[] { "panel", "habitos", "tareas", "enfoque", "mipc" })
             Assert.Contains($"\"{s}\"", tool.Parameters);
-        Assert.Equal(["inicio", "tareas", "habitos", "enfoque", "mipc", "ajustes"], Kroko.App.ViewModels.KrokoPanelViewModel.Sections);
+        Assert.Equal(["inicio", "tareas", "habitos", "enfoque", "mipc"], Kroko.App.ViewModels.KrokoPanelViewModel.Sections);
     }
 }

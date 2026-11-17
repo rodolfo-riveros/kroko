@@ -49,6 +49,15 @@ public sealed partial class NotionNotebook(INotionCalls notion, KrokoDatabase db
 
     private readonly SemaphoreSlim _setup = new(1, 1);
 
+    // Lo guardado hace poco (título + fecha → enlace): la misma nota pedida dos veces seguidas no se repite (17/11/2026:
+    // salieron «Presentación de notas» dos veces en el mismo segundo).
+    private readonly Dictionary<string, (DateTimeOffset At, string? Url)> _recent = [];
+    private readonly Lock _recentGate = new();
+    private static readonly TimeSpan RepeatWindow = TimeSpan.FromMinutes(10);
+
+    internal static string RepeatKey(NotionNote note) =>
+        $"{Kroko.Shared.Tools.QuietCommand.Normalize(note.Title)}|{note.Date?.Trim()[..Math.Min(10, note.Date.Trim().Length)]}";
+
     public bool IsConnected => notion.IsConnected;
 
     /// <summary>Guarda la nota y devuelve el enlace de la página creada (o null si Notion no lo dio).</summary>
@@ -57,6 +66,33 @@ public sealed partial class NotionNotebook(INotionCalls notion, KrokoDatabase db
         if (!notion.IsConnected)
             throw new InvalidOperationException("Notion no está conectado: clic derecho en Kroko → Conectores → Conectar Notion.");
 
+        var key = RepeatKey(note);
+        lock (_recentGate)
+        {
+            var now = time.GetUtcNow();
+            foreach (var old in _recent.Where(p => now - p.Value.At > RepeatWindow).Select(p => p.Key).ToList()) _recent.Remove(old);
+            if (_recent.TryGetValue(key, out var done))
+            {
+                log.LogInformation("Esa nota ya se guardó hace un momento en Notion; no la repito");
+                return done.Url;
+            }
+            _recent[key] = (now, null); // reservada: una segunda llamada simultánea tampoco la duplica
+        }
+        try
+        {
+            var url = await SaveNewAsync(note, ct);
+            lock (_recentGate) _recent[key] = (time.GetUtcNow(), url);
+            return url;
+        }
+        catch
+        {
+            lock (_recentGate) _recent.Remove(key);
+            throw;
+        }
+    }
+
+    private async Task<string?> SaveNewAsync(NotionNote note, CancellationToken ct)
+    {
         var dataSource = await EnsureDatabaseAsync(ct);
         try
         {
@@ -274,7 +310,9 @@ public sealed class GuardarEnNotionTool(NotionNotebook notebook) : IBrainTool
     public ToolDefinition Definition { get; } = BrainToolResult.Define("guardar_en_notion",
         $"Guarda una nota, idea, lista o entrada de agenda en el Notion de tu dueño, en su base «{NotionNotebook.DatabaseTitle}» " +
         "(si no existe, la crea sola la primera vez). Úsala SIEMPRE para notas y agenda en Notion, en vez de las herramientas " +
-        "notion_… sueltas. Para citas con hora, crea además el evento en Google Calendar si está vinculado.",
+        "notion_… sueltas. Solo para GUARDAR algo nuevo que el dueño pidió anotar o agendar: NUNCA para consultar, ver o " +
+        "repasar su agenda (eso es leer, no guardar), y una sola vez por cosa (no la llames dos veces). " +
+        "Para citas con hora, crea además el evento en Google Calendar si está vinculado.",
         """
         {"type":"object","properties":{
           "titulo":{"type":"string","description":"Título corto y claro"},

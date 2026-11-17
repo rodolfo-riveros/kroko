@@ -434,6 +434,7 @@ public sealed partial class OnboardingViewModel : ObservableObject, IDisposable
                   (s.Gemini ? $" ({s.GeminiDisponibles} disponibles ahora)." : ".")
                 : "✓ Clave de Gemini guardada en esta PC (cifrada). Escribe otra solo si quieres cambiarla.";
         DeepSeekState = !string.IsNullOrEmpty(local.DeepSeek) ? "✓ Guardada en esta PC" : "Opcional: respaldo si Gemini falla.";
+        RefreshKeySlots(local);
         TavilyState = s.Tavily ? "✓ Configurada" + Source("tavily") : "Opcional: mejora las búsquedas y la lectura de páginas.";
         if (s.Correo.Configurado)
         {
@@ -781,6 +782,67 @@ public sealed partial class OnboardingViewModel : ObservableObject, IDisposable
         CloseRequested?.Invoke();
         return false;
     }
+
+    // ------------------------------------------------------------ claves por trabajo (Configuración, 17/11/2026)
+
+    /// <summary>Lo que hay en cada posición de clave de Gemini: «••••a1b2» o «vacía».</summary>
+    [ObservableProperty] public partial string KeySlot1 { get; set; } = "vacía";
+    [ObservableProperty] public partial string KeySlot2 { get; set; } = "vacía";
+    [ObservableProperty] public partial string KeySlot3 { get; set; } = "vacía";
+    [ObservableProperty] public partial string KeySlot4 { get; set; } = "vacía";
+
+    private void RefreshKeySlots(LocalAiKeys.Keys local)
+    {
+        static string Mask(string? k) => string.IsNullOrEmpty(k) ? "vacía" : $"guardada ••••{k[^Math.Min(4, k.Length)..]}";
+        KeySlot1 = Mask(local.Gemini.ElementAtOrDefault(0));
+        KeySlot2 = Mask(local.Gemini.ElementAtOrDefault(1));
+        KeySlot3 = Mask(local.Gemini.ElementAtOrDefault(2));
+        KeySlot4 = Mask(local.Gemini.ElementAtOrDefault(3));
+    }
+
+    /// <summary>Quita una clave de Gemini guardada en esta PC (1 a 4).</summary>
+    [RelayCommand]
+    private async Task RemoveKeyAsync(string? slot)
+    {
+        if (!int.TryParse(slot, out var n) || n is < 1 or > 4) return;
+        var slots = new string?[4];
+        slots[n - 1] = "";
+        var left = _aiKeys.Update(slots, null);
+        RefreshKeySlots(left);
+        await _aiKeys.SendAsync();
+        Ok(left.Gemini.Count == 0 ? "Clave quitada. Sin ninguna clave no puedo pensar." : "Clave quitada.");
+    }
+
+    // ------------------------------------------------------------ usado desde Configuración (17/11/2026)
+
+    /// <summary>Carga perfil, claves y cuentas para mostrarlos en la ventana de Configuración (sin el asistente).</summary>
+    public Task LoadForSettingsAsync() => RefreshAsync(loadProfile: true);
+
+    private async Task RunSaveAsync(Func<Task<bool>> save, string done)
+    {
+        if (IsBusy) return;
+        IsBusy = true;
+        try
+        {
+            if (await save()) Ok(done);
+        }
+        finally
+        {
+            IsBusy = false;
+        }
+    }
+
+    [RelayCommand]
+    private Task SaveProfileNowAsync() => RunSaveAsync(SaveProfileAsync, "Perfil guardado.");
+
+    [RelayCommand]
+    private Task SaveAiNowAsync() => RunSaveAsync(SaveAiAsync, "Claves guardadas en esta PC.");
+
+    [RelayCommand]
+    private Task SaveMailNowAsync() => RunSaveAsync(SaveMailAsync, "Gmail guardado.");
+
+    [RelayCommand]
+    private Task SaveTelegramNowAsync() => RunSaveAsync(() => SaveTelegramTokenAsync(onlyIfTyped: false), "Bot de Telegram guardado.");
 
     // ------------------------------------------------------------ utilidades
 

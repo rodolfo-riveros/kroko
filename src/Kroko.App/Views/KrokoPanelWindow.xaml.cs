@@ -1,4 +1,11 @@
 using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Input;
+using System.Windows.Interop;
+using System.Windows.Media;
+using System.Windows.Media.Animation;
+using Kroko.App.Native;
+using Kroko.App.Services;
 using Kroko.App.ViewModels;
 
 namespace Kroko.App.Views;
@@ -6,6 +13,10 @@ namespace Kroko.App.Views;
 /// <summary>El panel «Kroko»: Inicio, Tareas, Hábitos, Enfoque, Mi PC y Ajustes (14/11/2026).</summary>
 public partial class KrokoPanelWindow : Window
 {
+    private bool _attached;
+    private bool _closing;
+    private DateTime _openedAt;
+
     public KrokoPanelWindow(KrokoPanelViewModel viewModel)
     {
         InitializeComponent();
@@ -13,10 +24,108 @@ public partial class KrokoPanelWindow : Window
         Loaded += async (_, _) =>
         {
             await viewModel.RefreshAsync();
-            await viewModel.LoadNoticesAsync();
+
         };
         Activated += async (_, _) => await viewModel.RefreshAsync();
     }
 
     public KrokoPanelViewModel ViewModel => (KrokoPanelViewModel)DataContext;
+
+    public bool IsAttached => _attached;
+
+    public bool IsClosing => _closing;
+
+    /// <summary>
+    /// Modo isla (17/11/2026, como Troko Desk): sin marco, colgando de la isla de arriba, con esquinas redondeadas.
+    /// Se cierra al hacer clic fuera o con Esc. Hay que llamarlo antes de Show().
+    /// </summary>
+    public void AttachToIsland(BubbleGeometry geometry)
+    {
+        _attached = true;
+        WindowStyle = WindowStyle.None;
+        AllowsTransparency = true;
+        ResizeMode = ResizeMode.NoResize;
+        ShowInTaskbar = false;
+        Topmost = true;
+        WindowStartupLocation = WindowStartupLocation.Manual;
+        Width = 820;
+        Height = 560;
+        MinWidth = 0;
+        MinHeight = 0;
+
+        var surface = Background;
+        Background = Brushes.Transparent;
+        var content = (UIElement)Content;
+        Content = null;
+        var frame = new Border
+        {
+            Background = surface,
+            BorderBrush = new SolidColorBrush(Color.FromRgb(0x26, 0x26, 0x26)),
+            BorderThickness = new Thickness(1),
+            CornerRadius = new CornerRadius(20),
+            Margin = new Thickness(14, 0, 14, 18), // espacio para la sombra
+            Child = content,
+            RenderTransformOrigin = new Point(0.5, 0),
+            RenderTransform = new ScaleTransform(1, 1),
+            Effect = new System.Windows.Media.Effects.DropShadowEffect
+            {
+                BlurRadius = 24, ShadowDepth = 6, Direction = 270, Opacity = 0.45, Color = Colors.Black,
+            },
+        };
+        Content = frame;
+
+        SourceInitialized += (_, _) => PlaceUnder(geometry);
+        Loaded += (_, _) => AnimateOpen(frame);
+        Deactivated += (_, _) =>
+        {
+            // El clic que lo abrió puede quitarle el foco un instante: no cerrarse en ese primer momento
+            if ((DateTime.Now - _openedAt).TotalMilliseconds > 350) CloseAnimated();
+        };
+        PreviewKeyDown += (_, e) =>
+        {
+            if (e.Key != Key.Escape) return;
+            e.Handled = true;
+            CloseAnimated();
+        };
+        _openedAt = DateTime.Now;
+    }
+
+    private void PlaceUnder(BubbleGeometry geometry)
+    {
+        if (!geometry.IsKnown) return;
+        var hwnd = new WindowInteropHelper(this).Handle;
+        var s = geometry.MonitorScale;
+        var widthPx = (int)Math.Round(Width * s);
+        var body = geometry.Body;
+        var left = (body.Left + body.Right) / 2 - widthPx / 2;
+        var top = body.Bottom + (int)Math.Round(6 * s);
+        NativeMethods.SetWindowPos(hwnd, 0, left, top, 0, 0,
+            NativeMethods.SWP_NOSIZE | NativeMethods.SWP_NOZORDER | NativeMethods.SWP_NOACTIVATE);
+    }
+
+    private static void AnimateOpen(Border frame)
+    {
+        var ease = new CubicEase { EasingMode = EasingMode.EaseOut };
+        var scale = (ScaleTransform)frame.RenderTransform;
+        scale.BeginAnimation(ScaleTransform.ScaleYProperty, new DoubleAnimation(0.86, 1, TimeSpan.FromMilliseconds(200)) { EasingFunction = ease });
+        scale.BeginAnimation(ScaleTransform.ScaleXProperty, new DoubleAnimation(0.94, 1, TimeSpan.FromMilliseconds(200)) { EasingFunction = ease });
+        frame.BeginAnimation(OpacityProperty, new DoubleAnimation(0, 1, TimeSpan.FromMilliseconds(160)));
+    }
+
+    /// <summary>Se recoge hacia la isla y se cierra.</summary>
+    public void CloseAnimated()
+    {
+        if (_closing) return;
+        _closing = true;
+        if (!_attached || Content is not Border frame)
+        {
+            Close();
+            return;
+        }
+        var fade = new DoubleAnimation(0, TimeSpan.FromMilliseconds(130));
+        fade.Completed += (_, _) => Close();
+        ((ScaleTransform)frame.RenderTransform).BeginAnimation(ScaleTransform.ScaleYProperty,
+            new DoubleAnimation(0.9, TimeSpan.FromMilliseconds(130)));
+        frame.BeginAnimation(OpacityProperty, fade);
+    }
 }

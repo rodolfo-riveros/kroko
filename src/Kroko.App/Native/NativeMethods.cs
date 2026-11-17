@@ -9,6 +9,21 @@ namespace Kroko.App.Native;
 /// </summary>
 public static partial class NativeMethods
 {
+    [LibraryImport("dwmapi.dll")]
+    private static partial int DwmSetWindowAttribute(nint hwnd, int attribute, ref int value, int size);
+
+    /// <summary>Barra de título oscura (y del color de Kroko en Windows 11) para que no salga blanca sobre fondo negro.</summary>
+    public static void UseDarkTitleBar(nint hwnd)
+    {
+        if (hwnd == 0) return;
+        var on = 1;
+        _ = DwmSetWindowAttribute(hwnd, 20, ref on, sizeof(int)); // DWMWA_USE_IMMERSIVE_DARK_MODE
+        var caption = 0x000F0F0F; // COLORREF (0x00BBGGRR): el negro de Kroko
+        _ = DwmSetWindowAttribute(hwnd, 35, ref caption, sizeof(int)); // DWMWA_CAPTION_COLOR (Windows 11)
+        var text = 0x00E9F1F5; // crema
+        _ = DwmSetWindowAttribute(hwnd, 36, ref text, sizeof(int)); // DWMWA_TEXT_COLOR
+    }
+
     public const int GWL_EXSTYLE = -20;
 
     /// <summary>No aparece en Alt+Tab ni en la barra de tareas.</summary>

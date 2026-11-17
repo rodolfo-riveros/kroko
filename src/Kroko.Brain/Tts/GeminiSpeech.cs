@@ -13,8 +13,11 @@ public sealed class VoiceOptions
 
     public bool TtsEnabled { get; set; } = true;
 
-    /// <summary>Modelo de voz de Gemini (verificado en la documentación oficial, 07/11/2026).</summary>
-    public string TtsModel { get; set; } = "gemini-3.8-flash-tts";
+    /// <summary>Modelo de voz de Gemini: el "lite" es más rápido (17/11/2026, lista oficial de modelos).</summary>
+    public string TtsModel { get; set; } = "gemini-3.8-flash-lite-tts";
+
+    /// <summary>Si el modelo de voz rápido no responde, se usa este.</summary>
+    public string? TtsFallbackModel { get; set; } = "gemini-3.8-flash-tts";
 
     /// <summary>Voz prediseñada (Kore, Puck, Charon, Zephyr, Fenrir, Leda, Aoede…).</summary>
     public string Voice { get; set; } = "Puck";
@@ -28,8 +31,8 @@ public sealed class VoiceOptions
     /// <summary>Cómo debe sonar (instrucción en lenguaje natural).</summary>
     public string Style { get; set; } = "Habla en español con acento {acento} suave, cálido, alegre y natural, a ritmo ágil.";
 
-    /// <summary>Modelo para transcribir lo que dice Pol (vacío = el modelo principal de Gemini).</summary>
-    public string? SttModel { get; set; }
+    /// <summary>Modelo para transcribir lo que dice el dueño: el de transcripción es más rápido (si falla, el principal).</summary>
+    public string? SttModel { get; set; } = "gemini-3.5-transcribe";
 
     /// <summary>Textos más largos que esto no se convierten en voz (se leen en pantalla).</summary>
     public int MaxTtsChars { get; set; } = 1200;
@@ -65,25 +68,42 @@ public sealed class GeminiSpeech(HttpClient http, IOptionsMonitor<LlmOptions> ll
     public async Task<string?> TranscribeAsync(byte[] audio, string mimeType, CancellationToken ct)
     {
         var keys = llm.CurrentValue.Gemini.AllApiKeys();
-        for (var attempt = 0; ; attempt++)
+        if (keys.Count == 0) throw new NoLlmConfiguredException();
+        var models = SttModels();
+        LlmProviderException? last = null;
+        // Entender la voz tiene su propia clave (GeminiUse.Transcribe); si falla, prueba otra clave y luego otro modelo
+        foreach (var model in models)
         {
-            var key = llm.CurrentValue.Gemini.ResolveApiKey() ?? throw new NoLlmConfiguredException();
-            try
+            for (var attempt = 0; attempt < keys.Count; attempt++)
             {
-                return await TranscribeWithKeyAsync(audio, mimeType, key, ct);
+                var key = GeminiKeyRing.Pick(keys, GeminiUse.Transcribe)!;
+                try
+                {
+                    return await TranscribeWithKeyAsync(audio, mimeType, key, model, ct);
+                }
+                catch (LlmProviderException ex)
+                {
+                    last = ex;
+                    if (!GeminiKeyRing.Report(key, ex.StatusCode, ex.Message, GeminiUse.Transcribe) || keys.Count == 1) break;
+                }
             }
-            catch (LlmProviderException ex) when (ex.StatusCode is 402 or 429 && attempt + 1 < keys.Count
-                                                   && llm.CurrentValue.Gemini.ResolveApiKey() != key)
-            {
-                // esa clave se agotó y ya se apartó: se prueba con la siguiente
-            }
+            // Sin saldo no lo arregla otro modelo
+            if (last?.StatusCode is 402 or 429) break;
         }
+        throw last ?? new LlmProviderException("gemini", "No se pudo transcribir el audio");
     }
 
-    private async Task<string?> TranscribeWithKeyAsync(byte[] audio, string mimeType, string key, CancellationToken ct)
+    /// <summary>Primero el modelo rápido de transcripción; si no responde bien, el modelo principal.</summary>
+    private List<string> SttModels()
+    {
+        var main = llm.CurrentValue.Gemini.Model;
+        var stt = voice.CurrentValue.SttModel;
+        return string.IsNullOrWhiteSpace(stt) || stt == main ? [main] : [stt, main];
+    }
+
+    private async Task<string?> TranscribeWithKeyAsync(byte[] audio, string mimeType, string key, string model, CancellationToken ct)
     {
         var opt = llm.CurrentValue.Gemini;
-        var model = string.IsNullOrWhiteSpace(voice.CurrentValue.SttModel) ? opt.Model : voice.CurrentValue.SttModel;
 
         var body = new JsonObject
         {
@@ -104,7 +124,9 @@ public sealed class GeminiSpeech(HttpClient http, IOptionsMonitor<LlmOptions> ll
                         ["inlineData"] = new JsonObject { ["mimeType"] = mimeType, ["data"] = Convert.ToBase64String(audio) },
                     }),
             }),
-            ["generationConfig"] = new JsonObject { ["maxOutputTokens"] = 512, ["thinkingConfig"] = new JsonObject { ["thinkingLevel"] = "MINIMAL" } },
+            ["generationConfig"] = model == opt.Model
+                ? new JsonObject { ["maxOutputTokens"] = 512, ["thinkingConfig"] = new JsonObject { ["thinkingLevel"] = "MINIMAL" } }
+                : new JsonObject { ["maxOutputTokens"] = 512 },
         };
 
         using var req = new HttpRequestMessage(HttpMethod.Post,
@@ -118,8 +140,8 @@ public sealed class GeminiSpeech(HttpClient http, IOptionsMonitor<LlmOptions> ll
         if (!res.IsSuccessStatusCode)
         {
             log.LogWarning("Transcripción falló: {Status} {Body}", (int)res.StatusCode, Trim(json));
-            GeminiKeyRing.Report(key, (int)res.StatusCode, json);
-            throw new LlmProviderException("gemini", "No se pudo transcribir el audio", (int)res.StatusCode);
+            // Quien llama aparta la clave (según el trabajo) y decide si prueba otra
+            throw new LlmProviderException("gemini", $"No se pudo transcribir el audio: {Trim(json)}", (int)res.StatusCode);
         }
 
         using var doc = JsonDocument.Parse(json);
@@ -138,18 +160,24 @@ public sealed class GeminiSpeech(HttpClient http, IOptionsMonitor<LlmOptions> ll
         if (!v.TtsEnabled || string.IsNullOrWhiteSpace(text) || text.Length > v.MaxTtsChars) return null;
         if (usage is { IsOverDailyLimit: true }) return null; // modo ahorro: sin voz de Gemini
         var opt = llm.CurrentValue.Gemini;
+        var keys = opt.AllApiKeys();
+        if (keys.Count == 0) return null;
         try
         {
-            // Con varias claves: si una se agota, se prueba con la siguiente en el acto
-            for (var attempt = 0; attempt < Math.Max(1, opt.AllApiKeys().Count); attempt++)
+            // Hablar tiene su propia clave (GeminiUse.Speech). Primero la voz rápida; si no responde, la voz normal.
+            var models = new[] { v.TtsModel, v.TtsFallbackModel }
+                .Where(m => !string.IsNullOrWhiteSpace(m)).Select(m => m!).Distinct().ToList();
+            foreach (var model in models)
             {
-                var key = opt.ResolveApiKey();
-                if (key is null) return null;
-                // Primero con estilo; si el servidor no acepta la anotación, se reintenta sin ella
-                var wav = await RequestAsync(text, v, key, opt.BaseUrl, withStyle: true, ct)
-                          ?? await RequestAsync(text, v, key, opt.BaseUrl, withStyle: false, ct);
-                if (wav is not null) return wav;
-                if (opt.ResolveApiKey() == key) break; // no era cuota de esa clave: otra no lo arregla
+                for (var attempt = 0; attempt < keys.Count; attempt++)
+                {
+                    var key = GeminiKeyRing.Pick(keys, GeminiUse.Speech)!;
+                    // Con estilo; si el servidor no acepta la anotación, se reintenta sin ella
+                    var (wav, status, body) = await RequestAsync(text, v, model, key, opt.BaseUrl, withStyle: true, ct);
+                    if (wav is null && status is 400) (wav, status, body) = await RequestAsync(text, v, model, key, opt.BaseUrl, withStyle: false, ct);
+                    if (wav is not null) return wav;
+                    if (!GeminiKeyRing.Report(key, status, body, GeminiUse.Speech) || keys.Count == 1) break;
+                }
             }
             return null;
         }
@@ -160,7 +188,8 @@ public sealed class GeminiSpeech(HttpClient http, IOptionsMonitor<LlmOptions> ll
         }
     }
 
-    private async Task<byte[]?> RequestAsync(string text, VoiceOptions v, string key, string baseUrl, bool withStyle, CancellationToken ct)
+    private async Task<(byte[]? Wav, int? Status, string? Body)> RequestAsync(string text, VoiceOptions v, string model, string key,
+        string baseUrl, bool withStyle, CancellationToken ct)
     {
         var textItem = new JsonObject { ["type"] = "text", ["text"] = text };
         if (withStyle && !string.IsNullOrWhiteSpace(v.Style))
@@ -172,7 +201,7 @@ public sealed class GeminiSpeech(HttpClient http, IOptionsMonitor<LlmOptions> ll
 
         var body = new JsonObject
         {
-            ["model"] = v.TtsModel,
+            ["model"] = model,
             ["input"] = new JsonArray(new JsonObject
             {
                 ["type"] = "user_input",
@@ -195,21 +224,20 @@ public sealed class GeminiSpeech(HttpClient http, IOptionsMonitor<LlmOptions> ll
         if (!res.IsSuccessStatusCode)
         {
             log.LogWarning("TTS ({Style}) respondió {Status}: {Body}", withStyle ? "con estilo" : "sin estilo", (int)res.StatusCode, Trim(json));
-            GeminiKeyRing.Report(key, (int)res.StatusCode, json); // clave agotada: la próxima vez se usa otra
-            return null;
+            return (null, (int)res.StatusCode, json); // quien llama aparta la clave y prueba otra
         }
 
         var data = FindAudio(JsonNode.Parse(json));
         if (data is null)
         {
             log.LogWarning("TTS sin audio en la respuesta");
-            return null;
+            return (null, null, null);
         }
         var bytes = Convert.FromBase64String(data);
         // Esta API no informa el uso como generateContent: se estima (texto ≈ 4 letras por token, audio ≈ 25 tokens por segundo
         // a 24 kHz y 16 bits = 48 000 bytes por segundo)
         usage?.Record(new Usage.LlmUsage(text.Length / 4 + 1, bytes.Length / 48000 * 25 + 1), "voz");
-        return IsWav(bytes) ? bytes : WavFromPcm(bytes, 24000);
+        return (IsWav(bytes) ? bytes : WavFromPcm(bytes, 24000), 200, null);
     }
 
     /// <summary>Busca el audio en steps[] (model_output → content[] type=audio → data), tolerando variaciones.</summary>

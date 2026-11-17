@@ -70,7 +70,7 @@ public sealed class BuscarEnInternetTool(HttpClient http, IOptionsMonitor<LlmOpt
     private async Task<ToolExecution> SearchGeminiAsync(string query, CancellationToken ct)
     {
         var opt = options.CurrentValue.Gemini;
-        var key = opt.ResolveApiKey();
+        var key = opt.ResolveApiKey(GeminiUse.Search);
         if (key is null) return ToolConfirmation.Fail("La búsqueda con Google necesita la API key de Gemini.");
 
         var body = new JsonObject
@@ -98,7 +98,7 @@ public sealed class BuscarEnInternetTool(HttpClient http, IOptionsMonitor<LlmOpt
         if (!res.IsSuccessStatusCode)
         {
             log.LogWarning("Búsqueda web falló: {Status} {Body}", (int)res.StatusCode, json.Length > 300 ? json[..300] : json);
-            GeminiKeyRing.Report(key, (int)res.StatusCode, json); // la próxima búsqueda usa otra clave
+            GeminiKeyRing.Report(key, (int)res.StatusCode, json, GeminiUse.Search); // la próxima búsqueda usa otra clave
             return ToolConfirmation.Fail(res.StatusCode == HttpStatusCode.TooManyRequests
                 ? "Se acabó la cuota de búsquedas por ahora. Prueba más tarde."
                 : "La búsqueda en internet no respondió.");

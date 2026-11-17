@@ -11,7 +11,7 @@ namespace Kroko.App.Views;
 /// <summary>Herramienta de desarrollo (--snapshot): dibuja cada pestaña de Ajustes.</summary>
 public static class SettingsWindowSnapshot
 {
-    private const int W = 920, H = 680;
+    private const int W = 980, H = 700;
 
     public static IEnumerable<string> Render(IServiceProvider services, string outputDir)
     {
@@ -23,6 +23,14 @@ public static class SettingsWindowSnapshot
         var panelVm = services.GetRequiredService<KrokoPanelViewModel>();
         panelVm.ShowSample();
         paths.AddRange(RenderTabs(new KrokoPanelWindow(panelVm), panelVm, "panel", outputDir));
+
+        // El mismo panel desplegado desde la isla (sin marco, como lo usa el dueño)
+        var islandVm = services.GetRequiredService<KrokoPanelViewModel>();
+        islandVm.ShowSample();
+        var attached = new KrokoPanelWindow(islandVm);
+        attached.AttachToIsland(new Kroko.App.Services.BubbleGeometry());
+        paths.AddRange(RenderTabs(attached, islandVm, "isla-panel", outputDir));
+        islandVm.Dispose();
         panelVm.Dispose();
         return paths;
     }
@@ -30,14 +38,18 @@ public static class SettingsWindowSnapshot
     /// <summary>Dibuja cada pestaña de una ventana con navegación lateral (y otra vez desplazada si es larga).</summary>
     internal static IEnumerable<string> RenderTabs(Window window, object vm, string prefix, string outputDir)
     {
-        var content = (FrameworkElement)window.Content;
-        window.Content = null;
-        var host = new Border { Background = (Brush)Application.Current.Resources["Kroko.Window"], Child = content };
-        host.Resources.MergedDictionaries.Add(window.Resources);
-        host.DataContext = vm;
-        System.Windows.Documents.TextElement.SetForeground(host, window.Foreground);
-        System.Windows.Documents.TextElement.SetFontFamily(host, window.FontFamily);
-        System.Windows.Documents.TextElement.SetFontSize(host, window.FontSize);
+        // La ventana de verdad, abierta fuera de la pantalla: así los estilos de Windows se aplican igual que en uso real
+        // (17/11/2026: dibujar el contenido suelto escondía letras negras sobre fondo oscuro).
+        window.WindowStartupLocation = WindowStartupLocation.Manual;
+        window.Left = -30000;
+        window.Top = -30000;
+        window.Width = W;
+        window.Height = H;
+        window.ShowActivated = false;
+        window.ShowInTaskbar = false;
+        window.Show();
+        var host = (FrameworkElement)window.Content;
+        var content = host;
         Directory.CreateDirectory(outputDir);
 
         var tabs = FindTabControl(content);
@@ -45,11 +57,9 @@ public static class SettingsWindowSnapshot
         for (var i = 0; tabs is not null && i < tabs.Items.Count; i++)
         {
             tabs.SelectedIndex = i;
-            host.Measure(new Size(W, H));
-            host.Arrange(new Rect(0, 0, W, H));
-            host.UpdateLayout();
-            var bmp = new RenderTargetBitmap(W, H, 96, 96, PixelFormats.Pbgra32);
-            bmp.Render(host);
+            window.UpdateLayout();
+            System.Windows.Threading.Dispatcher.CurrentDispatcher.Invoke(() => { }, System.Windows.Threading.DispatcherPriority.Background);
+            var bmp = Capture(window, host);
             var path = Path.Combine(outputDir, $"{prefix}-{i}.png");
             using (var fs = File.Create(path))
             {
@@ -64,8 +74,7 @@ public static class SettingsWindowSnapshot
             {
                 scroll.ScrollToEnd();
                 host.UpdateLayout();
-                var lower = new RenderTargetBitmap(W, H, 96, 96, PixelFormats.Pbgra32);
-                lower.Render(host);
+                var lower = Capture(window, host);
                 var lowerPath = Path.Combine(outputDir, $"{prefix}-{i}-abajo.png");
                 using (var fs = File.Create(lowerPath))
                 {
@@ -79,6 +88,21 @@ public static class SettingsWindowSnapshot
         }
         window.Close();
         return paths;
+    }
+
+    /// <summary>El contenido con el fondo de la ventana detrás (como se ve en pantalla).</summary>
+    private static RenderTargetBitmap Capture(Window window, FrameworkElement content)
+    {
+        var visual = new DrawingVisual();
+        using (var dc = visual.RenderOpen())
+        {
+            dc.DrawRectangle(window.AllowsTransparency ? new SolidColorBrush(Color.FromRgb(0x3B, 0x4C, 0x7A)) : window.Background, null, new Rect(0, 0, W, H));
+            dc.DrawRectangle(new VisualBrush(content) { Stretch = Stretch.None, AlignmentX = AlignmentX.Left, AlignmentY = AlignmentY.Top }, null,
+                new Rect(0, 0, content.ActualWidth, content.ActualHeight));
+        }
+        var bmp = new RenderTargetBitmap(W, H, 96, 96, PixelFormats.Pbgra32);
+        bmp.Render(visual);
+        return bmp;
     }
 
     /// <summary>El primer elemento T visible (la pestaña oculta no cuenta).</summary>

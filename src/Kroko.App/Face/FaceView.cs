@@ -35,6 +35,13 @@ public sealed class FaceView : FrameworkElement
     }
 
     /// <summary>Escala lógica actual (píxeles por unidad de cara).</summary>
+    /// <summary>Para las capturas (--snapshot): toma un fotograma ya, sin esperar al refresco de pantalla.</summary>
+    internal void RenderNow()
+    {
+        _frame = Animator?.Tick(null);
+        InvalidateVisual();
+    }
+
     public double FaceScale => Math.Min(ActualWidth / FaceRenderer.CanvasWidth, ActualHeight / FaceRenderer.CanvasHeight);
 
     private void UpdateSubscription()

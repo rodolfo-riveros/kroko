@@ -117,4 +117,36 @@ public class ReplyModeTests
         Assert.Contains("no me hables con voz", tool.Description); // «cállate» ahora lo calla y lo esconde (QuietCommand)
         Assert.Contains("háblame", tool.Description);
     }
+
+    [Fact]
+    public async Task Con_la_App_nueva_el_texto_llega_antes_que_la_voz()
+    {
+        var tts = new FakeTts();
+        await using var app = CreateBrain(tts);
+        var client = app.Server.CreateWebSocketClient();
+        client.ConfigureRequest = r => r.Headers[KrokoProtocol.TokenHeader] = Token;
+        var socket = await client.ConnectAsync(new Uri(app.Server.BaseAddress, KrokoProtocol.WebSocketPath), default);
+        var t = new WebSocketTransport(socket);
+        await t.SendAsync(new UserTextMessage { SessionId = "s", Text = "hola", Speak = true, AudioLater = true }, default);
+
+        using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+        var order = new List<string>();
+        ReplyMessage? reply = null;
+        ReplyAudioMessage? voice = null;
+        while (true)
+        {
+            var (closed, msg) = await t.ReceiveAsync(timeout.Token);
+            Assert.False(closed);
+            if (msg is ReplyMessage r) { reply = r; order.Add("texto"); }
+            if (msg is ReplyAudioMessage a) { voice = a; order.Add("voz"); }
+            if (msg is StateMessage { State: FaceStates.Idle } && voice is not null) break;
+        }
+        await socket.CloseAsync(WebSocketCloseStatus.NormalClosure, "fin", default);
+
+        Assert.Equal(["texto", "voz"], order);
+        Assert.True(reply!.AudioFollows);
+        Assert.Null(reply.AudioBase64);
+        Assert.Equal("¡Hola!", reply.Text);
+        Assert.Equal(Convert.ToBase64String([1, 2, 3, 4]), voice!.AudioBase64);
+    }
 }

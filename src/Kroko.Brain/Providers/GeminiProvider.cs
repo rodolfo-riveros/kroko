@@ -32,11 +32,11 @@ public sealed class GeminiProvider(HttpClient http, IOptionsMonitor<LlmOptions> 
         var url = $"{opt.Gemini.BaseUrl.TrimEnd('/')}/v1beta/models/{Uri.EscapeDataString(opt.Gemini.Model)}:generateContent";
         var body = BuildRequest(systemPrompt, history, tools, opt).ToJsonString();
 
-        // Varias claves: si una se quedó sin saldo o sin cuota (402/429), se aparta y se prueba la siguiente
+        // Varias claves: el chat usa la suya; si se quedó sin saldo, sin cuota o Gemini está saturado, se prueba otra
         LlmProviderException? last = null;
         for (var attempt = 0; attempt < keys.Count; attempt++)
         {
-            var key = GeminiKeyRing.Pick(keys)!;
+            var key = GeminiKeyRing.Pick(keys, GeminiUse.Chat)!;
             using var req = new HttpRequestMessage(HttpMethod.Post, url)
             {
                 Content = new StringContent(body, System.Text.Encoding.UTF8, "application/json"),
@@ -48,8 +48,8 @@ public sealed class GeminiProvider(HttpClient http, IOptionsMonitor<LlmOptions> 
             if (res.IsSuccessStatusCode) return ParseResponse(text);
 
             last = new LlmProviderException(Name, $"Gemini respondió {(int)res.StatusCode}: {Trim(text)}", (int)res.StatusCode);
-            if (!GeminiKeyRing.Report(key, (int)res.StatusCode, text) || keys.Count == 1) break;
-            log.LogWarning("Una clave de Gemini se agotó ({Status}); pruebo con la siguiente", (int)res.StatusCode);
+            if (!GeminiKeyRing.Report(key, (int)res.StatusCode, text, GeminiUse.Chat) || keys.Count == 1) break;
+            log.LogWarning("Una clave de Gemini no pudo ({Status}); pruebo con la siguiente", (int)res.StatusCode);
         }
         throw last!;
     }

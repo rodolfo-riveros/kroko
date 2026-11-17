@@ -1,0 +1,69 @@
+<UserControl x:Class="Kroko.App.Views.IslandView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:face="clr-namespace:Kroko.App.Face"
+             xmlns:v="clr-namespace:Kroko.App.Views"
+             Height="34" Cursor="Hand">
+    <!--
+        La isla (17/11/2026, como Troko Desk): pegada al borde de arriba, al centro. Esquinas de abajo redondeadas,
+        la cara chiquita a la izquierda, una línea de estado y la luz de conexión. El ancho lo anima BubbleWindow.
+    -->
+    <UserControl.Resources>
+        <v:BoolToVisibleConverter x:Key="BoolToVisible" />
+    </UserControl.Resources>
+
+    <Border CornerRadius="0,0,17,17" Background="#0B0B0B" BorderBrush="#262626" BorderThickness="1,0,1,1">
+        <Grid Margin="10,0,14,0" ClipToBounds="True">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+
+            <!-- La misma cara de siempre, en chiquito (el lienzo de la cara es más grande que el cuerpo) -->
+            <Canvas Width="34" Height="34" ClipToBounds="False">
+                <face:FaceView x:Name="Face" Animator="{Binding Face}" Width="46" Height="49"
+                               Canvas.Left="-6" Canvas.Top="-12" IsHitTestVisible="False" />
+            </Canvas>
+
+            <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center" Margin="8,0,0,0">
+                <Border Width="16" Height="16" CornerRadius="8" Margin="0,0,6,0" VerticalAlignment="Center"
+                        Background="{StaticResource Kroko.Accent}"
+                        Visibility="{Binding IslandCheck, Converter={StaticResource BoolToVisible}}">
+                    <Path Data="M3.5,8.2 L6.6,11.2 L12.5,4.8" Stroke="{StaticResource Kroko.OnAccent}" StrokeThickness="2"
+                          StrokeStartLineCap="Round" StrokeEndLineCap="Round" StrokeLineJoin="Round" />
+                </Border>
+                <TextBlock Text="{Binding IslandText}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"
+                           FontFamily="{StaticResource Kroko.Font}" FontSize="12.5" FontWeight="SemiBold">
+                    <TextBlock.Style>
+                        <Style TargetType="TextBlock">
+                            <Setter Property="Foreground" Value="{StaticResource Kroko.TextMuted}" />
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding IslandBusy}" Value="True">
+                                    <Setter Property="Foreground" Value="{StaticResource Kroko.Text}" />
+                                </DataTrigger>
+                                <DataTrigger Binding="{Binding IslandCheck}" Value="True">
+                                    <Setter Property="Foreground" Value="{StaticResource Kroko.Accent}" />
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </TextBlock.Style>
+                </TextBlock>
+            </StackPanel>
+
+            <!-- Luz de conexión: lima con el cerebro, gris sin él -->
+            <Ellipse Grid.Column="2" Width="7" Height="7" VerticalAlignment="Center">
+                <Ellipse.Style>
+                    <Style TargetType="Ellipse">
+                        <Setter Property="Fill" Value="#5A5A5A" />
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding IslandOnline}" Value="True">
+                                <Setter Property="Fill" Value="{StaticResource Kroko.Accent}" />
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </Ellipse.Style>
+            </Ellipse>
+        </Grid>
+    </Border>
+</UserControl>

@@ -44,7 +44,7 @@ public partial class BadgeWindow : Window
 
     private void Update()
     {
-        var show = _vm.HasAnything && _geometry.IsKnown;
+        var show = _vm.HasAnything && _geometry.IsKnown && !_geometry.IsIsland; // en la isla, el check y la cuenta atrás van dentro de ella
         if (show && !IsVisible)
         {
             Show();

@@ -19,10 +19,14 @@ public sealed class BubbleGeometry
 
     public bool IsKnown { get; private set; }
 
+    /// <summary>Kroko vive en la isla de arriba (17/11/2026): los paneles se abren debajo y centrados.</summary>
+    public bool IsIsland { get; private set; }
+
     public event Action? Changed;
 
-    public void Update(NativeMethods.RECT body, NativeMethods.RECT workArea, double monitorScale, double unitPx)
+    public void Update(NativeMethods.RECT body, NativeMethods.RECT workArea, double monitorScale, double unitPx, bool island = false)
     {
+        IsIsland = island;
         Body = body;
         WorkArea = workArea;
         MonitorScale = monitorScale;

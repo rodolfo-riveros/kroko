@@ -27,6 +27,17 @@ public sealed class KrokoOptions
     /// <summary>Velocidad del efecto máquina de escribir (caracteres por segundo).</summary>
     public double TypingCharsPerSecond { get; set; } = 45;
 
+    /// <summary>
+    /// Dónde vive Kroko: "isla" = arriba al centro, en una isla pegada al borde de la pantalla que se despliega con un
+    /// clic (pedido por Pol, 17/11/2026, como Troko Desk); "burbuja" = la burbuja flotante de la esquina.
+    /// </summary>
+    public string Look { get; set; } = "isla";
+
+    public bool IsIsland => !string.Equals(Look?.Trim(), "burbuja", StringComparison.OrdinalIgnoreCase);
+
+    /// <summary>La isla se esconde cuando no la usas y sale al llamarla o al pasar el cursor por arriba (17/11/2026).</summary>
+    public bool IslandAutoHide { get; set; } = true;
+
     /// <summary>Escala de la burbuja: 0.75 a 1.5.</summary>
     public double BubbleScale { get; set; } = 1.0;
 

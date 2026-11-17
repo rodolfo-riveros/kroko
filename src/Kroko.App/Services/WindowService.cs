@@ -23,11 +23,15 @@ public sealed class WindowService(IServiceProvider services)
     /// </summary>
     public void ShowPanel(string? section = null)
     {
+        var geometry = services.GetRequiredService<BubbleGeometry>();
         if (_panel is not { IsLoaded: true })
         {
             _panel = services.GetRequiredService<KrokoPanelWindow>();
+            // Kroko vive en la isla de arriba: el panel se despliega desde ella (17/11/2026)
+            if (geometry.IsIsland) _panel.AttachToIsland(geometry);
             _panel.Closed += (_, _) =>
             {
+                _panelClosedAt = DateTime.Now;
                 _panel?.ViewModel.Dispose();
                 _panel = null;
             };
@@ -40,6 +44,24 @@ public sealed class WindowService(IServiceProvider services)
             if (_panel.WindowState == WindowState.Minimized) _panel.WindowState = WindowState.Normal;
         }
         _panel.Activate();
+    }
+
+    private DateTime _panelClosedAt;
+
+    /// <summary>El panel «Kroko» está desplegado desde la isla.</summary>
+    public bool IsIslandPanelOpen => _panel is { IsLoaded: true, IsAttached: true, IsClosing: false };
+
+    /// <summary>Clic en la isla: abre el panel o, si ya está desplegado, lo recoge.</summary>
+    public void ToggleIslandPanel()
+    {
+        if (_panel is { IsLoaded: true, IsAttached: true } open)
+        {
+            if (!open.IsClosing) open.CloseAnimated();
+            return;
+        }
+        // El mismo clic en la isla acaba de cerrarlo (perdió el foco): no volver a abrirlo
+        if ((DateTime.Now - _panelClosedAt).TotalMilliseconds < 400) return;
+        ShowPanel("inicio");
     }
 
     public void ShowMyDay()

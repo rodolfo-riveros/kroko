@@ -60,7 +60,7 @@ public sealed class LiveSession : IAsyncDisposable
 
     public async Task StartAsync(CancellationToken ct)
     {
-        var key = _key = _llm.Gemini.ResolveApiKey() ?? throw new NoLlmConfiguredException();
+        var key = _key = _llm.Gemini.ResolveApiKey(GeminiUse.Live) ?? throw new NoLlmConfiguredException();
         _ws.Options.SetRequestHeader("x-goog-api-key", key);
         await _ws.ConnectAsync(new Uri(Endpoint), ct);
 
@@ -147,7 +147,7 @@ public sealed class LiveSession : IAsyncDisposable
                         var why = _ws.CloseStatusDescription ?? "";
                         if (why.Contains("credit", StringComparison.OrdinalIgnoreCase) || why.Contains("quota", StringComparison.OrdinalIgnoreCase)
                             || why.Contains("exhausted", StringComparison.OrdinalIgnoreCase))
-                            GeminiKeyRing.Report(_key, why.Contains("credit", StringComparison.OrdinalIgnoreCase) ? 402 : 429, why);
+                            GeminiKeyRing.Report(_key, why.Contains("credit", StringComparison.OrdinalIgnoreCase) ? 402 : 429, why, GeminiUse.Live);
                         await EmitAsync("ended", _ws.CloseStatusDescription, CancellationToken.None);
                         return;
                     }

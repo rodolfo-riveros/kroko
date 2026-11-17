@@ -18,6 +18,7 @@ namespace Kroko.Shared.Protocol;
 [JsonDerivedType(typeof(ToolCallMessage), MessageTypes.ToolCall)]
 [JsonDerivedType(typeof(ConfirmRequestMessage), MessageTypes.ConfirmRequest)]
 [JsonDerivedType(typeof(ReplyMessage), MessageTypes.Reply)]
+[JsonDerivedType(typeof(ReplyAudioMessage), MessageTypes.ReplyAudio)]
 [JsonDerivedType(typeof(PingMessage), MessageTypes.Ping)]
 [JsonDerivedType(typeof(PongMessage), MessageTypes.Pong)]
 [JsonDerivedType(typeof(StopMessage), MessageTypes.Stop)]
@@ -47,6 +48,7 @@ public static class MessageTypes
     public const string ToolCall = "tool.call";
     public const string ConfirmRequest = "confirm.request";
     public const string Reply = "reply";
+    public const string ReplyAudio = "reply.audio";
     public const string Ping = "ping";
     public const string Pong = "pong";
     public const string Stop = "control.stop";
@@ -80,6 +82,9 @@ public sealed record UserAudioMessage : KrokoMessage
 
     /// <summary>¿Responder también con voz? null = sí (comportamiento clásico de las órdenes por voz).</summary>
     public bool? Speak { get; init; }
+
+    /// <summary>La App acepta el texto primero y la voz después (reply + reply.audio). null = todo junto (Apps antiguas).</summary>
+    public bool? AudioLater { get; init; }
 }
 
 public sealed record UserTextMessage : KrokoMessage
@@ -88,6 +93,9 @@ public sealed record UserTextMessage : KrokoMessage
 
     /// <summary>¿Responder también con voz? null = no (comportamiento clásico de lo escrito).</summary>
     public bool? Speak { get; init; }
+
+    /// <summary>La App acepta el texto primero y la voz después (reply + reply.audio). null = todo junto (Apps antiguas).</summary>
+    public bool? AudioLater { get; init; }
 }
 
 public sealed record ToolResultMessage : KrokoMessage
@@ -151,11 +159,23 @@ public sealed record ReplyMessage : KrokoMessage
 {
     public string Text { get; init; } = "";
 
+    /// <summary>La voz viene después en un reply.audio (mientras tanto se muestra el texto).</summary>
+    public bool AudioFollows { get; init; }
+
     /// <summary>Audio TTS en base64 (Fase 1C). Null si solo hay texto.</summary>
     public string? AudioBase64 { get; init; }
 
     /// <summary>True si la respuesta explica un fallo (sin conexión con la IA, etc.).</summary>
     public bool IsError { get; init; }
+}
+
+/// <summary>
+/// La voz de la última respuesta, que llega después del texto (17/11/2026: el texto ya no espera a que la voz esté
+/// lista). AudioBase64 null = no hubo voz de Gemini (la App usa la de Windows si corresponde).
+/// </summary>
+public sealed record ReplyAudioMessage : KrokoMessage
+{
+    public string? AudioBase64 { get; init; }
 }
 
 // ---------------- Ambos

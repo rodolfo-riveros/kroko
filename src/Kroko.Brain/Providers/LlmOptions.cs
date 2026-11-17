@@ -51,8 +51,8 @@ public sealed class GeminiOptions
         : [.. new[] { ApiKey, Environment.GetEnvironmentVariable("GEMINI_API_KEY"), ApiKey2, ApiKey3, ApiKey4 }
             .Where(k => !string.IsNullOrWhiteSpace(k)).Select(k => k!.Trim()).Distinct()];
 
-    /// <summary>La clave que toca usar ahora (la primera que no esté agotada; ver GeminiKeyRing).</summary>
-    public string? ResolveApiKey() => GeminiKeyRing.Pick(AllApiKeys());
+    /// <summary>La clave que toca usar ahora para ese trabajo (cada trabajo tiene la suya; ver GeminiKeyRing).</summary>
+    public string? ResolveApiKey(GeminiUse use = GeminiUse.Chat) => GeminiKeyRing.Pick(AllApiKeys(), use);
 
     internal static string? FirstNonEmpty(params string?[] values) =>
         values.FirstOrDefault(v => !string.IsNullOrWhiteSpace(v))?.Trim();

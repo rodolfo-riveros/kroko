@@ -209,7 +209,7 @@ public partial class PanelViewModel : ObservableObject
         IsReplyError = false;
         RestartAutoHide();
 
-        var sent = await _brain.SendAsync(new UserTextMessage { Text = text, Speak = _opt.Voice.WantsVoice(spoken: false) });
+        var sent = await _brain.SendAsync(new UserTextMessage { Text = text, Speak = _opt.Voice.WantsVoice(spoken: false), AudioLater = true });
         if (!sent)
         {
             _log.LogInformation("Mensaje no enviado: sin conexión con el Brain");
@@ -244,9 +244,18 @@ public partial class PanelViewModel : ObservableObject
                 }
                 break;
 
+            case ReplyMessage { AudioFollows: true } r:
+                IsThinking = false;
+                ShowReplyAwaitingVoice(r);
+                break;
+
             case ReplyMessage r:
                 IsThinking = false;
                 _ = SpeakReplyAsync(r);
+                break;
+
+            case ReplyAudioMessage a:
+                _ = PlayLateVoiceAsync(a.AudioBase64);
                 break;
 
             case ExpressionMessage e:
@@ -440,6 +449,9 @@ public partial class PanelViewModel : ObservableObject
     }
 
     private bool IsBusy => IsThinking || IsTyping || IsConfirming || IsListening || _audioDriven || _suppressed;
+
+    /// <summary>Kroko está en algo (escucha, piensa, habla, pide permiso o muestra una respuesta): la isla debe verse.</summary>
+    public bool IsActiveForIsland => IsThinking || IsTyping || IsConfirming || IsListening || _audioDriven || _panelShown;
 
     private async void FlushNotifications()
     {
@@ -658,8 +670,82 @@ public partial class PanelViewModel : ObservableObject
         }
     }
 
+    // ---------------------------------------------------------------- texto primero, voz después (17/11/2026)
+
+    /// <summary>Respuesta cuya voz llega aparte: el texto se muestra ya y la cara espera la voz.</summary>
+    private sealed record AwaitedVoice(string Text, bool Spoken);
+
+    private AwaitedVoice? _awaitedVoice;
+    private DispatcherTimer? _voiceWait;
+
+    private void ShowReplyAwaitingVoice(ReplyMessage r)
+    {
+        var spoken = _voice.LastRequestWasVoice;
+        _voice.LastRequestWasVoice = false;
+        if (!_opt.Voice.WantsVoice(spoken))
+        {
+            // Solo chat: la voz que llegue se ignora
+            _awaitedVoice = null;
+            _audioDriven = false;
+            StartTyping(r.Text, r.IsError);
+            if (spoken) ReplyFinished?.Invoke(true);
+            return;
+        }
+
+        _awaitedVoice = new AwaitedVoice(r.Text, spoken);
+        StartTyping(r.Text, r.IsError);
+        // Mientras llega la voz, Kroko sigue "hablando" (la conversación no se cierra ni se pone otra cara)
+        _audioDriven = true;
+        _voiceWait ??= new DispatcherTimer { Interval = TimeSpan.FromSeconds(20) };
+        _voiceWait.Tick -= OnVoiceWaitTimeout;
+        _voiceWait.Tick += OnVoiceWaitTimeout;
+        _voiceWait.Stop();
+        _voiceWait.Start();
+    }
+
+    /// <summary>Si la voz no llega (cerebro caído, sin internet), no quedarse esperando.</summary>
+    private void OnVoiceWaitTimeout(object? sender, EventArgs e) => _ = PlayLateVoiceAsync(null);
+
+    private async Task PlayLateVoiceAsync(string? audioBase64)
+    {
+        _voiceWait?.Stop();
+        if (_awaitedVoice is not { } awaited) return; // ya se interrumpió o era solo chat
+        _awaitedVoice = null;
+
+        byte[]? wav = null;
+        if (!string.IsNullOrEmpty(audioBase64))
+        {
+            try { wav = Convert.FromBase64String(audioBase64); }
+            catch (FormatException) { wav = null; }
+        }
+        // Respaldo: la voz de Windows, solo si le hablaste (a lo escrito, sin voz de Gemini se responde por escrito)
+        if (wav is null && awaited.Spoken && _opt.Voice.LocalTtsFallback)
+            wav = await Task.Run(() => _localTts.Synthesize(awaited.Text));
+        if (!_audioDriven) return; // lo interrumpieron mientras se preparaba la voz de Windows
+
+        var duration = wav is null ? null : _player.Play(wav);
+        if (duration is { TotalSeconds: > 0.3 } d)
+        {
+            // Lo que falta escribir se acomoda al ritmo de la voz
+            if (_typing.IsEnabled)
+                _cps = Math.Max(_cps * 0.5, (_fullReply.Length - _typed) / Math.Max(0.5, d.TotalSeconds * 0.92));
+            return; // al terminar de sonar, OnSpeechFinished cierra todo
+        }
+
+        _audioDriven = false;
+        if (!_typing.IsEnabled)
+        {
+            _behavior.SetBrainState(FaceStates.Idle);
+            if (_pendingExpression is { } expr) _behavior.PlayExpression(expr);
+            _pendingExpression = null;
+        }
+        if (awaited.Spoken) ReplyFinished?.Invoke(true);
+    }
+
     private void OnSpeechFinished()
     {
+        _awaitedVoice = null;
+        _voiceWait?.Stop();
         if (!_audioDriven) return;
         _audioDriven = false;
         if (_typing.IsEnabled)
@@ -706,7 +792,7 @@ public partial class PanelViewModel : ObservableObject
         var after = (int)_typed;
 
         // Sin audio, la boca se mueve con las vocales; con audio la mueve la amplitud real
-        if (!_audioDriven)
+        if (!_audioDriven || !_player.IsPlaying)
         {
             for (var i = before; i < after; i++)
                 _speech = "aeiouáéíóúAEIOUÁÉÍÓÚ".Contains(_fullReply[i]) ? 0.9
@@ -724,7 +810,7 @@ public partial class PanelViewModel : ObservableObject
         if (!_typing.IsEnabled) return;
         _typing.Stop();
         ReplyText = _fullReply;
-        if (_audioDriven && _player.IsPlaying)
+        if (_audioDriven && (_player.IsPlaying || _awaitedVoice is not null))
         {
             RestartAutoHide();
             return; // la cara sigue "hablando" hasta que termine la voz

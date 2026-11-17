@@ -19,7 +19,7 @@ public sealed class EmbeddingService(HttpClient http, IOptionsMonitor<LlmOptions
     public async Task<float[][]> EmbedAsync(IReadOnlyList<string> texts, string kind, IReadOnlyList<string?>? titles, CancellationToken ct)
     {
         var g = options.CurrentValue.Gemini;
-        var key = g.ResolveApiKey() ?? throw new NoLlmConfiguredException();
+        var key = g.ResolveApiKey(GeminiUse.Embeddings) ?? throw new NoLlmConfiguredException();
         var model = "models/" + g.EmbeddingModel;
         var requests = new JsonArray();
         for (var i = 0; i < texts.Count; i++)
@@ -45,7 +45,7 @@ public sealed class EmbeddingService(HttpClient http, IOptionsMonitor<LlmOptions
         if (!res.IsSuccessStatusCode)
         {
             log.LogWarning("Embeddings respondió {Status}", (int)res.StatusCode);
-            GeminiKeyRing.Report(key, (int)res.StatusCode);
+            GeminiKeyRing.Report(key, (int)res.StatusCode, null, GeminiUse.Embeddings);
             throw new LlmProviderException("gemini", "no se pudieron calcular los vectores", (int)res.StatusCode);
         }
         var json = await res.Content.ReadFromJsonAsync<JsonElement>(ct);

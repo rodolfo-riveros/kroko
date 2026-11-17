@@ -11,12 +11,65 @@ namespace Kroko.App.ViewModels;
 /// la conversación, PanelViewModel.
 /// </summary>
 public partial class BubbleViewModel(CompanionBehavior behavior, PanelViewModel panel, WindowService windows,
-    EmergencyHotkey emergency, VoiceController voice)
+    EmergencyHotkey emergency, VoiceController voice, BadgeViewModel badge)
     : ObservableObject
 {
     public CompanionBehavior Behavior { get; } = behavior;
 
     public FaceAnimator Face => Behavior.Face;
+
+    // ---------------------------------------------------------------- la isla de arriba (17/11/2026)
+
+    /// <summary>Lo que dice la isla al lado de la cara: «Listo», «Te escucho…», «✓ Anotado», «12:30 · Enfoque»…</summary>
+    [ObservableProperty]
+    public partial string IslandText { get; set; } = "Listo";
+
+    /// <summary>La línea es un check verde (acaba de hacer algo).</summary>
+    [ObservableProperty]
+    public partial bool IslandCheck { get; set; }
+
+    /// <summary>Hay algo que contar (no está en reposo): la isla se ensancha para que se lea.</summary>
+    [ObservableProperty]
+    public partial bool IslandBusy { get; set; }
+
+    /// <summary>Kroko tiene algo que mostrar ahora (escucha, piensa, habla, un check, el enfoque, su panel): la isla sale.</summary>
+    public bool IslandWanted { get; private set; }
+
+    /// <summary>Hay conexión con el cerebro (la luz de la isla, lima o gris).</summary>
+    [ObservableProperty]
+    public partial bool IslandOnline { get; set; }
+
+    /// <summary>Se llama varias veces por segundo desde la isla.</summary>
+    public void RefreshIsland()
+    {
+        var (text, check, busy) = IslandStatus();
+        if (IslandText != text) IslandText = text;
+        if (IslandCheck != check) IslandCheck = check;
+        if (IslandBusy != busy) IslandBusy = busy;
+        if (IslandOnline != Behavior.IsBrainAvailable) IslandOnline = Behavior.IsBrainAvailable;
+        IslandWanted = panel.IsActiveForIsland || badge.BadgeText.Length > 0 || badge.Timers.IsActive || windows.IsIslandPanelOpen;
+    }
+
+    private (string Text, bool Check, bool Busy) IslandStatus()
+    {
+        if (badge.BadgeText.Length > 0) return (badge.BadgeText, true, true);
+        if (panel.IsListening) return ("Te escucho…", false, true);
+        if (panel.IsThinking) return ("Pensando…", false, true);
+        if (panel.IsTyping) return ("Hablando", false, true);
+        if (badge.Timers.IsActive)
+            return (string.IsNullOrWhiteSpace(badge.Timers.Label) ? badge.Timers.RemainingText : $"{badge.Timers.RemainingText} · {badge.Timers.Label}", false, true);
+        if (!Behavior.IsBrainAvailable) return ("Sin conexión", false, true);
+        if (Behavior.IsSleeping) return ("Durmiendo", false, false);
+        return ("Listo", false, false);
+    }
+
+    /// <summary>Clic en la isla: se despliega el panel «Kroko» pegado a ella.</summary>
+    public void OpenIsland()
+    {
+        Behavior.WakeUp();
+        if (!Behavior.IsBrainAvailable) panel.ExplainOffline();
+        windows.ToggleIslandPanel();
+    }
 
     public void OnClick()
     {

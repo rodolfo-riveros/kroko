@@ -3,6 +3,7 @@ using System.Windows;
 using System.Windows.Input;
 using System.Windows.Interop;
 using System.Windows.Media.Animation;
+using System.Windows.Threading;
 using Kroko.App.Face;
 using Kroko.App.Native;
 using Kroko.App.Services;
@@ -56,6 +57,7 @@ public partial class BubbleWindow : Window
         var scale = Math.Clamp(_options.BubbleScale, 0.75, 1.5);
         Width = FaceRenderer.CanvasWidth * scale;
         Height = FaceRenderer.CanvasHeight * scale;
+        if (_options.IsIsland) SetUpIsland();
 
         _fullscreen = new FullscreenWatcher(() => _hwnd);
         _fullscreen.Changed += OnFullscreenChanged;
@@ -83,11 +85,12 @@ public partial class BubbleWindow : Window
                 EnterFullscreenHidden();
                 return;
             }
-            if (_hiddenAsleep)
+            if (_hiddenAsleep && !_options.IsIsland)
             {
                 Hide();
                 return;
             }
+            _hiddenAsleep = false;
             BeginAnimation(OpacityProperty, new DoubleAnimation(1, TimeSpan.FromMilliseconds(250)));
         };
         Closed += (_, _) => _fullscreen.Dispose();
@@ -101,6 +104,11 @@ public partial class BubbleWindow : Window
 
     private void RestorePlacement()
     {
+        if (_options.IsIsland)
+        {
+            PlaceIsland();
+            return;
+        }
         _placement = _placementStore.Load();
 
         var monitor = NativeMethods.MonitorFromPoint(
@@ -168,6 +176,11 @@ public partial class BubbleWindow : Window
         if (_hwnd == 0 || !NativeMethods.GetWindowRect(_hwnd, out var r) || r.Width <= 0) return;
         var monitor = NativeMethods.MonitorFromWindow(_hwnd, NativeMethods.MONITOR_DEFAULTTONEAREST);
         if (!NativeMethods.TryGetMonitorInfo(monitor, out var mi)) return;
+        if (_options.IsIsland)
+        {
+            PublishIslandGeometry(r, mi, NativeMethods.GetMonitorScale(monitor));
+            return;
+        }
 
         var unit = r.Width / FaceRenderer.CanvasWidth;
         var body = new NativeMethods.RECT
@@ -293,6 +306,7 @@ public partial class BubbleWindow : Window
     /// <summary>Dormido un buen rato: se desvanece. Sigue escuchando «Oye Kroko» y los atajos.</summary>
     private void FadeAwayAsleep()
     {
+        if (_options.IsIsland) return; // la isla no desaparece: se queda chiquita y dormida
         if (!IsVisible || _hiddenByUser || _hiddenAsleep) return;
         _hiddenAsleep = true;
         var fade = new DoubleAnimation(0, TimeSpan.FromMilliseconds(700)) { EasingFunction = new CubicEase { EasingMode = EasingMode.EaseIn } };
@@ -371,5 +385,144 @@ public partial class BubbleWindow : Window
             Show();
         }
         BeginAnimation(OpacityProperty, fade);
+    }
+
+    // ---------------------------------------------------------------- isla de arriba (17/11/2026, como Troko Desk)
+
+    private const double IslandWindowWidth = 340;
+    private const double IslandWindowHeight = 40;
+    private const double IslandIdleWidth = 150;
+    private const double IslandBusyWidth = 250;
+    private const double IslandHoverWidth = 280;
+    private DispatcherTimer? _islandTimer;
+    private bool _islandHover;
+    private double _islandTarget = IslandIdleWidth;
+
+    private void SetUpIsland()
+    {
+        Face.Visibility = Visibility.Collapsed;
+        Island.Visibility = Visibility.Visible;
+        Width = IslandWindowWidth;
+        Height = IslandWindowHeight;
+
+        Island.RenderTransform = _islandSlide;
+        if (_options.IslandAutoHide)
+        {
+            // Empieza escondida: sale cuando la llamas o pasas el cursor por arriba
+            _islandSlide.Y = -IslandWindowHeight;
+            Island.Opacity = 0;
+            _islandShown = false;
+        }
+
+        _islandTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(120) };
+        _islandTimer.Tick += (_, _) => RefreshIsland();
+        _islandTimer.Start();
+        RefreshIsland();
+    }
+
+    // ---- isla inteligente (17/11/2026, como Troko Desk): sale cuando la llamas, cuando hace algo o al pasar el cursor
+    // por el borde de arriba; se esconde sola un momento después de terminar.
+
+    private const double IslandHideDelaySeconds = 2.5;
+    private readonly System.Windows.Media.TranslateTransform _islandSlide = new();
+    private bool _islandShown = true;
+    private DateTime _islandLastWanted = DateTime.Now;
+
+    private void RefreshIsland()
+    {
+        _vm.RefreshIsland();
+        UpdateIslandVisibility();
+
+        var target = _islandHover ? IslandHoverWidth : _vm.IslandBusy ? IslandBusyWidth : IslandIdleWidth;
+        if (Math.Abs(target - _islandTarget) < 0.5) return;
+        _islandTarget = target;
+        Island.BeginAnimation(WidthProperty, new DoubleAnimation(target, TimeSpan.FromMilliseconds(220))
+        {
+            EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut },
+        });
+    }
+
+
+    private void UpdateIslandVisibility()
+    {
+        if (!_options.IslandAutoHide)
+        {
+            if (!_islandShown) SlideIsland(true);
+            return;
+        }
+        var now = DateTime.Now;
+        if (_vm.IslandWanted || _islandHover || CursorAtTopCenter()) _islandLastWanted = now;
+        var show = (now - _islandLastWanted).TotalSeconds < IslandHideDelaySeconds;
+        if (show != _islandShown) SlideIsland(show);
+    }
+
+    /// <summary>El cursor está en el borde de arriba, a la altura de la isla (aunque esté escondida).</summary>
+    private bool CursorAtTopCenter()
+    {
+        if (_hwnd == 0 || !NativeMethods.GetCursorPos(out var c) || !NativeMethods.GetWindowRect(_hwnd, out var r)) return false;
+        var ms = r.Width / IslandWindowWidth;
+        var grab = (int)Math.Round((_islandShown ? IslandWindowHeight : 6) * ms); // escondida: solo el filo de arriba
+        return c.X >= r.Left && c.X <= r.Right && c.Y >= r.Top && c.Y <= r.Top + grab;
+    }
+
+    /// <summary>Baja desde el borde (aparece) o sube y se va (desaparece).</summary>
+    private void SlideIsland(bool show)
+    {
+        _islandShown = show;
+        var ease = new CubicEase { EasingMode = show ? EasingMode.EaseOut : EasingMode.EaseIn };
+        var time = TimeSpan.FromMilliseconds(show ? 240 : 200);
+        _islandSlide.BeginAnimation(System.Windows.Media.TranslateTransform.YProperty,
+            new DoubleAnimation(show ? 0 : -IslandWindowHeight, time) { EasingFunction = ease });
+        Island.BeginAnimation(OpacityProperty, new DoubleAnimation(show ? 1 : 0, time));
+        Island.IsHitTestVisible = show;
+    }
+    /// <summary>Arriba al centro del monitor principal, pegada al borde (encima de todo, como un notch).</summary>
+    private void PlaceIsland()
+    {
+        var monitor = NativeMethods.MonitorFromPoint(new NativeMethods.POINT(0, 0), NativeMethods.MONITOR_DEFAULTTOPRIMARY);
+        if (!NativeMethods.TryGetMonitorInfo(monitor, out var mi)) return;
+        var ms = NativeMethods.GetMonitorScale(monitor);
+        var widthPx = (int)Math.Round(IslandWindowWidth * ms);
+        var left = mi.rcMonitor.Left + (mi.rcMonitor.Right - mi.rcMonitor.Left - widthPx) / 2;
+        NativeMethods.SetWindowPos(_hwnd, 0, left, mi.rcMonitor.Top, 0, 0,
+            NativeMethods.SWP_NOSIZE | NativeMethods.SWP_NOZORDER | NativeMethods.SWP_NOACTIVATE);
+    }
+
+    /// <summary>El "cuerpo" para los demás paneles es la isla desplegada (ancho máximo), centrada arriba.</summary>
+    private void PublishIslandGeometry(NativeMethods.RECT window, NativeMethods.MONITORINFOEX mi, double ms)
+    {
+        var center = (window.Left + window.Right) / 2;
+        var half = (int)Math.Round(IslandHoverWidth / 2 * ms);
+        var body = new NativeMethods.RECT
+        {
+            Left = center - half,
+            Right = center + half,
+            Top = window.Top,
+            Bottom = window.Top + (int)Math.Round(Island.Height * ms),
+        };
+        // Debajo de la isla: el área de trabajo empieza en su borde de abajo
+        var work = mi.rcWork;
+        if (work.Top < body.Bottom) work.Top = body.Bottom;
+        _geometry.Update(body, work, ms, ms * 0.3, island: true);
+    }
+
+    private void Island_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
+    {
+        e.Handled = true;
+        _vm.OpenIsland();
+    }
+
+    private void Island_MouseEnter(object sender, MouseEventArgs e)
+    {
+        _islandHover = true;
+        _vm.Behavior.OnHoverChanged(true);
+        RefreshIsland();
+    }
+
+    private void Island_MouseLeave(object sender, MouseEventArgs e)
+    {
+        _islandHover = false;
+        _vm.Behavior.OnHoverChanged(false);
+        RefreshIsland();
     }
 }

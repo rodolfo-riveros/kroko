@@ -35,7 +35,50 @@ public class GeminiKeyRingTests
         now = now.AddHours(13);
         Assert.Equal("a", GeminiKeyRing.Pick(keys));
 
-        Assert.False(GeminiKeyRing.Report("a", 500)); // un error del servidor no es culpa de la clave
+        Assert.False(GeminiKeyRing.Report("a", 400)); // una petición mal hecha no la arregla otra clave
+    }
+
+    [Fact]
+    public void Cada_trabajo_usa_su_propia_clave()
+    {
+        string[] four = ["pensar", "entender", "hablar", "buscar"];
+        Assert.Equal("pensar", GeminiKeyRing.Pick(four, GeminiUse.Chat));
+        Assert.Equal("pensar", GeminiKeyRing.Pick(four, GeminiUse.Live));
+        Assert.Equal("entender", GeminiKeyRing.Pick(four, GeminiUse.Transcribe));
+        Assert.Equal("hablar", GeminiKeyRing.Pick(four, GeminiUse.Speech));
+        Assert.Equal("buscar", GeminiKeyRing.Pick(four, GeminiUse.Search));
+        Assert.Equal("buscar", GeminiKeyRing.Pick(four, GeminiUse.Embeddings));
+
+        // Con 2 claves se reparten en ronda: pensar y hablar en la 1; entender y buscar en la 2
+        string[] two = ["uno", "dos"];
+        Assert.Equal("uno", GeminiKeyRing.Pick(two, GeminiUse.Chat));
+        Assert.Equal("dos", GeminiKeyRing.Pick(two, GeminiUse.Transcribe));
+        Assert.Equal("uno", GeminiKeyRing.Pick(two, GeminiUse.Speech));
+        Assert.Equal("dos", GeminiKeyRing.Pick(two, GeminiUse.Search));
+    }
+
+    [Fact]
+    public void El_limite_de_un_trabajo_no_frena_a_los_demas_pero_sin_saldo_no_sirve_para_nada()
+    {
+        var now = new DateTimeOffset(2026, 11, 17, 9, 0, 0, TimeSpan.Zero);
+        GeminiKeyRing.Now = () => now;
+        string[] keys = ["uno", "dos"];
+
+        // La voz se quedó sin cuota del día en la clave 1: la voz pasa a la 2, pero el chat sigue con la 1
+        Assert.True(GeminiKeyRing.Report("uno", 429, "Quota exceeded for metric: requests per day", GeminiUse.Speech));
+        Assert.Equal("dos", GeminiKeyRing.Pick(keys, GeminiUse.Speech));
+        Assert.Equal("uno", GeminiKeyRing.Pick(keys, GeminiUse.Chat));
+
+        // Gemini saturado (503): ese trabajo prueba otra 30 s
+        Assert.True(GeminiKeyRing.Report("uno", 503, null, GeminiUse.Chat));
+        Assert.Equal("dos", GeminiKeyRing.Pick(keys, GeminiUse.Chat));
+        now = now.AddSeconds(31);
+        Assert.Equal("uno", GeminiKeyRing.Pick(keys, GeminiUse.Chat));
+
+        // Sin saldo: la clave 2 no sirve para nada
+        Assert.True(GeminiKeyRing.Report("dos", 402, "credits are depleted", GeminiUse.Search));
+        Assert.Equal("uno", GeminiKeyRing.Pick(keys, GeminiUse.Transcribe));
+        Assert.Equal("uno", GeminiKeyRing.Pick(keys, GeminiUse.Search));
     }
 
     private sealed class FakeGemini(params HttpStatusCode[] answersByKey) : HttpMessageHandler

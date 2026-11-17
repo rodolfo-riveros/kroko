@@ -124,12 +124,12 @@ public static class ToolCatalog
             Name = "abrir_ventana",
             Description = "Abre en la PC una de tus propias ventanas para que tu dueño siga configurándote o revise algo. " +
                           "panel = el panel Kroko (tu día); habitos, tareas, enfoque (pomodoro) y mipc = esa parte del panel; " +
-                          "configuracion = Ajustes simples del panel (\"abre tu configuración\"); avanzado = Ajustes avanzados (con seccion: general, voz, cerebro, personalidad, " +
-                          "herramientas o cuentas); asistente = \"Configurar Kroko\" (sus datos y TODAS sus claves y cuentas: IA, Tavily, Gmail, Telegram y " +
+                          "configuracion = la ventana de Configuración (\"abre tu configuración\"; con seccion para ir directo: general, voz, personalidad, " +
+                          "avisos, perfil, cuentas, claves, gasto, cerebro, permisos o privacidad); avanzado = lo mismo; asistente = \"Configurar Kroko\" (sus datos y TODAS sus claves y cuentas: IA, Tavily, Gmail, Telegram y " +
                           "vincular apps: Google, Trello, Notion, Todoist); conectores = conectar o desconectar Notion, Todoist y el " +
                           "navegador; memoria = \"Lo que sabe de ti\" (recuerdos, rutinas, buzón de mejoras); registro = acciones " +
                           "que hiciste; galeria = tus caras; mi_dia = agenda, tareas y clima de hoy.",
-            Parameters = """{"type":"object","properties":{"ventana":{"type":"string","enum":["panel","habitos","tareas","enfoque","mipc","configuracion","avanzado","asistente","conectores","memoria","registro","galeria","mi_dia"]},"seccion":{"type":"string","enum":["general","voz","cerebro","personalidad","herramientas","cuentas"],"description":"Solo con avanzado: la pestaña que se abre"}},"required":["ventana"]}""",
+            Parameters = """{"type":"object","properties":{"ventana":{"type":"string","enum":["panel","habitos","tareas","enfoque","mipc","configuracion","avanzado","asistente","conectores","memoria","registro","galeria","mi_dia"]},"seccion":{"type":"string","enum":["general","voz","personalidad","avisos","perfil","cuentas","claves","gasto","cerebro","permisos","privacidad"],"description":"Solo con configuracion: la sección que se abre"}},"required":["ventana"]}""",
             Risk = ToolRisk.Read,
         },
         new()

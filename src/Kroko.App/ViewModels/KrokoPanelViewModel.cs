@@ -73,33 +73,29 @@ public sealed record StatBar(string Name, string Value, double Fraction);
 /// </summary>
 public sealed partial class KrokoPanelViewModel : ObservableObject, IDisposable
 {
-    public static readonly string[] Sections = ["inicio", "tareas", "habitos", "enfoque", "mipc", "ajustes"];
+    public static readonly string[] Sections = ["inicio", "tareas", "habitos", "enfoque", "mipc"];
 
     private readonly BrainApiClient _api;
     private readonly CompanionBehavior _behavior;
     private readonly PanelViewModel _chat;
     private readonly VoiceController _voice;
     private readonly WindowService _windows;
-    private readonly WakeWordService _wake;
     private readonly KrokoOptions _opt;
     private readonly DispatcherTimer _refresh;
-    private bool _loadingSettings;
 
     public KrokoPanelViewModel(BrainApiClient api, CompanionBehavior behavior, PanelViewModel chat, VoiceController voice,
-        WindowService windows, WakeWordService wake, TimerService timers, IOptions<KrokoOptions> options)
+        WindowService windows, TimerService timers, IOptions<KrokoOptions> options)
     {
         _api = api;
         _behavior = behavior;
         _chat = chat;
         _voice = voice;
         _windows = windows;
-        _wake = wake;
         _opt = options.Value;
         Timers = timers;
         _refresh = new DispatcherTimer { Interval = TimeSpan.FromSeconds(30) };
         _refresh.Tick += async (_, _) => await RefreshAsync();
         _refresh.Start();
-        LoadSettings();
     }
 
     public TimerService Timers { get; }
@@ -138,20 +134,6 @@ public sealed partial class KrokoPanelViewModel : ObservableObject, IDisposable
     // ---- Mi PC
     public ObservableCollection<StatBar> PcStats { get; } = [];
     [ObservableProperty] public partial string PcSummary { get; set; } = "";
-
-    // ---- Ajustes simples
-    [ObservableProperty] public partial bool StartHidden { get; set; }
-    [ObservableProperty] public partial bool HideAfterMinute { get; set; }
-    [ObservableProperty] public partial bool WakeWordOn { get; set; }
-    [ObservableProperty] public partial bool RepliesWithVoice { get; set; }
-    [ObservableProperty] public partial bool Realtime { get; set; }
-    [ObservableProperty] public partial bool StartWithWindowsOn { get; set; }
-    [ObservableProperty] public partial bool SoundsOn { get; set; }
-    [ObservableProperty] public partial bool NoticeMeetings { get; set; }
-    [ObservableProperty] public partial bool NoticeEmails { get; set; }
-    [ObservableProperty] public partial bool NoticeOverdue { get; set; }
-    [ObservableProperty] public partial bool NoticeSummary { get; set; }
-    [ObservableProperty] public partial string SettingsStatus { get; set; } = "";
 
     public void OpenSection(string? section)
     {
@@ -224,7 +206,6 @@ public sealed partial class KrokoPanelViewModel : ObservableObject, IDisposable
             [new(1, "Comprar pan", null, false), new(2, "Enviar el informe a Ana", "2026-11-15", false), new(3, "Pagar la luz", "2026-11-14", true)],
             [new(1, "Llamar al dentista", "2026-11-15 13:30", "nunca"), new(2, "Hábito: Beber agua", "2026-11-15 16:00", "diario")]));
         Celebration = "💧  ¡Meta cumplida! Beber agua · 4 días seguidos";
-        NoticeMeetings = NoticeEmails = true;
         PcStats.Add(new StatBar("Procesador", "12 %", 0.12));
         PcStats.Add(new StatBar("Memoria", "58 % · 6,7 GB libres", 0.58));
         PcStats.Add(new StatBar("Disco C:", "212 GB libres de 476 GB", 0.55));
@@ -394,105 +375,6 @@ public sealed partial class KrokoPanelViewModel : ObservableObject, IDisposable
 
     [RelayCommand]
     private void OpenDownloads() => Example("Abre la carpeta de descargas");
-
-    // ------------------------------------------------------------------ ajustes simples (se aplican al instante)
-
-    private void LoadSettings()
-    {
-        _loadingSettings = true;
-        StartHidden = _opt.StartHidden;
-        HideAfterMinute = _opt.HideAfterIdleSeconds > 0;
-        WakeWordOn = _opt.Voice.WakeWord.Enabled;
-        RepliesWithVoice = _opt.Voice.RepliesWithVoice;
-        Realtime = _opt.Voice.Realtime;
-        StartWithWindowsOn = StartWithWindows.IsEnabled;
-        SoundsOn = _opt.SoundsEnabled;
-        _loadingSettings = false;
-    }
-
-    [RelayCommand]
-    public async Task LoadNoticesAsync()
-    {
-        try
-        {
-            if (await _api.GetNoticesAsync() is not { } n) return;
-            _loadingSettings = true;
-            NoticeMeetings = n.Reuniones;
-            NoticeEmails = n.Correos;
-            NoticeOverdue = n.TareasVencidas;
-            NoticeSummary = n.ResumenDelDia;
-        }
-        catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException or JsonException)
-        {
-            SettingsStatus = "No pude leer los avisos: el cerebro no responde.";
-        }
-        finally
-        {
-            _loadingSettings = false;
-        }
-    }
-
-    partial void OnStartHiddenChanged(bool value) => SaveSetting(k => k["StartHidden"] = value, () => _opt.StartHidden = value);
-    partial void OnHideAfterMinuteChanged(bool value) =>
-        SaveSetting(k => k["HideAfterIdleSeconds"] = value ? 60 : 0, () => _opt.HideAfterIdleSeconds = value ? 60 : 0);
-    partial void OnSoundsOnChanged(bool value) => SaveSetting(k => k["SoundsEnabled"] = value, () => _opt.SoundsEnabled = value);
-
-    partial void OnWakeWordOnChanged(bool value) => SaveVoice(v =>
-    {
-        var wake = v["WakeWord"] as JsonObject ?? new JsonObject();
-        wake["Enabled"] = value;
-        v["WakeWord"] = wake.DeepClone();
-    }, () =>
-    {
-        _opt.Voice.WakeWord.Enabled = value;
-        _wake.Refresh();
-    });
-
-    partial void OnRepliesWithVoiceChanged(bool value) =>
-        SaveVoice(v => v["RepliesWithVoice"] = value, () => _opt.Voice.RepliesWithVoice = value);
-
-    partial void OnRealtimeChanged(bool value) => SaveVoice(v => v["Realtime"] = value, () => _opt.Voice.Realtime = value);
-
-    partial void OnStartWithWindowsOnChanged(bool value)
-    {
-        if (!_loadingSettings) StartWithWindows.Set(value);
-    }
-
-    partial void OnNoticeMeetingsChanged(bool value) => _ = SaveNoticesAsync();
-    partial void OnNoticeEmailsChanged(bool value) => _ = SaveNoticesAsync();
-    partial void OnNoticeOverdueChanged(bool value) => _ = SaveNoticesAsync();
-    partial void OnNoticeSummaryChanged(bool value) => _ = SaveNoticesAsync();
-
-    private async Task SaveNoticesAsync()
-    {
-        if (_loadingSettings) return;
-        try
-        {
-            await _api.SetNoticesAsync(new NoticesDto(NoticeMeetings, NoticeEmails, NoticeOverdue, NoticeSummary));
-            SettingsStatus = "Avisos guardados.";
-        }
-        catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException)
-        {
-            SettingsStatus = "No pude guardar los avisos: el cerebro no responde.";
-        }
-    }
-
-    private void SaveSetting(Action<JsonObject> write, Action apply)
-    {
-        if (_loadingSettings) return;
-        apply();
-        var k = UserSettings.LoadKrokoSection();
-        write(k);
-        UserSettings.SaveKrokoSection(k);
-        SettingsStatus = "Guardado.";
-    }
-
-    private void SaveVoice(Action<JsonObject> write, Action apply) => SaveSetting(k =>
-    {
-        var v = k["Voice"] as JsonObject ?? new JsonObject();
-        write(v);
-        k["Voice"] = v.DeepClone();
-    }, apply);
 
     [RelayCommand] private void OpenOnboarding() => _windows.ShowOnboarding();
     [RelayCommand] private void OpenConnectors() => _windows.ShowConnectors();
