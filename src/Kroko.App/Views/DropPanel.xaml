@@ -1,0 +1,227 @@
+<Window x:Class="Kroko.App.Views.DropPanel"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:v="clr-namespace:Kroko.App.Views"
+        Title="Kroko — Archivos"
+        Width="420" SizeToContent="Height"
+        WindowStyle="None" AllowsTransparency="True" Background="Transparent"
+        ResizeMode="NoResize" Topmost="True" ShowInTaskbar="False"
+        WindowStartupLocation="Manual"
+        Foreground="{StaticResource Kroko.Text}"
+        FontFamily="{StaticResource Kroko.Font}"
+        FontSize="13">
+
+    <Window.Resources>
+        <v:BoolToVisibleConverter x:Key="BoolToVisible" />
+        <v:EmptyToCollapsedConverter x:Key="EmptyToCollapsed" />
+        <v:EqualsToVisibleConverter x:Key="ModeIs" />
+        <v:NotNullToVisibleConverter x:Key="NotNullToVisible" />
+
+        <!-- Mosaico de acción (Convertir, Analizar, Ordenar, Enviar) -->
+        <Style x:Key="Tile" TargetType="Button">
+            <Setter Property="Foreground" Value="{StaticResource Kroko.Text}" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Margin" Value="4" />
+            <Setter Property="Height" Value="96" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Bd" Background="{StaticResource Kroko.Pill}" CornerRadius="16" BorderThickness="1"
+                                BorderBrush="{StaticResource Kroko.GlassEdge}" Padding="14,12">
+                            <ContentPresenter VerticalAlignment="Stretch" HorizontalAlignment="Stretch" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Bd" Property="BorderBrush" Value="{StaticResource Kroko.Accent}" />
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter Property="Opacity" Value="0.4" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        <Style x:Key="TileIcon" TargetType="TextBlock">
+            <Setter Property="FontFamily" Value="{StaticResource Kroko.Icons}" />
+            <Setter Property="FontSize" Value="20" />
+            <Setter Property="Foreground" Value="{StaticResource Kroko.Accent}" />
+        </Style>
+        <Style x:Key="TileTitle" TargetType="TextBlock">
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="FontSize" Value="14" />
+            <Setter Property="Margin" Value="0,10,0,2" />
+        </Style>
+        <Style x:Key="TileNote" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="{StaticResource Kroko.TextMuted}" />
+            <Setter Property="FontSize" Value="11" />
+            <Setter Property="TextWrapping" Value="Wrap" />
+        </Style>
+        <Style x:Key="Row" TargetType="WrapPanel">
+            <Setter Property="Margin" Value="0,4,0,0" />
+        </Style>
+        <Style x:Key="Small" TargetType="Button" BasedOn="{StaticResource Kroko.Button}">
+            <Setter Property="Margin" Value="0,0,8,8" />
+            <Setter Property="MinWidth" Value="64" />
+        </Style>
+        <Style x:Key="SmallPrimary" TargetType="Button" BasedOn="{StaticResource Kroko.PrimaryButton}">
+            <Setter Property="Margin" Value="0,0,8,8" />
+            <Setter Property="MinWidth" Value="64" />
+        </Style>
+    </Window.Resources>
+
+    <Border x:Name="Frame" Background="{StaticResource Kroko.Island}" CornerRadius="20" BorderThickness="1"
+            BorderBrush="#262626" Margin="14,0,14,18" Padding="18,16,18,14"
+            RenderTransformOrigin="0.5,0">
+        <Border.RenderTransform>
+            <ScaleTransform />
+        </Border.RenderTransform>
+        <Border.Effect>
+            <DropShadowEffect BlurRadius="24" ShadowDepth="6" Direction="270" Opacity="0.45" Color="Black" />
+        </Border.Effect>
+
+        <StackPanel>
+            <!-- Encabezado: qué soltaste -->
+            <DockPanel Margin="0,0,0,12">
+                <Button DockPanel.Dock="Right" Style="{StaticResource Kroko.TextButton}" Command="{Binding CloseCommand}"
+                        ToolTip="Cerrar (Esc)" VerticalAlignment="Top">
+                    <TextBlock Text="&#xE711;" FontFamily="{StaticResource Kroko.Icons}" FontSize="12" Foreground="{StaticResource Kroko.TextMuted}" />
+                </Button>
+                <Button DockPanel.Dock="Left" Style="{StaticResource Kroko.TextButton}" Command="{Binding BackCommand}"
+                        ToolTip="Volver" VerticalAlignment="Center" Margin="-8,0,4,0"
+                        Visibility="{Binding Mode, Converter={StaticResource ModeIs}, ConverterParameter=convertir|analizar|ordenar|enviar|celular}">
+                    <TextBlock Text="&#xE72B;" FontFamily="{StaticResource Kroko.Icons}" FontSize="13" />
+                </Button>
+                <Border DockPanel.Dock="Left" Width="38" Height="38" CornerRadius="19" Background="{StaticResource Kroko.AccentSoft}" Margin="0,0,12,0">
+                    <TextBlock Text="&#xE8A5;" FontFamily="{StaticResource Kroko.Icons}" FontSize="16" Foreground="{StaticResource Kroko.Accent}"
+                               HorizontalAlignment="Center" VerticalAlignment="Center" />
+                </Border>
+                <StackPanel VerticalAlignment="Center">
+                    <TextBlock Text="{Binding Title}" FontWeight="SemiBold" FontSize="14" TextTrimming="CharacterEllipsis" />
+                    <TextBlock Text="{Binding Detail}" Foreground="{StaticResource Kroko.TextMuted}" FontSize="12" />
+                </StackPanel>
+            </DockPanel>
+
+            <!-- Inicio: cuatro mosaicos -->
+            <UniformGrid Columns="2" Margin="-4,0"
+                         Visibility="{Binding Mode, Converter={StaticResource ModeIs}, ConverterParameter=inicio}">
+                <Button Style="{StaticResource Tile}" Command="{Binding ShowCommand}" CommandParameter="convertir">
+                    <StackPanel>
+                        <TextBlock Style="{StaticResource TileIcon}" Text="&#xE8AB;" />
+                        <TextBlock Style="{StaticResource TileTitle}" Text="Convertir" />
+                        <TextBlock Style="{StaticResource TileNote}" Text="Imagen, PDF o audio" />
+                    </StackPanel>
+                </Button>
+                <Button Style="{StaticResource Tile}" Command="{Binding ShowCommand}" CommandParameter="analizar">
+                    <StackPanel>
+                        <TextBlock Style="{StaticResource TileIcon}" Text="&#xE9D9;" />
+                        <TextBlock Style="{StaticResource TileTitle}" Text="Analizar" />
+                        <TextBlock Style="{StaticResource TileNote}" Text="Lo lee Gemini" />
+                    </StackPanel>
+                </Button>
+                <Button Style="{StaticResource Tile}" Command="{Binding ShowCommand}" CommandParameter="ordenar">
+                    <StackPanel>
+                        <TextBlock Style="{StaticResource TileIcon}" Text="&#xE8B7;" />
+                        <TextBlock Style="{StaticResource TileTitle}" Text="Ordenar" />
+                        <TextBlock Style="{StaticResource TileNote}" Text="A una carpeta, con deshacer" />
+                    </StackPanel>
+                </Button>
+                <Button Style="{StaticResource Tile}" Command="{Binding ShowCommand}" CommandParameter="enviar">
+                    <StackPanel>
+                        <TextBlock Style="{StaticResource TileIcon}" Text="&#xE724;" />
+                        <TextBlock Style="{StaticResource TileTitle}" Text="Enviar" />
+                        <TextBlock Style="{StaticResource TileNote}" Text="Telegram o tu celular" />
+                    </StackPanel>
+                </Button>
+            </UniformGrid>
+
+            <!-- Convertir -->
+            <StackPanel Visibility="{Binding Mode, Converter={StaticResource ModeIs}, ConverterParameter=convertir}">
+                <TextBlock Style="{StaticResource Kroko.Label}" Margin="0,0,0,8" Text="CONVERTIR" />
+                <StackPanel Visibility="{Binding AllImages, Converter={StaticResource BoolToVisible}}">
+                    <TextBlock Style="{StaticResource TileNote}" Margin="0,0,0,8" Text="El original no se toca: la copia queda al lado." />
+                    <WrapPanel Style="{StaticResource Row}">
+                        <Button Style="{StaticResource Small}" Content="PNG" Command="{Binding ConvertImagesCommand}" CommandParameter="png" />
+                        <Button Style="{StaticResource Small}" Content="JPG" Command="{Binding ConvertImagesCommand}" CommandParameter="jpg" />
+                        <Button Style="{StaticResource Small}" Content="BMP" Command="{Binding ConvertImagesCommand}" CommandParameter="bmp" />
+                        <Button Style="{StaticResource SmallPrimary}" Content="Juntar en un PDF" Command="{Binding ImagesToPdfCommand}" />
+                    </WrapPanel>
+                </StackPanel>
+                <StackPanel Visibility="{Binding AllAudio, Converter={StaticResource BoolToVisible}}">
+                    <WrapPanel Style="{StaticResource Row}" Visibility="{Binding HasFfmpeg, Converter={StaticResource BoolToVisible}}">
+                        <Button Style="{StaticResource Small}" Content="MP3" Command="{Binding ConvertAudioCommand}" CommandParameter="mp3" />
+                        <Button Style="{StaticResource Small}" Content="WAV" Command="{Binding ConvertAudioCommand}" CommandParameter="wav" />
+                        <Button Style="{StaticResource Small}" Content="M4A" Command="{Binding ConvertAudioCommand}" CommandParameter="m4a" />
+                    </WrapPanel>
+                    <StackPanel Visibility="{Binding HasFfmpeg, Converter={StaticResource BoolToVisible}, ConverterParameter=invert}">
+                        <TextBlock Style="{StaticResource TileNote}" Margin="0,0,0,8"
+                                   Text="Para convertir audio necesito ffmpeg (gratis). Instálalo y vuelve a soltar el archivo; yo no descargo nada solo." />
+                        <WrapPanel><Button Style="{StaticResource Small}" Content="Abrir ffmpeg.org" Command="{Binding OpenFfmpegPageCommand}" /></WrapPanel>
+                    </StackPanel>
+                </StackPanel>
+                <TextBlock Style="{StaticResource TileNote}" Visibility="{Binding CanConvert, Converter={StaticResource BoolToVisible}, ConverterParameter=invert}"
+                           Text="Por ahora convierto imágenes (PNG, JPG, BMP o a PDF) y audio (MP3, WAV, M4A). Suelta solo imágenes o solo audios." />
+            </StackPanel>
+
+            <!-- Analizar -->
+            <StackPanel Visibility="{Binding Mode, Converter={StaticResource ModeIs}, ConverterParameter=analizar}">
+                <TextBlock Style="{StaticResource Kroko.Label}" Margin="0,0,0,8" Text="ANALIZAR" />
+                <TextBlock Style="{StaticResource TileNote}" Margin="0,0,0,10"
+                           Text="El contenido se envía a Gemini para leerlo. La respuesta sale en el panel de Kroko." />
+                <WrapPanel Style="{StaticResource Row}">
+                    <Button Style="{StaticResource SmallPrimary}" Content="Resumir" Command="{Binding SummarizeCommand}" />
+                    <Button Style="{StaticResource Small}" Content="Puntos clave" Command="{Binding KeyPointsCommand}" />
+                </WrapPanel>
+                <DockPanel Margin="0,6,0,0">
+                    <Button DockPanel.Dock="Right" Style="{StaticResource Small}" Margin="8,0,0,0" Content="Preguntar" Command="{Binding AskCommand}" />
+                    <TextBox x:Name="QuestionBox" Style="{StaticResource Kroko.Field}" Text="{Binding Question, UpdateSourceTrigger=PropertyChanged}"
+                             ToolTip="Escribe tu pregunta sobre el archivo y pulsa Enter">
+                        <TextBox.InputBindings>
+                            <KeyBinding Key="Enter" Command="{Binding AskCommand}" />
+                        </TextBox.InputBindings>
+                    </TextBox>
+                </DockPanel>
+            </StackPanel>
+
+            <!-- Ordenar -->
+            <StackPanel Visibility="{Binding Mode, Converter={StaticResource ModeIs}, ConverterParameter=ordenar}">
+                <TextBlock Style="{StaticResource Kroko.Label}" Margin="0,0,0,8" Text="ORDENAR" />
+                <CheckBox Style="{StaticResource Kroko.Check}" Content="Por fecha (año-mes) en vez de por tipo" IsChecked="{Binding ByDate}" />
+                <Border Background="{StaticResource Kroko.Inset}" CornerRadius="12" Padding="12,10" Margin="0,4,0,10">
+                    <TextBlock Text="{Binding OrganizePreview}" TextWrapping="Wrap" />
+                </Border>
+                <WrapPanel>
+                    <Button Style="{StaticResource SmallPrimary}" Content="Mover" Command="{Binding MoveCommand}" />
+                    <Button Style="{StaticResource Small}" Content="Deshacer" Command="{Binding UndoCommand}"
+                            Visibility="{Binding CanUndo, Converter={StaticResource BoolToVisible}}" />
+                </WrapPanel>
+            </StackPanel>
+
+            <!-- Enviar -->
+            <StackPanel Visibility="{Binding Mode, Converter={StaticResource ModeIs}, ConverterParameter=enviar}">
+                <TextBlock Style="{StaticResource Kroko.Label}" Margin="0,0,0,8" Text="ENVIAR" />
+                <WrapPanel>
+                    <Button Style="{StaticResource SmallPrimary}" Content="A mi Telegram" Command="{Binding SendTelegramCommand}" />
+                    <Button Style="{StaticResource Small}" Content="A mi celular (QR)" Command="{Binding SendPhoneCommand}" />
+                </WrapPanel>
+                <TextBlock Style="{StaticResource TileNote}" Margin="0,4,0,0"
+                           Text="Con el QR, el celular lo descarga por tu Wi-Fi: sin apps ni cuentas, una sola vez y por 5 minutos." />
+            </StackPanel>
+
+            <!-- Celular: el QR -->
+            <StackPanel Visibility="{Binding Mode, Converter={StaticResource ModeIs}, ConverterParameter=celular}" HorizontalAlignment="Center">
+                <Border Background="White" CornerRadius="14" Padding="10" HorizontalAlignment="Center"
+                        Visibility="{Binding PhoneQr, Converter={StaticResource NotNullToVisible}}">
+                    <Image Source="{Binding PhoneQr}" Width="190" Height="190" RenderOptions.BitmapScalingMode="NearestNeighbor" />
+                </Border>
+                <TextBlock Text="{Binding PhoneLink}" Foreground="{StaticResource Kroko.TextMuted}" FontSize="11" Margin="0,8,0,0"
+                           HorizontalAlignment="Center" TextTrimming="CharacterEllipsis" />
+            </StackPanel>
+
+            <!-- Estado -->
+            <TextBlock Text="{Binding Status}" TextWrapping="Wrap" Margin="0,10,0,0"
+                       Foreground="{StaticResource Kroko.Accent}"
+                       Visibility="{Binding Status, Converter={StaticResource EmptyToCollapsed}}" />
+        </StackPanel>
+    </Border>
+</Window>

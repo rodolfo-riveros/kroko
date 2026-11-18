@@ -113,6 +113,9 @@ public partial class App : Application
                 services.AddTransient<SettingsWindow>();
                 services.AddTransient<KrokoPanelViewModel>();
                 services.AddTransient<KrokoPanelWindow>();
+                services.AddSingleton<Kroko.App.Services.LanShare.PhoneShare>();
+                services.AddTransient<DropPanelViewModel>();
+                services.AddTransient<DropPanel>();
                 services.AddSingleton<TrayService>();
                 services.AddSingleton<UpdateService>();
                 services.AddSingleton<ResponsePanel>();

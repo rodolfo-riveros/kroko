@@ -373,7 +373,7 @@ public sealed class OrdenarCarpetaTool : ILocalTool
         return ToolOutcome.Success(new { movidos = moves.Count, porCarpeta, omitidos, registro = logPath });
     }, ct);
 
-    private static string CategoryOf(string ext) =>
+    internal static string CategoryOf(string ext) =>
         Categories.FirstOrDefault(c => c.Ext.Contains(ext, StringComparer.OrdinalIgnoreCase)).Folder ?? "Otros";
 }
 
@@ -395,7 +395,10 @@ internal static class FileSizes
 /// </summary>
 public static class OrderUndo
 {
-    public static string LogDir => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Kroko", "ordenes");
+    /// <summary>Solo para las pruebas: otra carpeta de registros (para no tocar la del dueño).</summary>
+    internal static string? LogDirOverride { get; set; }
+
+    public static string LogDir => LogDirOverride ?? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Kroko", "ordenes");
 
     public sealed record Result(int Devueltos, int NoSePudo, string Carpeta);
 

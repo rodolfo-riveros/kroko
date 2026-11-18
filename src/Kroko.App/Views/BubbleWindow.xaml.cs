@@ -433,7 +433,7 @@ public partial class BubbleWindow : Window
         _vm.RefreshIsland();
         UpdateIslandVisibility();
 
-        var target = _islandHover ? IslandHoverWidth : _vm.IslandBusy ? IslandBusyWidth : IslandIdleWidth;
+        var target = _islandHover || _vm.DragOver ? IslandHoverWidth : _vm.IslandBusy ? IslandBusyWidth : IslandIdleWidth;
         if (Math.Abs(target - _islandTarget) < 0.5) return;
         _islandTarget = target;
         Island.BeginAnimation(WidthProperty, new DoubleAnimation(target, TimeSpan.FromMilliseconds(220))
@@ -524,5 +524,43 @@ public partial class BubbleWindow : Window
         _islandHover = false;
         _vm.Behavior.OnHoverChanged(false);
         RefreshIsland();
+    }
+
+    // ---------------------------------------------------------------- soltar archivos (17/11/2026)
+
+    private static string[] DroppedFiles(DragEventArgs e) =>
+        e.Data.GetDataPresent(DataFormats.FileDrop) && e.Data.GetData(DataFormats.FileDrop) is string[] files
+            ? [.. files.Where(System.IO.File.Exists)]
+            : [];
+
+    private void Kroko_DragEnter(object sender, DragEventArgs e)
+    {
+        Kroko_DragOver(sender, e);
+        if (e.Effects == DragDropEffects.None) return;
+        _vm.DragOver = true;
+        _vm.Behavior.WakeUp();
+        _vm.Behavior.SetBrainState("listening"); // «te escucho»: abre los ojos al ver el archivo
+        if (_options.IsIsland) RefreshIsland();
+    }
+
+    private void Kroko_DragOver(object sender, DragEventArgs e)
+    {
+        // Solo archivos (no carpetas ni texto suelto)
+        e.Effects = DroppedFiles(e).Length > 0 ? DragDropEffects.Copy : DragDropEffects.None;
+        e.Handled = true;
+    }
+
+    private void Kroko_DragLeave(object sender, DragEventArgs e)
+    {
+        _vm.DragOver = false;
+        _vm.Behavior.SetBrainState("idle");
+        if (_options.IsIsland) RefreshIsland();
+    }
+
+    private void Kroko_Drop(object sender, DragEventArgs e)
+    {
+        e.Handled = true;
+        _vm.Behavior.SetBrainState("idle");
+        _vm.DropFiles(DroppedFiles(e));
     }
 }

@@ -33,7 +33,7 @@ public sealed class LocalLlmOptions
         "internet", "busca en", "búscame", "googlea", "clima", "tiempo hará", "pronóstico", "noticia", "precio", "dólar",
         "correo", "email", "gmail", "notion", "drive", "calendar", "calendario", "evento", "reunión", "trello", "todoist",
         "whatsapp", "formulario", "página", "web", "pantalla", "captura", "ventana", "documento", "pdf", "traduce", "contacto",
-        "automatiza", "cada día", "todos los días", "telegram", "archivo a", "mándame",
+        "automatiza", "cada día", "todos los días", "telegram", "archivo a", "mándame", "imagen", "foto", "analiza", "resúme", "puntos clave", "archivo «",
     ];
 }
 

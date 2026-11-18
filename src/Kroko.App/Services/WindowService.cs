@@ -16,6 +16,18 @@ public sealed class WindowService(IServiceProvider services)
     private OnboardingWindow? _onboarding;
     private MyDayWindow? _myDay;
     private KrokoPanelWindow? _panel;
+    private DropPanel? _drop;
+
+    /// <summary>Soltaste archivos sobre Kroko: el panel Convertir / Analizar / Ordenar / Enviar.</summary>
+    public void ShowDrop(IEnumerable<string> files)
+    {
+        if (_drop is not { IsLoaded: true })
+        {
+            _drop = services.GetRequiredService<DropPanel>();
+            _drop.Closed += (_, _) => _drop = null;
+        }
+        _drop.Open(files);
+    }
 
     /// <summary>
     /// El panel «Kroko» (14/11/2026): inicio, tareas, hábitos, enfoque, mi PC y ajustes simples. section = una de
@@ -50,6 +62,7 @@ public sealed class WindowService(IServiceProvider services)
 
     /// <summary>El panel «Kroko» está desplegado desde la isla.</summary>
     public bool IsIslandPanelOpen => _panel is { IsLoaded: true, IsAttached: true, IsClosing: false };
+    public bool IsDropOpen => _drop is { IsLoaded: true };
 
     /// <summary>Clic en la isla: abre el panel o, si ya está desplegado, lo recoge.</summary>
     public void ToggleIslandPanel()

@@ -5,6 +5,7 @@ using Kroko.App.Tools;
 namespace Kroko.App.Tests;
 
 /// <summary>Herramientas de archivos sobre una carpeta temporal (nunca toca tus archivos reales).</summary>
+[Collection("Archivos")]
 public sealed class FileToolTests : IDisposable
 {
     private readonly string _root = Path.Combine(Path.GetTempPath(), "kroko-tests-" + Guid.NewGuid().ToString("N")[..8]);

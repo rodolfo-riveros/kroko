@@ -110,3 +110,13 @@ public sealed class FractionConverter : IValueConverter
     public object ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture) =>
         throw new NotSupportedException();
 }
+
+/// <summary>Visible si el valor (como texto) es igual al parámetro; con varios separados por «|», si es alguno.</summary>
+public sealed class EqualsToVisibleConverter : IValueConverter
+{
+    public object Convert(object? value, Type targetType, object? parameter, CultureInfo culture) =>
+        (parameter as string ?? "").Split('|').Contains(value?.ToString() ?? "") ? Visibility.Visible : Visibility.Collapsed;
+
+    public object ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture) =>
+        throw new NotSupportedException();
+}

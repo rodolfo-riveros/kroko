@@ -47,11 +47,12 @@ public partial class BubbleViewModel(CompanionBehavior behavior, PanelViewModel 
         if (IslandCheck != check) IslandCheck = check;
         if (IslandBusy != busy) IslandBusy = busy;
         if (IslandOnline != Behavior.IsBrainAvailable) IslandOnline = Behavior.IsBrainAvailable;
-        IslandWanted = panel.IsActiveForIsland || badge.BadgeText.Length > 0 || badge.Timers.IsActive || windows.IsIslandPanelOpen;
+        IslandWanted = panel.IsActiveForIsland || badge.BadgeText.Length > 0 || badge.Timers.IsActive || windows.IsIslandPanelOpen || windows.IsDropOpen || DragOver;
     }
 
     private (string Text, bool Check, bool Busy) IslandStatus()
     {
+        if (DragOver) return ("Suéltalo aquí", false, true);
         if (badge.BadgeText.Length > 0) return (badge.BadgeText, true, true);
         if (panel.IsListening) return ("Te escucho…", false, true);
         if (panel.IsThinking) return ("Pensando…", false, true);
@@ -61,6 +62,19 @@ public partial class BubbleViewModel(CompanionBehavior behavior, PanelViewModel 
         if (!Behavior.IsBrainAvailable) return ("Sin conexión", false, true);
         if (Behavior.IsSleeping) return ("Durmiendo", false, false);
         return ("Listo", false, false);
+    }
+
+    /// <summary>Hay archivos arrastrándose sobre Kroko (la isla se ensancha y dice «Suéltalo aquí»).</summary>
+    public bool DragOver { get; set; }
+
+    /// <summary>Soltaste archivos sobre Kroko: abre el panel Convertir / Analizar / Ordenar / Enviar.</summary>
+    public void DropFiles(IReadOnlyList<string> files)
+    {
+        DragOver = false;
+        if (files.Count == 0) return;
+        Behavior.WakeUp();
+        Behavior.PlayExpression("surprised");
+        windows.ShowDrop(files);
     }
 
     /// <summary>Clic en la isla: se despliega el panel «Kroko» pegado a ella.</summary>

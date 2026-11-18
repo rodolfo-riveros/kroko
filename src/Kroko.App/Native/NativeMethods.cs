@@ -117,6 +117,12 @@ public static partial class NativeMethods
     [return: MarshalAs(UnmanagedType.Bool)]
     public static partial bool GetCursorPos(out POINT point);
 
+    /// <summary>Estado de una tecla o botón del mouse ahora mismo (bit alto = presionado).</summary>
+    [LibraryImport("user32.dll")]
+    public static partial short GetAsyncKeyState(int key);
+
+    public const int VK_LBUTTON = 0x01;
+
     [LibraryImport("user32.dll")]
     [return: MarshalAs(UnmanagedType.Bool)]
     public static partial bool GetWindowRect(nint hWnd, out RECT rect);

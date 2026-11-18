@@ -46,7 +46,9 @@
                        MouseLeftButtonUp="Face_MouseLeftButtonUp"
                        LostMouseCapture="Face_LostMouseCapture"
                        MouseEnter="Face_MouseEnter"
-                       MouseLeave="Face_MouseLeave" />
+                       MouseLeave="Face_MouseLeave"
+                       AllowDrop="True" DragEnter="Kroko_DragEnter" DragOver="Kroko_DragOver"
+                       DragLeave="Kroko_DragLeave" Drop="Kroko_Drop" />
 
         <!-- Isla de arriba (17/11/2026, como Troko Desk): se ensancha al pasar el mouse o cuando hay algo que contar -->
         <v:IslandView x:Name="Island" Visibility="Collapsed" Width="150"
@@ -54,6 +56,8 @@
                       ContextMenu="{StaticResource KrokoMenu}"
                       MouseLeftButtonUp="Island_MouseLeftButtonUp"
                       MouseEnter="Island_MouseEnter"
-                      MouseLeave="Island_MouseLeave" />
+                      MouseLeave="Island_MouseLeave"
+                      AllowDrop="True" DragEnter="Kroko_DragEnter" DragOver="Kroko_DragOver"
+                      DragLeave="Kroko_DragLeave" Drop="Kroko_Drop" />
     </Grid>
 </Window>

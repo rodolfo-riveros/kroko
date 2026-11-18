@@ -133,6 +133,14 @@ public static class ToolCatalog
         },
         new()
         {
+            // 17/11/2026: «Analizar» una foto soltada sobre Kroko
+            Name = "ver_imagen",
+            Description = "Mira una imagen de la PC (PNG, JPG, BMP, TIFF o GIF) para describirla, leer su texto o responder preguntas sobre ella. " +
+                          "Úsala cuando te pidan analizar o resumir una imagen o foto con su ruta.",
+            Parameters = """{"type":"object","properties":{"ruta":{"type":"string","description":"Ruta completa de la imagen"}},"required":["ruta"]}""",
+        },
+        new()
+        {
             Name = "abrir_ventana",
             Description = "Abre en la PC una de tus propias ventanas para que tu dueño siga configurándote o revise algo. " +
                           "panel = el panel Kroko (tu día); chat, habitos, tareas, enfoque (pomodoro), correo y mipc = esa parte del panel; " +
