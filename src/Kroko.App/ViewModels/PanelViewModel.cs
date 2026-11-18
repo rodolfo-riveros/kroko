@@ -227,7 +227,13 @@ public partial class PanelViewModel : ObservableObject
     {
         switch (message)
         {
+            case StateMessage { Tool: { Length: > 0 } tool }:
+                // Solo informa qué herramienta usa (la isla lo muestra); no cambia la cara ni el estado
+                CurrentTool = tool;
+                break;
+
             case StateMessage s:
+                if (s.State != FaceStates.Thinking) CurrentTool = "";
                 if (s.State == FaceStates.Thinking)
                 {
                     IsThinking = true;
@@ -245,11 +251,13 @@ public partial class PanelViewModel : ObservableObject
                 break;
 
             case ReplyMessage { AudioFollows: true } r:
+                CurrentTool = "";
                 IsThinking = false;
                 ShowReplyAwaitingVoice(r);
                 break;
 
             case ReplyMessage r:
+                CurrentTool = "";
                 IsThinking = false;
                 _ = SpeakReplyAsync(r);
                 break;
@@ -483,6 +491,10 @@ public partial class PanelViewModel : ObservableObject
 
     [ObservableProperty]
     public partial bool IsListening { get; set; }
+
+    /// <summary>La herramienta que está usando ahora (vacío = ninguna). La isla: «Abriendo Notion · abrir_app».</summary>
+    [ObservableProperty]
+    public partial string CurrentTool { get; set; } = "";
 
     /// <summary>Hay una conversación por voz en curso (Kroko vuelve a escuchar tras responder).</summary>
     [ObservableProperty]

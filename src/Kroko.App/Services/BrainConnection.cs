@@ -65,6 +65,15 @@ public sealed class BrainConnection(IOptions<KrokoOptions> options, ILogger<Brai
         }
     }
 
+    private CancellationTokenSource? _retryNow;
+
+    /// <summary>«Reintentar» de la isla sin cerebro: corta la espera y vuelve a conectar ya.</summary>
+    public Task ReconnectNowAsync()
+    {
+        try { _retryNow?.Cancel(); } catch (ObjectDisposedException) { }
+        return Task.CompletedTask;
+    }
+
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         var backoff = TimeSpan.FromSeconds(1);
@@ -111,11 +120,17 @@ public sealed class BrainConnection(IOptions<KrokoOptions> options, ILogger<Brai
             try
             {
                 var jitter = TimeSpan.FromMilliseconds(Random.Shared.Next(0, 400));
-                await Task.Delay(backoff + jitter, stoppingToken);
+                _retryNow = CancellationTokenSource.CreateLinkedTokenSource(stoppingToken);
+                await Task.Delay(backoff + jitter, _retryNow.Token);
+            }
+            catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
+            {
+                break;
             }
             catch (OperationCanceledException)
             {
-                break;
+                backoff = TimeSpan.FromSeconds(1); // «Reintentar» de la isla: ahora mismo
+                continue;
             }
             backoff = TimeSpan.FromTicks(Math.Min(backoff.Ticks * 2, MaxBackoff.Ticks));
         }

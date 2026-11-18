@@ -50,9 +50,18 @@ public partial class DropPanel : Window
 
     public DropPanelViewModel ViewModel => _vm;
 
-    public void Open(IEnumerable<string> files)
+    public void OpenText(string title, string content)
+    {
+        _vm.LoadText(title, content);
+        _openedAt = DateTime.Now;
+        if (!IsLoaded) Show();
+        Activate();
+    }
+
+    public void Open(IEnumerable<string> files, string? mode = null)
     {
         _vm.Load(files);
+        if (mode == "celular") _vm.SendPhoneCommand.Execute(null);
         _openedAt = DateTime.Now;
         if (!IsLoaded) Show();
         Activate();

@@ -335,6 +335,13 @@ public sealed partial class VoiceController : IDisposable
     /// «Cállate» / «descansa» (decidido por Pol, 14/11/2026): deja de hablar, termina la conversación (también la de
     /// tiempo real), cierra el panel y se esconde dormido. Vuelve con «Oye Kroko», el atajo o la bandeja.
     /// </summary>
+    /// <summary>«Esc para cancelar» de la isla: deja de escuchar sin enviar nada.</summary>
+    public void CancelListening()
+    {
+        if (_live.IsActive) _live.Stop();
+        else if (_recorder.IsRecording) Finish(send: false);
+    }
+
     public void Rest()
     {
         _followUpDelay.Stop();

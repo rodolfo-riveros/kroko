@@ -27,6 +27,7 @@ public partial class BubbleWindow : Window
     private readonly WindowPlacementStore _placementStore;
     private readonly FullscreenWatcher _fullscreen;
     private readonly BubbleGeometry _geometry;
+    private readonly IslandViewModel _island;
     private WindowPlacementStore.PlacementData _placement = new();
 
     private nint _hwnd;
@@ -41,15 +42,15 @@ public partial class BubbleWindow : Window
     private double _velX;
 
     public BubbleWindow(BubbleViewModel viewModel, IOptions<KrokoOptions> options, WindowPlacementStore placementStore,
-        BubbleGeometry geometry)
+        BubbleGeometry geometry, IslandViewModel island)
     {
         InitializeComponent();
+        _island = island;
         _vm = viewModel;
         _options = options.Value;
         _placementStore = placementStore;
         _geometry = geometry;
         DataContext = viewModel;
-        viewModel.HookMusic();
         // «Volver arriba al centro» solo tiene sentido fuera de la isla
         if (_options.IsIsland && FindResource("KrokoMenu") is System.Windows.Controls.ContextMenu menu)
             foreach (var item in menu.Items.OfType<System.Windows.Controls.MenuItem>().Where(i => "volver".Equals(i.Tag)))
@@ -419,21 +420,28 @@ public partial class BubbleWindow : Window
         BeginAnimation(OpacityProperty, fade);
     }
 
-    // ---------------------------------------------------------------- isla de arriba (17/11/2026, como Troko Desk)
+    // ---------------------------------------------------------------- isla «Kroko 2» (18/11/2026)
+    //
+    // La ventana es un lienzo transparente grande (los píxeles transparentes dejan pasar los clics) y la isla cuelga
+    // arriba al centro: crece solo lo necesario según su estado (el ancho se anima hacia lo que mide su contenido) y
+    // vuelve a su tamaño mínimo. Con el autoocultado, sale cuando tiene algo que contar o al pasar el cursor por arriba.
 
-    private const double IslandWindowWidth = 340;
-    private const double IslandWindowHeight = 40;
-    private const double IslandIdleWidth = 150;
-    private const double IslandBusyWidth = 250;
-    private const double IslandHoverWidth = 280;
+    private const double IslandWindowWidth = 640;
+    private const double IslandWindowHeight = 240;
+    private const double IslandHideDelaySeconds = 2.5;
     private DispatcherTimer? _islandTimer;
     private bool _islandHover;
-    private double _islandTarget = IslandIdleWidth;
+    private string _islandShape = "";
+    private readonly System.Windows.Media.TranslateTransform _islandSlide = new();
+    private bool _islandShown = true;
+    private DateTime _islandLastWanted = DateTime.Now;
 
     private void SetUpIsland()
     {
         Face.Visibility = Visibility.Collapsed;
         Island.Visibility = Visibility.Visible;
+        Island.DataContext = _island;
+        if (Island.ContextMenu is { } menu) menu.DataContext = _vm; // el menú de clic derecho sigue usando los comandos de Kroko
         Width = IslandWindowWidth;
         Height = IslandWindowHeight;
 
@@ -452,28 +460,37 @@ public partial class BubbleWindow : Window
         RefreshIsland();
     }
 
-    // ---- isla inteligente (17/11/2026, como Troko Desk): sale cuando la llamas, cuando hace algo o al pasar el cursor
-    // por el borde de arriba; se esconde sola un momento después de terminar.
-
-    private const double IslandHideDelaySeconds = 2.5;
-    private readonly System.Windows.Media.TranslateTransform _islandSlide = new();
-    private bool _islandShown = true;
-    private DateTime _islandLastWanted = DateTime.Now;
-
     private void RefreshIsland()
     {
-        _vm.RefreshIsland();
+        _island.Refresh();
         UpdateIslandVisibility();
 
-        var target = _islandHover || _vm.DragOver ? IslandHoverWidth : _vm.IslandBusy ? IslandBusyWidth : IslandIdleWidth;
-        if (Math.Abs(target - _islandTarget) < 0.5) return;
-        _islandTarget = target;
-        Island.BeginAnimation(WidthProperty, new DoubleAnimation(target, TimeSpan.FromMilliseconds(220))
-        {
-            EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut },
-        });
+        // Cambió lo que muestra: el ancho va suave hacia lo que mide el contenido nuevo
+        var shape = _island.State + "|" + _island.Hover + "|" + _island.DoneCanUndo + "|" + _island.ToolChip.Length;
+        if (shape == _islandShape) return;
+        _islandShape = shape;
+        Dispatcher.BeginInvoke(AnimateIslandWidth, DispatcherPriority.Loaded);
     }
 
+    private void AnimateIslandWidth()
+    {
+        var from = Island.ActualWidth;
+        Island.BeginAnimation(WidthProperty, null);
+        Island.Width = double.NaN;
+        Island.Measure(new Size(IslandWindowWidth, IslandWindowHeight));
+        var to = Math.Min(IslandWindowWidth - 8, Island.DesiredSize.Width);
+        if (from <= 0 || Math.Abs(to - from) < 1) return;
+        var grow = new DoubleAnimation(from, to, TimeSpan.FromMilliseconds(260))
+        {
+            EasingFunction = new BackEase { Amplitude = 0.25, EasingMode = EasingMode.EaseOut },
+        };
+        grow.Completed += (_, _) =>
+        {
+            Island.BeginAnimation(WidthProperty, null);
+            Island.Width = double.NaN; // vuelve a medir su contenido (textos que cambian)
+        };
+        Island.BeginAnimation(WidthProperty, grow);
+    }
 
     private void UpdateIslandVisibility()
     {
@@ -483,7 +500,7 @@ public partial class BubbleWindow : Window
             return;
         }
         var now = DateTime.Now;
-        if (_vm.IslandWanted || _islandHover || CursorAtTopCenter()) _islandLastWanted = now;
+        if (_island.Wanted || _islandHover || CursorAtTopCenter()) _islandLastWanted = now;
         var show = (now - _islandLastWanted).TotalSeconds < IslandHideDelaySeconds;
         if (show != _islandShown) SlideIsland(show);
     }
@@ -493,8 +510,10 @@ public partial class BubbleWindow : Window
     {
         if (_hwnd == 0 || !NativeMethods.GetCursorPos(out var c) || !NativeMethods.GetWindowRect(_hwnd, out var r)) return false;
         var ms = r.Width / IslandWindowWidth;
-        var grab = (int)Math.Round((_islandShown ? IslandWindowHeight : 6) * ms); // escondida: solo el filo de arriba
-        return c.X >= r.Left && c.X <= r.Right && c.Y >= r.Top && c.Y <= r.Top + grab;
+        var half = Math.Max(90, Island.ActualWidth / 2) * ms;
+        var center = (r.Left + r.Right) / 2.0;
+        var grab = (_islandShown ? Math.Max(34, Island.ActualHeight) : 6) * ms; // escondida: solo el filo de arriba
+        return c.X >= center - half && c.X <= center + half && c.Y >= r.Top && c.Y <= r.Top + grab;
     }
 
     /// <summary>Baja desde el borde (aparece) o sube y se va (desaparece).</summary>
@@ -504,10 +523,11 @@ public partial class BubbleWindow : Window
         var ease = new CubicEase { EasingMode = show ? EasingMode.EaseOut : EasingMode.EaseIn };
         var time = TimeSpan.FromMilliseconds(show ? 240 : 200);
         _islandSlide.BeginAnimation(System.Windows.Media.TranslateTransform.YProperty,
-            new DoubleAnimation(show ? 0 : -IslandWindowHeight, time) { EasingFunction = ease });
+            new DoubleAnimation(show ? 0 : -Math.Max(40, Island.ActualHeight + 6), time) { EasingFunction = ease });
         Island.BeginAnimation(OpacityProperty, new DoubleAnimation(show ? 1 : 0, time));
         Island.IsHitTestVisible = show;
     }
+
     /// <summary>Arriba al centro del monitor principal, pegada al borde (encima de todo, como un notch).</summary>
     private void PlaceIsland()
     {
@@ -520,17 +540,17 @@ public partial class BubbleWindow : Window
             NativeMethods.SWP_NOSIZE | NativeMethods.SWP_NOZORDER | NativeMethods.SWP_NOACTIVATE);
     }
 
-    /// <summary>El "cuerpo" para los demás paneles es la isla desplegada (ancho máximo), centrada arriba.</summary>
+    /// <summary>El "cuerpo" para los demás paneles: la isla en reposo (34 px de alto), centrada arriba.</summary>
     private void PublishIslandGeometry(NativeMethods.RECT window, NativeMethods.MONITORINFOEX mi, double ms)
     {
         var center = (window.Left + window.Right) / 2;
-        var half = (int)Math.Round(IslandHoverWidth / 2 * ms);
+        var half = (int)Math.Round(150 * ms);
         var body = new NativeMethods.RECT
         {
             Left = center - half,
             Right = center + half,
             Top = window.Top,
-            Bottom = window.Top + (int)Math.Round(Island.Height * ms),
+            Bottom = window.Top + (int)Math.Round(40 * ms),
         };
         // Debajo de la isla: el área de trabajo empieza en su borde de abajo
         var work = mi.rcWork;
@@ -540,14 +560,22 @@ public partial class BubbleWindow : Window
 
     private void Island_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
     {
+        // Los estados con botones (Deshacer, +10 min…) manejan su clic; el resto abre el panel «Kroko»
+        if (e.Handled || _island.State is not (IslandViewModel.Idle or IslandViewModel.Thinking or IslandViewModel.Focus
+                or IslandViewModel.Offline or IslandViewModel.Done or IslandViewModel.Music)) return;
         e.Handled = true;
+        if (_island.State == IslandViewModel.Music)
+        {
+            _island.OpenPlayerCommand.Execute(null);
+            return;
+        }
         _vm.OpenIsland();
     }
 
     private void Island_MouseEnter(object sender, MouseEventArgs e)
     {
         _islandHover = true;
-        _vm.IslandHover = true;
+        _island.Hover = true;
         _vm.Behavior.OnHoverChanged(true);
         RefreshIsland();
     }
@@ -555,46 +583,79 @@ public partial class BubbleWindow : Window
     private void Island_MouseLeave(object sender, MouseEventArgs e)
     {
         _islandHover = false;
-        _vm.IslandHover = false;
+        _island.Hover = false;
         _vm.Behavior.OnHoverChanged(false);
         RefreshIsland();
     }
 
-    // ---------------------------------------------------------------- soltar archivos (17/11/2026)
+    /// <summary>Rueda del ratón sobre la isla con música: el volumen (diseño Kroko 2).</summary>
+    private void Island_MouseWheel(object sender, MouseWheelEventArgs e)
+    {
+        _island.Wheel(e.Delta);
+        e.Handled = true;
+    }
 
-    private static string[] DroppedFiles(DragEventArgs e) =>
-        e.Data.GetDataPresent(DataFormats.FileDrop) && e.Data.GetData(DataFormats.FileDrop) is string[] files
-            ? [.. files.Where(System.IO.File.Exists)]
-            : [];
+    // ---------------------------------------------------------------- soltar archivos
 
     private void Kroko_DragEnter(object sender, DragEventArgs e)
     {
         Kroko_DragOver(sender, e);
         if (e.Effects == DragDropEffects.None) return;
-        _vm.DragOver = true;
         _vm.Behavior.WakeUp();
-        _vm.Behavior.SetBrainState("listening"); // «te escucho»: abre los ojos al ver el archivo
-        if (_options.IsIsland) RefreshIsland();
+        if (_options.IsIsland)
+        {
+            // Se abre como imán con los bolsillos según el tipo
+            _island.DragNear(IslandView.Files(e));
+            RefreshIsland();
+        }
+        else
+        {
+            _vm.DragOver = true;
+            _vm.Behavior.SetBrainState("listening"); // «te escucho»: abre los ojos al ver el archivo
+        }
     }
+
+    private DateTime _lastDragOver;
+
+    /// <summary>Cualquier movimiento de un archivo sobre la isla (también sobre sus bolsillos).</summary>
+    private void Island_PreviewDragOver(object sender, DragEventArgs e) => _lastDragOver = DateTime.Now;
 
     private void Kroko_DragOver(object sender, DragEventArgs e)
     {
         // Solo archivos (no carpetas ni texto suelto)
-        e.Effects = DroppedFiles(e).Length > 0 ? DragDropEffects.Copy : DragDropEffects.None;
+        e.Effects = IslandView.Files(e).Length > 0 ? DragDropEffects.Copy : DragDropEffects.None;
         e.Handled = true;
     }
 
     private void Kroko_DragLeave(object sender, DragEventArgs e)
     {
+        if (_options.IsIsland)
+        {
+            // Pasar de la isla a un bolsillo también dispara DragLeave: se cierra solo si no vuelve a moverse encima en 250 ms
+            var left = DateTime.Now;
+            var check = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(250) };
+            check.Tick += (_, _) =>
+            {
+                check.Stop();
+                if (_lastDragOver < left) _island.DragAway();
+            };
+            check.Start();
+            return;
+        }
         _vm.DragOver = false;
         _vm.Behavior.SetBrainState("idle");
-        if (_options.IsIsland) RefreshIsland();
     }
 
-    private void Kroko_Drop(object sender, DragEventArgs e)
+    private async void Kroko_Drop(object sender, DragEventArgs e)
     {
         e.Handled = true;
+        var files = IslandView.Files(e);
+        if (_options.IsIsland)
+        {
+            await _island.DropAsync(files, null); // fuera de un bolsillo: elegir en el panel de archivos
+            return;
+        }
         _vm.Behavior.SetBrainState("idle");
-        _vm.DropFiles(DroppedFiles(e));
+        _vm.DropFiles(files);
     }
 }

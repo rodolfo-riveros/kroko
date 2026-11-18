@@ -151,8 +151,8 @@ public class KrokoPanelTests
     public void Las_secciones_del_panel_coinciden_con_el_catalogo()
     {
         var tool = Assert.Single(Kroko.Shared.Tools.ToolCatalog.All, t => t.Name == "abrir_ventana");
-        foreach (var s in new[] { "panel", "chat", "habitos", "tareas", "enfoque", "correo", "mipc" })
+        foreach (var s in new[] { "panel", "chat", "habitos", "tareas", "enfoque", "correo", "bandeja", "mipc" })
             Assert.Contains($"\"{s}\"", tool.Parameters);
-        Assert.Equal(["inicio", "chat", "tareas", "habitos", "enfoque", "correo", "mipc"], Kroko.App.ViewModels.KrokoPanelViewModel.Sections);
+        Assert.Equal(["inicio", "chat", "tareas", "habitos", "enfoque", "correo", "bandeja", "mipc"], Kroko.App.ViewModels.KrokoPanelViewModel.Sections);
     }
 }

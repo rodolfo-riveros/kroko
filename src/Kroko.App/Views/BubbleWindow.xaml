@@ -52,12 +52,12 @@
                        DragLeave="Kroko_DragLeave" Drop="Kroko_Drop" />
 
         <!-- Isla de arriba (17/11/2026, como Troko Desk): se ensancha al pasar el mouse o cuando hay algo que contar -->
-        <v:IslandView x:Name="Island" Visibility="Collapsed" Width="150"
+        <v:IslandView x:Name="Island" Visibility="Collapsed"
                       HorizontalAlignment="Center" VerticalAlignment="Top"
                       ContextMenu="{StaticResource KrokoMenu}"
                       MouseLeftButtonUp="Island_MouseLeftButtonUp"
                       MouseEnter="Island_MouseEnter"
-                      MouseLeave="Island_MouseLeave"
+                      MouseLeave="Island_MouseLeave" MouseWheel="Island_MouseWheel" PreviewDragOver="Island_PreviewDragOver"
                       AllowDrop="True" DragEnter="Kroko_DragEnter" DragOver="Kroko_DragOver"
                       DragLeave="Kroko_DragLeave" Drop="Kroko_Drop" />
     </Grid>

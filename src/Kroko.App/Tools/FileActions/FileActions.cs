@@ -42,12 +42,14 @@ public static class FileConvert
     }
 
     /// <summary>Varias imágenes en un solo PDF (una por página, ajustada a A4). Devuelve la ruta del PDF.</summary>
-    public static string ImagesToPdf(IReadOnlyList<string> paths)
+    public static string ImagesToPdf(IReadOnlyList<string> paths, Action<int, string>? onImage = null)
     {
         if (paths.Count == 0) throw new ArgumentException("No hay imágenes.");
         var builder = new PdfDocumentBuilder();
-        foreach (var path in paths)
+        for (var i = 0; i < paths.Count; i++)
         {
+            var path = paths[i];
+            onImage?.Invoke(i, path);
             var frame = LoadFrame(path);
             var encoder = new JpegBitmapEncoder { QualityLevel = 90 };
             encoder.Frames.Add(BitmapFrame.Create(OnWhite(frame)));

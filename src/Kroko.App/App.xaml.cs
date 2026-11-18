@@ -115,6 +115,9 @@ public partial class App : Application
                 services.AddSingleton<MediaSessionService>();
                 services.AddSingleton<ActivityFeed>();
                 services.AddSingleton<FileTray>();
+                services.AddSingleton<QuickFiles>();
+                services.AddSingleton<ClipboardWatcher>();
+                services.AddSingleton<IslandViewModel>();
                 services.AddTransient<MusicPlayerViewModel>();
                 services.AddTransient<MusicPlayer>();
                 services.AddTransient<DropPanelViewModel>();

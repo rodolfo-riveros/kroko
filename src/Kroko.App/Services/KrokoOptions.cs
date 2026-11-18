@@ -41,6 +41,9 @@ public sealed class KrokoOptions
     /// <summary>La isla se esconde cuando no la usas y sale al llamarla o al pasar el cursor por arriba (17/11/2026).</summary>
     public bool IslandAutoHide { get; set; } = true;
 
+    /// <summary>La isla sugiere qué hacer con lo que copias (enlace, texto, imagen). Kroko 2, 18/11/2026.</summary>
+    public bool ClipboardSuggestions { get; set; } = true;
+
     /// <summary>Escala de la burbuja: 0.75 a 1.5.</summary>
     public double BubbleScale { get; set; } = 1.0;
 

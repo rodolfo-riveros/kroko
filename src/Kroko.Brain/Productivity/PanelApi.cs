@@ -13,6 +13,8 @@ public static class PanelApi
     public sealed record AmountDto(int Cantidad = 1);
     public sealed record TaskDto(string Texto, string? Fecha = null);
     public sealed record DoneDto(bool Hecha = true);
+    public sealed record SnoozeDto(string Texto, int Minutos = 10);
+    public sealed record TranscribeDto(string AudioBase64, string Mime);
 
     public static void MapPanelApi(this WebApplication app)
     {
@@ -67,6 +69,35 @@ public static class PanelApi
 
         api.MapDelete("/recordatorios/{id:long}", (long id, ProductivityStore store) =>
             store.DeleteReminder(id) ? Results.NoContent() : Results.NotFound());
+
+        // Transcribir un audio soltado sobre Kroko (Kroko 2, 18/11/2026): Gemini con la clave que presta la PC; hasta 18 MB
+        api.MapPost("/transcribir", async (TranscribeDto body, Tts.GeminiSpeech speech, CancellationToken ct) =>
+        {
+            byte[] audio;
+            try { audio = Convert.FromBase64String(body.AudioBase64); }
+            catch (FormatException) { return Results.BadRequest(); }
+            if (audio.Length is 0 or > 18 * 1024 * 1024) return Results.BadRequest(new { error = "El audio es muy grande (máximo 18 MB)." });
+            try
+            {
+                return Results.Ok(new { texto = await speech.TranscribeAsync(audio, body.Mime, ct) ?? "" });
+            }
+            catch (Providers.LlmProviderException ex)
+            {
+                return Results.Json(new { error = ex.OwnerMessage }, statusCode: 502);
+            }
+            catch (Providers.NoLlmConfiguredException)
+            {
+                return Results.Json(new { error = "Tu clave de Gemini vive en tu PC: abre Kroko en la computadora." }, statusCode: 503);
+            }
+        });
+
+        // La isla (Kroko 2, 18/11/2026): «+10 min» en un aviso que acaba de sonar = el mismo aviso otra vez en N minutos
+        api.MapPost("/recordatorios/posponer", (SnoozeDto body, ProductivityStore store, TimeProvider time) =>
+        {
+            if (string.IsNullOrWhiteSpace(body.Texto) || body.Minutos is < 1 or > 1440) return Results.BadRequest();
+            var id = store.AddReminder(body.Texto.Trim(), time.GetLocalNow().AddMinutes(body.Minutos), "nunca");
+            return Results.Ok(new { id });
+        });
 
         // ---------------------------------------------------------------- avisos automáticos (panel → Ajustes)
 

@@ -37,6 +37,19 @@ public sealed partial class DropPanelViewModel(PanelViewModel chat, AuditLog aud
     /// <summary>Se cerró o terminó: la ventana se va.</summary>
     public event Action? CloseRequested;
 
+    /// <summary>Un enlace o un texto copiado, al celular: el QR lleva el contenido mismo (no hace falta servidor).</summary>
+    public void LoadText(string title, string content)
+    {
+        Files = [];
+        Title = title;
+        Detail = content.Length > 60 ? content[..57] + "…" : content;
+        Status = "Escanéalo con la cámara de tu celular.";
+        PhoneQr = Services.LanShare.PhoneShare.MakeQr(content.Length > 900 ? content[..900] : content);
+        PhoneLink = content.StartsWith("http", StringComparison.OrdinalIgnoreCase) ? content : "";
+        Mode = "celular";
+        Record("enviar", "celular (QR)");
+    }
+
     public void Load(IEnumerable<string> paths)
     {
         Files = [.. paths.Where(File.Exists)];

@@ -35,14 +35,23 @@ public sealed class WindowService(IServiceProvider services)
     }
 
     /// <summary>Soltaste archivos sobre Kroko: el panel Convertir / Analizar / Ordenar / Enviar.</summary>
-    public void ShowDrop(IEnumerable<string> files)
+    public void ShowDrop(IEnumerable<string> files, string? mode = null) => Drop().Open(files, mode);
+
+    /// <summary>Lo que copiaste, al celular: enlace o texto en un QR; una imagen, como archivo por tu Wi-Fi.</summary>
+    public void ShowClipboardPhone(ClipItem clip)
+    {
+        if (clip.Image is { } img) ShowDrop([ClipboardWatcher.SaveImage(img)], "celular");
+        else Drop().OpenText(clip.Kind == "enlace" ? "Enlace al celular" : "Texto al celular", clip.Text);
+    }
+
+    private DropPanel Drop()
     {
         if (_drop is not { IsLoaded: true })
         {
             _drop = services.GetRequiredService<DropPanel>();
             _drop.Closed += (_, _) => _drop = null;
         }
-        _drop.Open(files);
+        return _drop;
     }
 
     /// <summary>

@@ -121,6 +121,9 @@ public sealed record ConfirmResponseMessage : KrokoMessage
 public sealed record StateMessage : KrokoMessage
 {
     public string State { get; init; } = FaceStates.Idle;
+
+    /// <summary>Mientras piensa: la herramienta que está usando (la isla dice «Abriendo Notion · abrir_app»). 18/11/2026.</summary>
+    public string? Tool { get; init; }
 }
 
 public sealed record ExpressionMessage : KrokoMessage

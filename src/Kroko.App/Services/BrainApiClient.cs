@@ -123,6 +123,24 @@ public sealed class BrainApiClient(IOptions<KrokoOptions> options) : IDisposable
 
     public async Task DeleteReminderAsync(long id) => (await _http.DeleteAsync($"api/recordatorios/{id}")).Dispose();
 
+    /// <summary>«+10 min» de la isla: el mismo aviso otra vez dentro de N minutos.</summary>
+    public async Task SnoozeReminderAsync(string text, int minutes)
+    {
+        using var res = await _http.PostAsJsonAsync("api/recordatorios/posponer", new { texto = text, minutos = minutes }, Json);
+        res.EnsureSuccessStatusCode();
+    }
+
+    /// <summary>Transcribe un audio (soltado sobre Kroko) con Gemini. Devuelve el texto o lanza con el motivo.</summary>
+    public async Task<string> TranscribeAsync(byte[] audio, string mime, CancellationToken ct)
+    {
+        using var transcriber = Create(options.Value, TimeSpan.FromMinutes(3));
+        using var res = await transcriber.PostAsJsonAsync("api/transcribir", new { audioBase64 = Convert.ToBase64String(audio), mime }, Json, ct);
+        var body = await res.Content.ReadFromJsonAsync<JsonElement>(Json, ct);
+        if (!res.IsSuccessStatusCode)
+            throw new InvalidOperationException(body.TryGetProperty("error", out var e) ? e.GetString() : "No pude transcribirlo.");
+        return body.TryGetProperty("texto", out var t) ? t.GetString() ?? "" : "";
+    }
+
     public async Task<NoticesDto?> GetNoticesAsync(CancellationToken ct = default) =>
         await _http.GetFromJsonAsync<NoticesDto>("api/avisos", Json, ct);
 

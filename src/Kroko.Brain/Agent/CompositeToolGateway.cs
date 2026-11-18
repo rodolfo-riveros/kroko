@@ -74,6 +74,13 @@ public sealed class CompositeToolGateway(
 
     public async Task<ToolExecution> ExecuteAsync(ToolCall call, IAgentChannel channel, CancellationToken ct)
     {
+        // La isla dice qué herramienta está usando (Kroko 2): un aviso de estado, nunca rompe la orden
+        try
+        {
+            var shown = call.Name.Equals(UseTool, StringComparison.OrdinalIgnoreCase) ? ResolveConnectorCall(call)?.Name ?? call.Name : call.Name;
+            await channel.SendAsync(new StateMessage { SessionId = channel.SessionId, State = FaceStates.Thinking, Tool = shown }, ct);
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException) { }
         var result = await ExecuteCoreAsync(call, channel, ct);
         // Check verde con una palabra junto a Kroko (14/11/2026): «Anotado», «Agendado»… solo si salió bien
         var name = call.Name.Equals(UseTool, StringComparison.OrdinalIgnoreCase) ? ResolveConnectorCall(call)?.Name ?? call.Name : call.Name;
