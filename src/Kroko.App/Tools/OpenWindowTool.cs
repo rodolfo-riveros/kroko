@@ -11,8 +11,8 @@ public sealed class AbrirVentanaTool(WindowService windows) : ILocalTool
 
     private static readonly Dictionary<string, (string Title, Action<WindowService> Open)> Windows = new(StringComparer.OrdinalIgnoreCase)
     {
-        ["asistente"] = ("Configurar Kroko", w => w.ShowOnboarding()),
-        ["conectores"] = ("Conectores", w => w.ShowConnectors()),
+        ["asistente"] = ("Configuración → Tu perfil", w => w.ShowOnboarding()),
+        ["conectores"] = ("Configuración → Cuentas y apps", w => w.ShowConnectors()),
         ["memoria"] = ("Lo que sabe de ti", w => w.ShowMemory()),
         ["registro"] = ("Registro de acciones", w => w.ShowAudit()),
         ["galeria"] = ("Galería de expresiones", w => w.ShowGallery()),
@@ -29,7 +29,7 @@ public sealed class AbrirVentanaTool(WindowService windows) : ILocalTool
         var panelSection = which.ToLowerInvariant() switch
         {
             "panel" or "inicio" => "inicio",
-            "habitos" or "tareas" or "enfoque" or "mipc" or "chat" or "correo" => which.ToLowerInvariant(),
+            "habitos" or "tareas" or "enfoque" or "mipc" or "chat" or "correo" or "bandeja" => which.ToLowerInvariant(),
             _ => null,
         };
         if (panelSection is not null)

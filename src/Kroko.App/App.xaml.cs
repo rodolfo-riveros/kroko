@@ -103,9 +103,7 @@ public partial class App : Application
                 services.AddTransient<MemoryViewModel>();
                 services.AddTransient<MemoryWindow>();
                 services.AddTransient<ConnectorsViewModel>();
-                services.AddTransient<ConnectorsWindow>();
                 services.AddTransient<OnboardingViewModel>();
-                services.AddTransient<OnboardingWindow>();
                 services.AddTransient<MyDayViewModel>();
                 services.AddTransient<MyDayWindow>();
                 services.AddHostedService<OnboardingLauncher>();
@@ -176,9 +174,7 @@ public partial class App : Application
             Log.Information("Captura guardada en {Path}", PanelSnapshot.Render(dir));
             Log.Information("Captura guardada en {Path}", IslandSnapshot.Render(lib, dir));
             Log.Information("Captura guardada en {Path}", MemoryWindowSnapshot.Render(dir));
-            Log.Information("Captura guardada en {Path}", ConnectorsWindowSnapshot.Render(dir));
             Log.Information("Captura guardada en {Path}", MyDayWindowSnapshot.Render(dir));
-            foreach (var p in OnboardingWindowSnapshot.Render(_host.Services, dir)) Log.Information("Captura guardada en {Path}", p);
             foreach (var p in SettingsWindowSnapshot.Render(_host.Services, dir)) Log.Information("Captura guardada en {Path}", p);
             Shutdown();
             return;

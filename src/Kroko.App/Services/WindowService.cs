@@ -11,9 +11,7 @@ public sealed class WindowService(IServiceProvider services)
 
     private AuditWindow? _audit;
     private MemoryWindow? _memory;
-    private ConnectorsWindow? _connectors;
     private SettingsWindow? _settings;
-    private OnboardingWindow? _onboarding;
     private MyDayWindow? _myDay;
     private KrokoPanelWindow? _panel;
     private DropPanel? _drop;
@@ -109,20 +107,13 @@ public sealed class WindowService(IServiceProvider services)
         _myDay.Activate();
     }
 
-    public bool IsOnboardingOpen => _onboarding is { IsLoaded: true };
+    // Kroko 2 (18/11/2026): ya no hay asistente ni ventana de conectores aparte; todo vive en Configuración.
+    public const int SectionProfile = 4, SectionAccounts = 5, SectionAiKeys = 6, SectionBrain = 8;
 
-    public void ShowOnboarding()
-    {
-        if (_onboarding is { IsLoaded: true })
-        {
-            _onboarding.Activate();
-            return;
-        }
-        _onboarding = services.GetRequiredService<OnboardingWindow>();
-        _onboarding.Closed += (_, _) => _onboarding = null;
-        _onboarding.Show();
-        _onboarding.Activate();
-    }
+    public bool IsSettingsOpen => _settings is { IsLoaded: true };
+
+    /// <summary>Lo que antes abría el asistente «Configurar Kroko»: Configuración en Tu perfil.</summary>
+    public void ShowOnboarding() => ShowSettings(SectionProfile);
 
     /// <param name="section">Pestaña a mostrar (0 General … 5 Cuentas y apps); null = la de siempre.</param>
     public void ShowSettings(int? section = null)
@@ -141,18 +132,8 @@ public sealed class WindowService(IServiceProvider services)
         _settings.Activate();
     }
 
-    public void ShowConnectors()
-    {
-        if (_connectors is { IsLoaded: true })
-        {
-            _connectors.Activate();
-            return;
-        }
-        _connectors = services.GetRequiredService<ConnectorsWindow>();
-        _connectors.Closed += (_, _) => _connectors = null;
-        _connectors.Show();
-        _connectors.Activate();
-    }
+    /// <summary>Notion, Todoist y navegador: Configuración → Cuentas y apps.</summary>
+    public void ShowConnectors() => ShowSettings(SectionAccounts);
 
     public void ShowMemory()
     {

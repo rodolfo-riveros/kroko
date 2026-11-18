@@ -20,7 +20,7 @@
             <Setter Property="Background" Value="{StaticResource Kroko.Surface}" />
             <Setter Property="BorderBrush" Value="{StaticResource Kroko.Line}" />
             <Setter Property="BorderThickness" Value="1" />
-            <Setter Property="CornerRadius" Value="10" />
+            <Setter Property="CornerRadius" Value="18" />
             <Setter Property="Padding" Value="16,14" />
             <Setter Property="Margin" Value="0,0,0,12" />
         </Style>
@@ -59,7 +59,7 @@
             </Border>
             <StackPanel VerticalAlignment="Center">
                 <TextBlock Text="{Binding Fecha}" Style="{StaticResource Kroko.Label}" Margin="0" />
-                <TextBlock Text="{Binding Saludo}" FontSize="28" FontWeight="SemiBold" Margin="0,4,0,0" />
+                <TextBlock Text="{Binding Saludo}" FontSize="32" FontWeight="Bold" Margin="0,4,0,0" />
             </StackPanel>
         </DockPanel>
 

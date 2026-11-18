@@ -43,8 +43,8 @@ public sealed class OnboardingLauncher(BrainConnection brain, BrainApiClient api
             if (profile.Completo && aiKeys.Load().HasAny) return;
 
             log.LogInformation(profile.Completo
-                ? "Esta PC aún no tiene clave de IA: abriendo el asistente"
-                : "Kroko aún no conoce a su dueño: abriendo el asistente de bienvenida");
+                ? "Esta PC aún no tiene clave de IA: abriendo Configuración → Claves de IA"
+                : "Kroko aún no conoce a su dueño: abriendo Configuración → Tu perfil");
             var watcher = Application.Current.Dispatcher.Invoke(() => new FullscreenWatcher(() => 0));
             while (Application.Current.Dispatcher.Invoke(watcher.IsFullscreenNow))
                 await Task.Delay(TimeSpan.FromSeconds(5));
@@ -53,7 +53,7 @@ public sealed class OnboardingLauncher(BrainConnection brain, BrainApiClient api
             await Task.Delay(TimeSpan.FromSeconds(2)); // que Kroko termine de despertar
             Application.Current.Dispatcher.Invoke(() =>
             {
-                if (!windows.IsOnboardingOpen) windows.ShowOnboarding();
+                if (!windows.IsSettingsOpen) windows.ShowSettings(profile.Completo ? WindowService.SectionAiKeys : WindowService.SectionProfile);
             });
         }
         catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException or System.Text.Json.JsonException)

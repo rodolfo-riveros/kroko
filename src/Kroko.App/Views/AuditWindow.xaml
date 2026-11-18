@@ -15,7 +15,7 @@
                     Style="{StaticResource Kroko.Button}" VerticalAlignment="Center" Margin="0" />
             <StackPanel>
                 <TextBlock Text="SEGURIDAD" FontFamily="Consolas" FontSize="11" Foreground="{StaticResource Kroko.Accent}" />
-                <TextBlock Text="Registro de acciones" FontSize="24" FontWeight="Bold" Margin="0,4,0,0" />
+                <TextBlock Text="Registro de acciones" FontSize="32" FontWeight="Bold" Margin="0,4,0,0" />
                 <TextBlock Text="Todo lo que Kroko hizo (o intentó hacer) en tu PC, lo más reciente arriba."
                            Foreground="{StaticResource Kroko.TextMuted}" Margin="0,2,0,0" />
             </StackPanel>

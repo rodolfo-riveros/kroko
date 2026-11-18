@@ -22,7 +22,7 @@
             <StackPanel DockPanel.Dock="Top" Margin="2,0,0,14">
                 <TextBlock Text="UN ROBOT CON PERSONALIDAD" FontFamily="Consolas" FontSize="11"
                            Foreground="{StaticResource Kroko.Accent}" />
-                <TextBlock FontSize="26" FontWeight="Bold" Margin="0,4,0,0">
+                <TextBlock FontSize="32" FontWeight="Bold" Margin="0,4,0,0">
                     <Run Text="Dos ojos." /> <Run Text="Mil gestos." Foreground="{StaticResource Kroko.Accent}" />
                 </TextBlock>
             </StackPanel>

@@ -52,8 +52,10 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
     private CancellationTokenSource? _download;
 
     public SettingsViewModel(IOptions<KrokoOptions> options, BrainApiClient api, WindowService windows, MicrophoneStream mic,
-        VoskModelManager models, WakeWordService wake, DocumentIndexer documents, OnboardingViewModel account, LocalAiService localAi)
+        VoskModelManager models, WakeWordService wake, DocumentIndexer documents, OnboardingViewModel account, LocalAiService localAi,
+        ConnectorsViewModel connectors)
     {
+        Connectors = connectors;
         _localAi = localAi;
         _loading = true;
         Account = account;
@@ -605,8 +607,8 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
         }
     }
 
-    [RelayCommand] private void OpenConnectors() => _windows.ShowConnectors();
-    [RelayCommand] private void OpenOnboarding() => _windows.ShowOnboarding();
+    /// <summary>Notion, Todoist y navegador, dentro de Cuentas y apps (18/11/2026: ya no hay ventana aparte).</summary>
+    public ConnectorsViewModel Connectors { get; }
     [RelayCommand] private void OpenAudit() => _windows.ShowAudit();
     [RelayCommand] private void OpenGallery() => _windows.ShowGallery();
     [RelayCommand] private void OpenMemory() => _windows.ShowMemory();
@@ -752,6 +754,7 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
 
     public void Dispose()
     {
+        Connectors.Dispose();
         if (_saveSoon?.IsEnabled == true) SaveNow(); // lo último que escribiste no se pierde al cerrar
         _download?.Cancel();
         if (MicTesting) MicTesting = false;

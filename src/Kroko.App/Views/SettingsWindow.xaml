@@ -3,10 +3,9 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:v="clr-namespace:Kroko.App.Views"
         Title="Configuración de Kroko"
-        Width="980" Height="700" MinWidth="820" MinHeight="560"
+        Width="1060" Height="740" MinWidth="860" MinHeight="560"
         WindowStartupLocation="CenterScreen"
-        WindowStyle="None" AllowsTransparency="False" Background="Transparent" ResizeMode="CanResize"
-        v:Glass.Enabled="True"
+        Style="{StaticResource Kroko.MacWindow}"
         Foreground="{StaticResource Kroko.Text}"
         FontFamily="{StaticResource Kroko.Font}"
         FontSize="13">
@@ -15,32 +14,29 @@
         Configuración estilo macOS (pedido por Pol, 17/11/2026): una sola ventana, barra lateral con iconos de colores
         agrupados en orden de uso (Kroko → Tú → Inteligencia → Seguridad), tarjetas con filas y todo se guarda solo.
     -->
-    <WindowChrome.WindowChrome>
-        <WindowChrome CaptionHeight="0" ResizeBorderThickness="6" GlassFrameThickness="-1" CornerRadius="0" />
-    </WindowChrome.WindowChrome>
 
     <Window.Resources>
         <v:BoolToVisibleConverter x:Key="BoolToVisible" />
         <v:EmptyToCollapsedConverter x:Key="EmptyToCollapsed" />
 
         <SolidColorBrush x:Key="Mac.Window" Color="Transparent" />
-        <SolidColorBrush x:Key="Mac.Sidebar" Color="#14FFFFFF" />
-        <SolidColorBrush x:Key="Mac.Card" Color="#17FFFFFF" />
-        <SolidColorBrush x:Key="Mac.Line" Color="#24FFFFFF" />
-        <SolidColorBrush x:Key="Mac.Muted" Color="#CDCDD2" />
+        <SolidColorBrush x:Key="Mac.Sidebar" Color="#000000" />
+        <SolidColorBrush x:Key="Mac.Card" Color="#111113" />
+        <SolidColorBrush x:Key="Mac.Line" Color="#232326" />
+        <SolidColorBrush x:Key="Mac.Muted" Color="#A1A1AA" />
 
         <!-- Tarjeta agrupada (inset grouped) -->
         <Style x:Key="Card" TargetType="Border">
             <Setter Property="Background" Value="{StaticResource Mac.Card}" />
-            <Setter Property="BorderBrush" Value="{StaticResource Kroko.GlassEdge}" />
+            <Setter Property="BorderBrush" Value="{StaticResource Kroko.Line}" />
             <Setter Property="BorderThickness" Value="1" />
-            <Setter Property="CornerRadius" Value="14" />
-            <Setter Property="Margin" Value="0,0,0,6" />
+            <Setter Property="CornerRadius" Value="18" />
+            <Setter Property="Margin" Value="0,0,0,8" />
         </Style>
         <!-- Título de grupo encima de la tarjeta -->
         <Style x:Key="CardTitle" TargetType="TextBlock">
             <Setter Property="FontWeight" Value="SemiBold" />
-            <Setter Property="FontSize" Value="13" />
+            <Setter Property="FontSize" Value="15" />
             <Setter Property="Margin" Value="4,18,0,8" />
         </Style>
         <!-- Nota al pie de una tarjeta -->
@@ -110,37 +106,14 @@
         </Style>
         <Style x:Key="Page" TargetType="StackPanel">
             <Setter Property="Margin" Value="28,4,28,28" />
-            <Setter Property="MaxWidth" Value="720" />
+            <Setter Property="MaxWidth" Value="860" />
+            <Setter Property="HorizontalAlignment" Value="Left" />
         </Style>
         <Style TargetType="ScrollViewer">
             <Setter Property="VerticalScrollBarVisibility" Value="Auto" />
             <Setter Property="HorizontalScrollBarVisibility" Value="Disabled" />
         </Style>
 
-        <!-- Botoncitos rojo, amarillo y verde de macOS -->
-        <Style x:Key="Light" TargetType="Button">
-            <Setter Property="Width" Value="12" />
-            <Setter Property="Height" Value="12" />
-            <Setter Property="Margin" Value="0,0,8,0" />
-            <Setter Property="Cursor" Value="Hand" />
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="Button">
-                        <Grid>
-                            <Ellipse Fill="{TemplateBinding Background}" Stroke="#30000000" StrokeThickness="0.5" />
-                            <TextBlock x:Name="Glyph" Text="{TemplateBinding Content}" FontSize="9" FontWeight="Bold"
-                                       Foreground="#99000000" HorizontalAlignment="Center" VerticalAlignment="Center"
-                                       Margin="0,-1,0,0" Visibility="Hidden" />
-                        </Grid>
-                        <ControlTemplate.Triggers>
-                            <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="Glyph" Property="Visibility" Value="Visible" />
-                            </Trigger>
-                        </ControlTemplate.Triggers>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-        </Style>
 
         <!-- Entrada de la barra lateral: cuadrito de color con icono + nombre; grupo encima si lo tiene -->
         <Style x:Key="NavItem" TargetType="ListBoxItem">
@@ -151,25 +124,25 @@
                 <Setter.Value>
                     <ControlTemplate TargetType="ListBoxItem">
                         <StackPanel>
-                            <TextBlock Text="{Binding Group}" Foreground="{StaticResource Mac.Muted}" FontSize="11" FontWeight="SemiBold"
-                                       Margin="10,14,0,4" Visibility="{Binding Group, Converter={StaticResource EmptyToCollapsed}}" />
-                            <Border x:Name="Bd" CornerRadius="6" Padding="8,5" Background="Transparent">
+                            <TextBlock Text="{Binding Group}" Foreground="#71717A" FontSize="11" FontWeight="Bold"
+                                       Margin="12,16,0,6" Visibility="{Binding Group, Converter={StaticResource EmptyToCollapsed}}" />
+                            <Border x:Name="Bd" CornerRadius="12" Padding="12,9" Background="Transparent">
                                 <StackPanel Orientation="Horizontal">
-                                    <Border Width="22" Height="22" CornerRadius="6" Background="{Binding Color}">
-                                        <TextBlock Text="{Binding GlyphText}" FontFamily="{StaticResource Kroko.Icons}" FontSize="12.5"
-                                                   Foreground="{Binding GlyphColor}" HorizontalAlignment="Center" VerticalAlignment="Center" />
-                                    </Border>
-                                    <TextBlock x:Name="Title" Text="{Binding Title}" Margin="10,0,0,0" VerticalAlignment="Center" FontSize="13" />
+                                    <TextBlock x:Name="Glyph" Text="{Binding GlyphText}" FontFamily="{StaticResource Kroko.Icons}" FontSize="15" Width="20"
+                                               Foreground="{StaticResource Kroko.NavText}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                    <TextBlock x:Name="Title" Text="{Binding Title}" Margin="12,0,0,0" VerticalAlignment="Center" FontSize="14"
+                                               Foreground="{StaticResource Kroko.NavText}" />
                                 </StackPanel>
                             </Border>
                         </StackPanel>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="Bd" Property="Background" Value="#33FFFFFF" />
+                                <Setter TargetName="Bd" Property="Background" Value="#151517" />
                             </Trigger>
                             <Trigger Property="IsSelected" Value="True">
-                                <Setter TargetName="Bd" Property="Background" Value="{StaticResource Kroko.Accent}" />
-                                <Setter TargetName="Title" Property="Foreground" Value="{StaticResource Kroko.OnAccent}" />
+                                <Setter TargetName="Bd" Property="Background" Value="#1A1D12" />
+                                <Setter TargetName="Title" Property="Foreground" Value="{StaticResource Kroko.Text}" />
+                                <Setter TargetName="Glyph" Property="Foreground" Value="{StaticResource Kroko.Accent}" />
                                 <Setter TargetName="Title" Property="FontWeight" Value="SemiBold" />
                             </Trigger>
                         </ControlTemplate.Triggers>
@@ -179,26 +152,19 @@
         </Style>
     </Window.Resources>
 
-    <Border Background="{DynamicResource Kroko.GlassTint}">
+    <Border Background="{StaticResource Kroko.Window}">
         <Grid>
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="250" />
+                <ColumnDefinition Width="240" />
                 <ColumnDefinition Width="*" />
             </Grid.ColumnDefinitions>
 
             <!-- ============================ barra lateral ============================ -->
-            <Border Background="{StaticResource Mac.Sidebar}" CornerRadius="16" BorderBrush="{StaticResource Kroko.GlassEdge}" BorderThickness="1" Margin="8,8,0,8">
-                <DockPanel Margin="10,0,10,12">
-                    <!-- Semáforo + zona para arrastrar la ventana -->
-                    <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Height="46" Margin="6,0,0,0"
-                                Background="Transparent" MouseLeftButtonDown="Drag_MouseLeftButtonDown">
-                        <Button Style="{StaticResource Light}" Background="#FF5F57" Content="×" Click="Close_Click" ToolTip="Cerrar" VerticalAlignment="Center" />
-                        <Button Style="{StaticResource Light}" Background="#FEBC2E" Content="–" Click="Minimize_Click" ToolTip="Minimizar" VerticalAlignment="Center" />
-                        <Button Style="{StaticResource Light}" Background="#28C840" Content="+" Click="Maximize_Click" ToolTip="Agrandar" VerticalAlignment="Center" />
-                    </StackPanel>
+            <Border Background="{StaticResource Mac.Sidebar}" BorderBrush="#1A1A1D" BorderThickness="0,0,1,0">
+                <DockPanel Margin="14,16,14,12">
 
                     <!-- Buscar -->
-                    <Border DockPanel.Dock="Top" CornerRadius="9" Background="#1FFFFFFF" BorderBrush="#24FFFFFF" BorderThickness="1" Margin="4,0,4,12" Height="30">
+                    <Border DockPanel.Dock="Top" CornerRadius="12" Background="{StaticResource Kroko.Inset}" BorderBrush="{StaticResource Kroko.ChipLine}" BorderThickness="1" Margin="0,0,0,14" Height="36">
                         <DockPanel Margin="8,0">
                             <TextBlock DockPanel.Dock="Left" Text="&#xE721;" FontFamily="{StaticResource Kroko.Icons}" FontSize="12"
                                        Foreground="{StaticResource Mac.Muted}" VerticalAlignment="Center" Margin="0,0,6,0" />
@@ -215,17 +181,9 @@
                     <Button DockPanel.Dock="Top" Click="Profile_Click" Cursor="Hand" Margin="0,0,0,6" Foreground="{StaticResource Kroko.Text}">
                         <Button.Template>
                             <ControlTemplate TargetType="Button">
-                                <Border x:Name="Bd" CornerRadius="8" Padding="8,8" Background="Transparent">
+                                <Border x:Name="Bd" CornerRadius="12" Padding="8,8" Background="Transparent">
                                     <StackPanel Orientation="Horizontal">
-                                        <Grid Width="38" Height="30">
-                                            <Path Data="M11.5,1 H26.5 Q30.5,1 32,5 L36.6,22 Q38,29 31,29 H7 Q0,29 1.4,22 L6,5 Q7.5,1 11.5,1 Z"
-                                                  Fill="{StaticResource Kroko.Body}" Stroke="#4A4A4C" StrokeThickness="1" />
-                                            <Border Width="7" Height="2.4" CornerRadius="1.2" Background="{StaticResource Kroko.Accent}" VerticalAlignment="Top" Margin="0,3.4,0,0" />
-                                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,4,0,0">
-                                                <Border Width="6" Height="8" CornerRadius="2.5" Background="White" Margin="0,0,5,0" />
-                                                <Border Width="6" Height="8" CornerRadius="2.5" Background="White" />
-                                            </StackPanel>
-                                        </Grid>
+                                        <v:KrokoMark Width="42" Height="33" />
                                         <StackPanel Margin="10,0,0,0" VerticalAlignment="Center">
                                             <TextBlock FontWeight="SemiBold" FontSize="13.5" TextTrimming="CharacterEllipsis" MaxWidth="160">
                                                 <TextBlock.Style>
@@ -245,7 +203,7 @@
                                 </Border>
                                 <ControlTemplate.Triggers>
                                     <Trigger Property="IsMouseOver" Value="True">
-                                        <Setter TargetName="Bd" Property="Background" Value="#22FFFFFF" />
+                                        <Setter TargetName="Bd" Property="Background" Value="#151517" />
                                     </Trigger>
                                 </ControlTemplate.Triggers>
                             </ControlTemplate>
@@ -260,12 +218,12 @@
             <!-- ============================ contenido ============================ -->
             <DockPanel Grid.Column="1">
                 <!-- Barra de título: nombre de la página (arrastrable) -->
-                <Border DockPanel.Dock="Top" Height="52" Background="Transparent" MouseLeftButtonDown="Drag_MouseLeftButtonDown">
-                    <TextBlock Text="{Binding PageTitle}" FontSize="15" FontWeight="SemiBold" VerticalAlignment="Center" Margin="28,0,0,0" />
+                <Border DockPanel.Dock="Top" Height="64" Background="Transparent">
+                    <TextBlock Text="{Binding PageTitle}" FontSize="28" FontWeight="Bold" VerticalAlignment="Bottom" Margin="28,0,0,4" />
                 </Border>
 
                 <!-- Aviso de reinicio y problemas al guardar (abajo) -->
-                <Border DockPanel.Dock="Bottom" Background="#1AFFFFFF" BorderBrush="{StaticResource Mac.Line}" BorderThickness="0,1,0,0" Padding="28,10">
+                <Border DockPanel.Dock="Bottom" Background="#111113" BorderBrush="{StaticResource Mac.Line}" BorderThickness="0,1,0,0" Padding="28,10">
                     <Border.Style>
                         <Style TargetType="Border">
                             <Setter Property="Visibility" Value="Collapsed" />
@@ -819,14 +777,51 @@
 
                                 <TextBlock Text="Notion, Todoist y navegador" Style="{StaticResource CardTitle}" />
                                 <Border Style="{StaticResource Card}">
-                                    <DockPanel Style="{StaticResource Row}">
-                                        <Button Content="Abrir conectores" Command="{Binding OpenConnectorsCommand}" Style="{StaticResource Btn}" />
-                                        <StackPanel Style="{StaticResource Text}">
-                                            <TextBlock Text="Se conectan con tu cuenta, sin claves" Style="{StaticResource Label}" />
-                                            <TextBlock Text="Pulsa Conectar y da «Permitir» en la página que se abre." Style="{StaticResource Sub}" />
-                                        </StackPanel>
-                                    </DockPanel>
+                                    <StackPanel>
+                                        <TextBlock Text="{Binding Connectors.Status}" Style="{StaticResource Sub}" Margin="14,10,14,4"
+                                                   Visibility="{Binding Connectors.Status, Converter={StaticResource EmptyToCollapsed}}" />
+                                        <ItemsControl ItemsSource="{Binding Connectors.Connectors}">
+                                            <ItemsControl.ItemTemplate>
+                                                <DataTemplate>
+                                                    <DockPanel Style="{StaticResource Row}">
+                                                        <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center">
+                                                            <Button Content="Conectar" Style="{StaticResource Btn}"
+                                                                    Visibility="{Binding PuedeConectar, Converter={StaticResource BoolToVisible}}"
+                                                                    Command="{Binding DataContext.Connectors.ConnectCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                                    CommandParameter="{Binding}" />
+                                                            <Button Content="Desconectar" Style="{StaticResource Btn}"
+                                                                    Visibility="{Binding IsConnected, Converter={StaticResource BoolToVisible}}"
+                                                                    Command="{Binding DataContext.Connectors.DisconnectCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                                    CommandParameter="{Binding}" />
+                                                        </StackPanel>
+                                                        <StackPanel Style="{StaticResource Text}">
+                                                            <StackPanel Orientation="Horizontal">
+                                                                <Ellipse Width="7" Height="7" Margin="0,0,8,0" VerticalAlignment="Center">
+                                                                    <Ellipse.Style>
+                                                                        <Style TargetType="Ellipse">
+                                                                            <Setter Property="Fill" Value="{StaticResource Kroko.TextMuted}" />
+                                                                            <Style.Triggers>
+                                                                                <DataTrigger Binding="{Binding IsConnected}" Value="True"><Setter Property="Fill" Value="{StaticResource Kroko.Accent}" /></DataTrigger>
+                                                                                <DataTrigger Binding="{Binding Estado}" Value="Error"><Setter Property="Fill" Value="{StaticResource Kroko.EyeError}" /></DataTrigger>
+                                                                                <DataTrigger Binding="{Binding Estado}" Value="NecesitaPermiso"><Setter Property="Fill" Value="{StaticResource Kroko.EyeAlert}" /></DataTrigger>
+                                                                            </Style.Triggers>
+                                                                        </Style>
+                                                                    </Ellipse.Style>
+                                                                </Ellipse>
+                                                                <TextBlock Text="{Binding Titulo}" Style="{StaticResource Label}" />
+                                                            </StackPanel>
+                                                            <TextBlock Style="{StaticResource Sub}">
+                                                                <Run Text="{Binding StateText, Mode=OneWay}" /><Run Text=" · " /><Run Text="{Binding Detalle, Mode=OneWay}" />
+                                                            </TextBlock>
+                                                        </StackPanel>
+                                                    </DockPanel>
+                                                </DataTemplate>
+                                            </ItemsControl.ItemTemplate>
+                                        </ItemsControl>
+                                    </StackPanel>
                                 </Border>
+                                <TextBlock Style="{StaticResource Foot}"
+                                           Text="Pulsa Conectar y da «Permitir» en la página que se abre. Lo que modifique algo siempre te pedirá confirmación; los permisos se guardan cifrados." />
                             </StackPanel>
                         </ScrollViewer>
                     </TabItem>
@@ -1106,11 +1101,6 @@
                                 <TextBlock Text="Más" Style="{StaticResource CardTitle}" />
                                 <Border Style="{StaticResource Card}">
                                     <StackPanel>
-                                        <DockPanel Style="{StaticResource Row}">
-                                            <Button Content="Abrir" Command="{Binding OpenOnboardingCommand}" Style="{StaticResource Btn}" />
-                                            <StackPanel Style="{StaticResource Text}"><TextBlock Text="Asistente de bienvenida" Style="{StaticResource Label}" /><TextBlock Text="Configurar todo paso a paso, como la primera vez." Style="{StaticResource Sub}" /></StackPanel>
-                                        </DockPanel>
-                                        <Border Style="{StaticResource Sep}" />
                                         <DockPanel Style="{StaticResource Row}">
                                             <Button Content="Abrir" Command="{Binding OpenGalleryCommand}" Style="{StaticResource Btn}" />
                                             <StackPanel Style="{StaticResource Text}"><TextBlock Text="Galería de expresiones" Style="{StaticResource Label}" /><TextBlock Text="Todas sus caras." Style="{StaticResource Sub}" /></StackPanel>

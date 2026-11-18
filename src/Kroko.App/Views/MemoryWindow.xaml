@@ -34,7 +34,7 @@
             <Setter Property="Background" Value="{StaticResource Kroko.Surface}" />
             <Setter Property="BorderBrush" Value="{StaticResource Kroko.Line}" />
             <Setter Property="BorderThickness" Value="1" />
-            <Setter Property="CornerRadius" Value="12" />
+            <Setter Property="CornerRadius" Value="18" />
             <Setter Property="Padding" Value="12,10" />
             <Setter Property="Margin" Value="0,0,0,8" />
         </Style>
@@ -56,7 +56,7 @@
             </StackPanel>
             <StackPanel>
                 <TextBlock Text="MEMORIA" FontFamily="Consolas" FontSize="11" Foreground="{StaticResource Kroko.Accent}" />
-                <TextBlock Text="Lo que Kroko sabe de ti" FontSize="24" FontWeight="Bold" Margin="0,4,0,0" />
+                <TextBlock Text="Lo que Kroko sabe de ti" FontSize="32" FontWeight="Bold" Margin="0,4,0,0" />
                 <TextBlock Text="{Binding Status}" Foreground="{StaticResource Kroko.TextMuted}" Margin="0,2,0,0" />
             </StackPanel>
         </DockPanel>

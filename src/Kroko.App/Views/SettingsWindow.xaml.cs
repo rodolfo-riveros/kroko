@@ -20,6 +20,7 @@ public partial class SettingsWindow : Window
             await viewModel.CheckBrainAsync();
             await viewModel.LoadNoticesAsync();
             await viewModel.LoadUsageAsync();
+            await viewModel.Connectors.StartAsync();
         };
         Closed += (_, _) => viewModel.Dispose();
         PreviewKeyDown += (_, e) =>
