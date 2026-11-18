@@ -4,7 +4,7 @@
         xmlns:v="clr-namespace:Kroko.App.Views"
         xmlns:sys="clr-namespace:System;assembly=mscorlib"
         Title="Kroko"
-        Width="900" Height="640" MinWidth="760" MinHeight="540"
+        Width="1120" Height="740" MinWidth="900" MinHeight="560"
         WindowStartupLocation="CenterScreen"
         Style="{StaticResource Kroko.MacWindow}"
         Foreground="{StaticResource Kroko.Text}"
@@ -21,8 +21,8 @@
             <Setter Property="VerticalContentAlignment" Value="Center" />
         </Style>
         <Style x:Key="PageTitle" TargetType="TextBlock">
-            <Setter Property="FontSize" Value="26" />
-            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="FontSize" Value="32" />
+            <Setter Property="FontWeight" Value="Bold" />
         </Style>
         <Style x:Key="Sub" TargetType="TextBlock">
             <Setter Property="Foreground" Value="{StaticResource Kroko.TextMuted}" />
@@ -31,41 +31,51 @@
         </Style>
         <Style x:Key="Group" TargetType="TextBlock">
             <Setter Property="FontWeight" Value="SemiBold" />
-            <Setter Property="FontSize" Value="13.5" />
+            <Setter Property="FontSize" Value="16" />
             <Setter Property="Margin" Value="2,20,0,8" />
         </Style>
         <Style x:Key="Row" TargetType="Border">
             <Setter Property="Background" Value="{StaticResource Kroko.Surface}" />
             <Setter Property="BorderBrush" Value="{StaticResource Kroko.Line}" />
             <Setter Property="BorderThickness" Value="1" />
-            <Setter Property="CornerRadius" Value="8" />
-            <Setter Property="Padding" Value="16,11" />
-            <Setter Property="Margin" Value="0,0,0,4" />
+            <Setter Property="CornerRadius" Value="14" />
+            <Setter Property="Padding" Value="16,12" />
+            <Setter Property="Margin" Value="0,0,0,8" />
             <Setter Property="MinHeight" Value="52" />
         </Style>
+        <!-- Kroko 2 (18/11/2026): icono gris de la barra lateral; lima en la sección abierta -->
         <Style x:Key="Icon" TargetType="TextBlock">
             <Setter Property="FontFamily" Value="{StaticResource Kroko.Icons}" />
-            <Setter Property="FontSize" Value="13" />
+            <Setter Property="FontSize" Value="15" />
+            <Setter Property="Foreground" Value="{StaticResource Kroko.NavText}" />
             <Setter Property="HorizontalAlignment" Value="Center" />
             <Setter Property="VerticalAlignment" Value="Center" />
             <Style.Triggers>
                 <DataTrigger Binding="{Binding IsSelected, RelativeSource={RelativeSource AncestorType=TabItem}}" Value="True">
-                    <Setter Property="Foreground" Value="{StaticResource Kroko.OnAccent}" />
+                    <Setter Property="Foreground" Value="{StaticResource Kroko.Accent}" />
                 </DataTrigger>
             </Style.Triggers>
         </Style>
-        <!-- El icono de la pestaña va en un círculo; verde cuando está abierta (estilo Troko, 17/11/2026) -->
         <Style x:Key="IconDot" TargetType="Border">
-            <Setter Property="Width" Value="26" />
-            <Setter Property="Height" Value="26" />
-            <Setter Property="CornerRadius" Value="13" />
-            <Setter Property="Margin" Value="0,0,10,0" />
+            <Setter Property="Width" Value="20" />
+            <Setter Property="Height" Value="20" />
+            <Setter Property="Margin" Value="0,0,12,0" />
             <Setter Property="Background" Value="Transparent" />
-            <Style.Triggers>
-                <DataTrigger Binding="{Binding IsSelected, RelativeSource={RelativeSource AncestorType=TabItem}}" Value="True">
-                    <Setter Property="Background" Value="{StaticResource Kroko.Accent}" />
-                </DataTrigger>
-            </Style.Triggers>
+        </Style>
+        <!-- Contador gris (Tareas 4) y etiqueta lima «NUEVO» de la barra lateral -->
+        <Style x:Key="NavCount" TargetType="Border">
+            <Setter Property="Background" Value="#26262A" />
+            <Setter Property="CornerRadius" Value="10" />
+            <Setter Property="Padding" Value="8,1" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+            <Setter Property="HorizontalAlignment" Value="Right" />
+        </Style>
+        <Style x:Key="NewTag" TargetType="Border">
+            <Setter Property="Background" Value="{StaticResource Kroko.Accent}" />
+            <Setter Property="CornerRadius" Value="4" />
+            <Setter Property="Padding" Value="5,1" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+            <Setter Property="HorizontalAlignment" Value="Right" />
         </Style>
         <!-- Botón pequeño solo con icono (borrar, quitar) -->
         <Style x:Key="IconButton" TargetType="Button" BasedOn="{StaticResource Kroko.Button}">
@@ -75,42 +85,129 @@
             <Setter Property="Padding" Value="8,4" />
             <Setter Property="Margin" Value="6,0,0,0" />
         </Style>
-        <!-- Ejemplo de orden (se manda al tocarlo) -->
-        <Style x:Key="Chip" TargetType="Button" BasedOn="{StaticResource Kroko.Button}">
-            <Setter Property="Margin" Value="0,0,6,6" />
-            <Setter Property="FontSize" Value="12" />
-            <Setter Property="Foreground" Value="{StaticResource Kroko.TextMuted}" />
-        </Style>
-        <Style TargetType="ScrollViewer">
-            <Setter Property="VerticalScrollBarVisibility" Value="Auto" />
-            <Setter Property="Padding" Value="0,0,14,0" />
-        </Style>
-
-        <!-- Navegación lateral (igual que Ajustes) -->
-        <Style TargetType="TabItem">
-            <Setter Property="Foreground" Value="{StaticResource Kroko.TextMuted}" />
+        <!-- Chip de ejemplo (diseño Kroko 2: píldora con borde, sin relleno; lima al pasar el mouse) -->
+        <Style x:Key="Chip" TargetType="Button">
+            <Setter Property="Foreground" Value="{StaticResource Kroko.NavText}" />
+            <Setter Property="FontSize" Value="13" />
+            <Setter Property="FontWeight" Value="Medium" />
+            <Setter Property="Margin" Value="0,0,8,8" />
+            <Setter Property="Cursor" Value="Hand" />
             <Setter Property="Template">
                 <Setter.Value>
-                    <ControlTemplate TargetType="TabItem">
-                        <Grid Margin="0,0,0,2" Cursor="Hand">
-                            <!-- Estilo Troko: la pestaña abierta con fondo verde translúcido y su icono en un círculo verde -->
-                            <Border x:Name="Bd" CornerRadius="14" Padding="8,6" Background="Transparent">
-                                <ContentPresenter ContentSource="Header" />
-                            </Border>
-                        </Grid>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Bd" CornerRadius="17" BorderThickness="1" BorderBrush="{StaticResource Kroko.ChipLine}"
+                                Background="Transparent" Padding="14,7">
+                            <ContentPresenter />
+                        </Border>
                         <ControlTemplate.Triggers>
-                            <Trigger Property="IsSelected" Value="True">
-                                <Setter TargetName="Bd" Property="Background" Value="{StaticResource Kroko.AccentSoft}" />
-                                <Setter Property="Foreground" Value="{StaticResource Kroko.Text}" />
-                            </Trigger>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="Bd" Property="Background" Value="{StaticResource Kroko.SurfaceHover}" />
+                                <Setter TargetName="Bd" Property="BorderBrush" Value="{StaticResource Kroko.Accent}" />
+                                <Setter Property="Foreground" Value="{StaticResource Kroko.Text}" />
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
                 </Setter.Value>
             </Setter>
         </Style>
+        <!-- Botón gris píldora pequeño (Deshacer, Abrir, Ver) -->
+        <Style x:Key="Mini" TargetType="Button" BasedOn="{StaticResource Kroko.Button}">
+            <Setter Property="MinHeight" Value="28" />
+            <Setter Property="MinWidth" Value="0" />
+            <Setter Property="Padding" Value="12,0" />
+            <Setter Property="Margin" Value="8,0,0,0" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="BorderBrush" Value="Transparent" />
+        </Style>
+        <Style TargetType="ScrollViewer">
+            <Setter Property="VerticalScrollBarVisibility" Value="Auto" />
+            <Setter Property="Padding" Value="0,0,14,0" />
+        </Style>
+
+        <!-- Navegación lateral Kroko 2: fila de 38 px, esquinas de 12; abierta = fondo verde oscuro #1A1D12 y letra blanca -->
+        <Style TargetType="TabItem">
+            <Setter Property="Foreground" Value="{StaticResource Kroko.NavText}" />
+            <Setter Property="FontSize" Value="14" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="TabItem">
+                        <Grid Margin="0,0,0,2" Cursor="Hand">
+                            <Border x:Name="Bd" CornerRadius="12" Padding="12,9" Background="Transparent">
+                                <ContentPresenter ContentSource="Header" />
+                            </Border>
+                        </Grid>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Bd" Property="Background" Value="#151517" />
+                            </Trigger>
+                            <Trigger Property="IsSelected" Value="True">
+                                <Setter TargetName="Bd" Property="Background" Value="#1A1D12" />
+                                <Setter Property="Foreground" Value="{StaticResource Kroko.Text}" />
+                                <Setter Property="FontWeight" Value="SemiBold" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Botón de la barra lateral que no es pestaña (Configuración, Salir): icono en Tag, texto en Content -->
+        <Style x:Key="NavButton" TargetType="Button">
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Foreground" Value="{StaticResource Kroko.NavText}" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Bd" CornerRadius="12" Padding="12,9" Background="Transparent">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="{TemplateBinding Tag}" FontFamily="{StaticResource Kroko.Icons}" FontSize="15" Width="20" Margin="0,0,12,0"
+                                           Foreground="{TemplateBinding Foreground}" VerticalAlignment="Center" />
+                                <TextBlock Text="{TemplateBinding Content}" FontSize="14" Foreground="{TemplateBinding Foreground}" VerticalAlignment="Center" />
+                            </StackPanel>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Bd" Property="Background" Value="#151517" />
+                                <Setter Property="Foreground" Value="{StaticResource Kroko.Text}" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Un archivo de la bandeja: etiqueta de color con el tipo y el nombre; se arrastra a cualquier app -->
+        <DataTemplate x:Key="TrayTile">
+            <Border Background="{StaticResource Kroko.Inset}" BorderBrush="{StaticResource Kroko.ChipLine}" BorderThickness="1" CornerRadius="12"
+                    Padding="10,8,14,8" Margin="0,0,10,10" Cursor="Hand" ToolTip="{Binding Path}"
+                    PreviewMouseLeftButtonDown="TrayTile_MouseDown" PreviewMouseMove="TrayTile_MouseMove">
+                <Border.InputBindings>
+                    <MouseBinding Gesture="LeftDoubleClick" Command="{Binding OpenCommand}" />
+                </Border.InputBindings>
+                <Border.ContextMenu>
+                    <ContextMenu>
+                        <MenuItem Header="Abrir" Command="{Binding OpenCommand}" />
+                        <MenuItem Header="Mostrar en la carpeta" Command="{Binding ShowInFolderCommand}" />
+                        <MenuItem Header="Quitar de la bandeja" Command="{Binding RemoveCommand}" />
+                    </ContextMenu>
+                </Border.ContextMenu>
+                <StackPanel Orientation="Horizontal">
+                    <Border Width="32" Height="38" CornerRadius="5" Background="{Binding KindColor}" Margin="0,0,10,0">
+                        <TextBlock Text="{Binding Kind}" FontSize="9" FontWeight="ExtraBold" Foreground="#000000"
+                                   HorizontalAlignment="Center" VerticalAlignment="Bottom" Margin="0,0,0,5" />
+                    </Border>
+                    <TextBlock Text="{Binding Name}" FontSize="13" VerticalAlignment="Center" MaxWidth="180" TextTrimming="CharacterEllipsis" />
+                </StackPanel>
+            </Border>
+        </DataTemplate>
+
+        <!-- «Suelta más aquí»: recuadro punteado al final de la bandeja -->
+        <ControlTemplate x:Key="DropHere" TargetType="ContentControl">
+                    <Grid Width="140" Height="56" Margin="0,0,10,10">
+                        <Rectangle RadiusX="12" RadiusY="12" Stroke="#3A3A3F" StrokeThickness="1" StrokeDashArray="4,3" />
+                        <TextBlock Text="Suelta más aquí" FontSize="13" Foreground="{StaticResource Kroko.TextMuted}"
+                                   HorizontalAlignment="Center" VerticalAlignment="Center" />
+                    </Grid>
+        </ControlTemplate>
 
         <!-- Los 7 días de la semana de un hábito -->
         <DataTemplate x:Key="WeekDot">
@@ -132,190 +229,224 @@
         </Style>
     </Window.Resources>
 
-    <TabControl TabStripPlacement="Left" Background="Transparent" BorderThickness="0" Padding="28,24,10,16" Margin="14,18,0,0"
+    <TabControl TabStripPlacement="Left" Background="Transparent" BorderThickness="0" Padding="32,26,18,18"
                 SelectedIndex="{Binding SelectedSection}">
         <TabControl.Template>
             <ControlTemplate TargetType="TabControl">
                 <DockPanel>
-                    <DockPanel DockPanel.Dock="Left" Width="200" LastChildFill="False">
-                        <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Margin="10,0,0,20">
-                            <!-- Kroko en chiquito, con su forma "mochi" (15/11/2026) -->
-                            <Grid Width="38" Height="30">
-                                <Path Data="M11.5,1 H26.5 Q30.5,1 32,5 L36.6,22 Q38,29 31,29 H7 Q0,29 1.4,22 L6,5 Q7.5,1 11.5,1 Z"
-                                      Fill="{StaticResource Kroko.Body}" Stroke="{StaticResource Kroko.BodyEdge}" StrokeThickness="1" />
-                                <Border Width="7" Height="2.4" CornerRadius="1.2" Background="{StaticResource Kroko.Accent}"
-                                        VerticalAlignment="Top" Margin="0,3.4,0,0" />
-                                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,4,0,0">
-                                    <Border Width="6" Height="8" CornerRadius="2.5" Background="{StaticResource Kroko.Eye}" Margin="0,0,5,0" />
-                                    <Border Width="6" Height="8" CornerRadius="2.5" Background="{StaticResource Kroko.Eye}" />
-                                </StackPanel>
-                            </Grid>
-                            <StackPanel Margin="10,0,0,0" VerticalAlignment="Center">
-                                <TextBlock Text="Kroko" FontWeight="SemiBold" FontSize="15" />
-                                <!-- Estado como en Troko: punto verde y «Listo» (gris «Sin conexión» si el cerebro no responde) -->
-                                <StackPanel Orientation="Horizontal" Margin="0,2,0,0">
-                                    <Ellipse Width="7" Height="7" VerticalAlignment="Center" Margin="0,1,6,0">
-                                        <Ellipse.Style>
-                                            <Style TargetType="Ellipse">
-                                                <Setter Property="Fill" Value="{StaticResource Kroko.Accent}" />
-                                                <Style.Triggers>
-                                                    <DataTrigger Binding="{Binding IsOffline}" Value="True"><Setter Property="Fill" Value="#6E6E73" /></DataTrigger>
-                                                </Style.Triggers>
-                                            </Style>
-                                        </Ellipse.Style>
-                                    </Ellipse>
-                                    <TextBlock FontSize="11.5" Foreground="{StaticResource Kroko.TextMuted}">
-                                        <TextBlock.Style>
-                                            <Style TargetType="TextBlock">
-                                                <Setter Property="Text" Value="Listo" />
-                                                <Style.Triggers>
-                                                    <DataTrigger Binding="{Binding IsOffline}" Value="True"><Setter Property="Text" Value="Sin conexión" /></DataTrigger>
-                                                </Style.Triggers>
-                                            </Style>
-                                        </TextBlock.Style>
-                                    </TextBlock>
+                    <!-- Barra lateral Kroko 2: negra, con línea a la derecha -->
+                    <Border DockPanel.Dock="Left" Width="232" Background="#000000" BorderBrush="#1A1A1D" BorderThickness="0,0,1,0">
+                        <DockPanel LastChildFill="False" Margin="14,18,14,14">
+                            <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Margin="6,0,0,22">
+                                <v:KrokoMark Width="46" Height="36" />
+                                <StackPanel Margin="12,0,0,0" VerticalAlignment="Center">
+                                    <TextBlock Text="Kroko" FontWeight="Bold" FontSize="16" />
+                                    <StackPanel Orientation="Horizontal" Margin="0,3,0,0">
+                                        <Ellipse Width="6" Height="6" VerticalAlignment="Center" Margin="0,1,6,0">
+                                            <Ellipse.Style>
+                                                <Style TargetType="Ellipse">
+                                                    <Setter Property="Fill" Value="{StaticResource Kroko.Accent}" />
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding IsOffline}" Value="True"><Setter Property="Fill" Value="#6E6E73" /></DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </Ellipse.Style>
+                                        </Ellipse>
+                                        <TextBlock FontSize="12" TextWrapping="Wrap" MaxWidth="140">
+                                            <TextBlock.Style>
+                                                <Style TargetType="TextBlock">
+                                                    <Setter Property="Text" Value="Listo · cerebro conectado" />
+                                                    <Setter Property="Foreground" Value="{StaticResource Kroko.Accent}" />
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding IsOffline}" Value="True">
+                                                            <Setter Property="Text" Value="Sin cerebro · modo local" />
+                                                            <Setter Property="Foreground" Value="{StaticResource Kroko.TextMuted}" />
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </TextBlock.Style>
+                                        </TextBlock>
+                                    </StackPanel>
                                 </StackPanel>
                             </StackPanel>
-                        </StackPanel>
-                        <TabPanel DockPanel.Dock="Top" IsItemsHost="True" />
-                        <!-- Salir de Kroko (17/11/2026, como en Troko Desk): lo último de la barra -->
-                        <Button DockPanel.Dock="Bottom" Command="{Binding QuitKrokoCommand}" Cursor="Hand" Margin="0,0,0,8">
-                            <Button.Template>
-                                <ControlTemplate TargetType="Button">
-                                    <Border x:Name="Bd" CornerRadius="6" Padding="12,9" Background="Transparent">
-                                        <StackPanel Orientation="Horizontal">
-                                            <TextBlock Text="&#xE7E8;" Style="{StaticResource Icon}" Width="26" Margin="0,0,10,0" />
-                                            <TextBlock Text="Salir de Kroko" Foreground="{StaticResource Kroko.TextMuted}" />
-                                        </StackPanel>
-                                    </Border>
-                                    <ControlTemplate.Triggers>
-                                        <Trigger Property="IsMouseOver" Value="True">
-                                            <Setter TargetName="Bd" Property="Background" Value="{StaticResource Kroko.SurfaceHover}" />
-                                        </Trigger>
-                                    </ControlTemplate.Triggers>
-                                </ControlTemplate>
-                            </Button.Template>
-                        </Button>
-                        <!-- Toda la configuración en una sola ventana (17/11/2026: el panel ya no repite ajustes) -->
-                        <Button DockPanel.Dock="Bottom" Command="{Binding OpenAdvancedCommand}" Cursor="Hand" Margin="0,0,0,2">
-                            <Button.Template>
-                                <ControlTemplate TargetType="Button">
-                                    <Border x:Name="Bd" CornerRadius="6" Padding="12,9" Background="Transparent">
-                                        <StackPanel Orientation="Horizontal">
-                                            <TextBlock Text="&#xE713;" Style="{StaticResource Icon}" Width="26" Margin="0,0,10,0" />
-                                            <TextBlock Text="Configuración" Foreground="{StaticResource Kroko.TextMuted}" />
-                                        </StackPanel>
-                                    </Border>
-                                    <ControlTemplate.Triggers>
-                                        <Trigger Property="IsMouseOver" Value="True">
-                                            <Setter TargetName="Bd" Property="Background" Value="{StaticResource Kroko.SurfaceHover}" />
-                                        </Trigger>
-                                    </ControlTemplate.Triggers>
-                                </ControlTemplate>
-                            </Button.Template>
-                        </Button>
-                        <TextBlock DockPanel.Dock="Bottom" Margin="12,0,10,16" Style="{StaticResource Sub}" FontSize="11.5"
-                                   Text="Todo esto también me lo puedes pedir con «Oye Kroko»." />
-                    </DockPanel>
+                            <TabPanel DockPanel.Dock="Top" IsItemsHost="True" />
+                            <!-- Salir de Kroko: lo último de la barra -->
+                            <Button DockPanel.Dock="Bottom" Command="{Binding QuitKrokoCommand}" Style="{StaticResource NavButton}" Tag="&#xE7E8;" Content="Salir de Kroko" />
+                            <!-- Toda la configuración en una sola ventana -->
+                            <Button DockPanel.Dock="Bottom" Command="{Binding OpenAdvancedCommand}" Style="{StaticResource NavButton}" Tag="&#xE713;" Content="Configuración" Margin="0,0,0,2" />
+                        </DockPanel>
+                    </Border>
                     <ContentPresenter ContentSource="SelectedContent" Margin="{TemplateBinding Padding}" />
                 </DockPanel>
             </ControlTemplate>
         </TabControl.Template>
 
-        <!-- ============================== Inicio ============================== -->
+        <!-- ============================== Inicio (diseño Kroko 2, 18/11/2026) ============================== -->
         <TabItem>
             <TabItem.Header>
                 <StackPanel Orientation="Horizontal"><Border Style="{StaticResource IconDot}"><TextBlock Text="&#xE80F;" Style="{StaticResource Icon}" /></Border><TextBlock Text="Inicio" VerticalAlignment="Center" /></StackPanel>
             </TabItem.Header>
             <ScrollViewer>
                 <StackPanel>
-                    <TextBlock Text="{Binding Greeting}" Style="{StaticResource PageTitle}" />
-                    <TextBlock Text="Tu resumen de hoy" Style="{StaticResource Sub}" Margin="0,2,0,14" />
+                    <DockPanel>
+                        <Border DockPanel.Dock="Right" VerticalAlignment="Bottom" CornerRadius="15" BorderThickness="1"
+                                BorderBrush="{StaticResource Kroko.ChipLine}" Padding="12,6">
+                            <TextBlock Text="Ctrl + Espacio para hablarle desde cualquier lugar" FontSize="12" Foreground="{StaticResource Kroko.TextMuted}" />
+                        </Border>
+                        <StackPanel>
+                            <TextBlock Text="{Binding Greeting}" FontSize="32" FontWeight="Bold" />
+                            <TextBlock FontSize="14" Foreground="{StaticResource Kroko.TextMuted}" Margin="0,4,0,0">
+                                <Run Text="{Binding WeekdayDateText, Mode=OneWay}" /><Run Text=" · tu resumen de hoy" />
+                            </TextBlock>
+                        </StackPanel>
+                    </DockPanel>
 
-                    <Border Background="{StaticResource Kroko.Accent}" CornerRadius="8" Padding="14,10" Margin="0,0,0,12"
+                    <Border Background="{StaticResource Kroko.Accent}" CornerRadius="14" Padding="16,11" Margin="0,18,0,0"
                             Visibility="{Binding Celebration, Converter={StaticResource EmptyToCollapsed}}">
                         <TextBlock Text="{Binding Celebration}" Foreground="{StaticResource Kroko.OnAccent}" FontWeight="SemiBold" FontSize="14" />
                     </Border>
-                    <TextBlock Text="{Binding Status}" Foreground="{StaticResource Kroko.EyeAlert}" TextWrapping="Wrap" Margin="0,0,0,10"
+                    <TextBlock Text="{Binding Status}" Foreground="{StaticResource Kroko.Amber}" TextWrapping="Wrap" Margin="0,12,0,0"
                                Visibility="{Binding Status, Converter={StaticResource EmptyToCollapsed}}" />
 
-                    <!-- Anillo del día + tres números -->
-                    <Border Style="{StaticResource Kroko.Card}" Padding="20">
-                        <DockPanel>
-                            <Grid Width="128" Height="128" DockPanel.Dock="Left" Margin="0,0,24,0">
-                                <Ellipse Stroke="{StaticResource Kroko.Line}" StrokeThickness="10" />
-                                <Ellipse Stroke="{StaticResource Kroko.Accent}" StrokeThickness="10" StrokeDashCap="Round"
-                                         StrokeDashArray="{Binding DayProgress, Converter={StaticResource ProgressToDash}, ConverterParameter='128,10'}"
-                                         RenderTransformOrigin="0.5,0.5">
-                                    <Ellipse.RenderTransform><RotateTransform Angle="-90" /></Ellipse.RenderTransform>
-                                </Ellipse>
-                                <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
-                                    <TextBlock Text="{Binding DayProgressText}" FontSize="28" FontWeight="SemiBold" HorizontalAlignment="Center" />
-                                    <TextBlock Text="hábitos" Style="{StaticResource Sub}" HorizontalAlignment="Center" />
-                                </StackPanel>
-                            </Grid>
-                            <UniformGrid Columns="3" VerticalAlignment="Center">
-                                <StackPanel Margin="0,0,12,0">
-                                    <TextBlock Text="{Binding MainHabitValue}" FontSize="26" FontWeight="SemiBold" />
-                                    <TextBlock Text="{Binding MainHabitLabel}" Style="{StaticResource Sub}" />
-                                </StackPanel>
-                                <StackPanel Margin="0,0,12,0">
-                                    <TextBlock Text="{Binding PendingTasksValue}" FontSize="26" FontWeight="SemiBold" />
-                                    <TextBlock Text="tareas pendientes" Style="{StaticResource Sub}" />
-                                </StackPanel>
-                                <StackPanel>
-                                    <TextBlock Text="{Binding NextNoticeValue}" FontSize="26" FontWeight="SemiBold" />
-                                    <TextBlock Text="{Binding NextNoticeLabel}" Style="{StaticResource Sub}" />
-                                </StackPanel>
-                            </UniformGrid>
-                        </DockPanel>
+                    <!-- Escribe, habla o suelta un archivo -->
+                    <Border Style="{StaticResource Kroko.Card}" Margin="0,20,0,0" Padding="18,18,18,10">
+                        <StackPanel>
+                            <DockPanel>
+                                <Button DockPanel.Dock="Right" Content="Enviar" Command="{Binding AskCommand}" Style="{StaticResource Kroko.PrimaryButton}"
+                                        Height="48" MinWidth="84" Margin="10,0,0,0" />
+                                <Button DockPanel.Dock="Right" Command="{Binding TalkCommand}" Style="{StaticResource Kroko.Button}" ToolTip="Hablar (Ctrl+Espacio)"
+                                        Width="48" Height="48" MinWidth="48" Padding="0" Margin="10,0,0,0">
+                                    <TextBlock Text="&#xE720;" FontFamily="{StaticResource Kroko.Icons}" FontSize="15" />
+                                </Button>
+                                <TextBox Text="{Binding AskText, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource Field}" Height="50"
+                                         FontSize="14" Tag="Escribe, habla o suelta un archivo aquí…" AllowDrop="True"
+                                         PreviewDragOver="AskBox_PreviewDragOver" PreviewDrop="AskBox_PreviewDrop">
+                                    <TextBox.InputBindings>
+                                        <KeyBinding Key="Return" Command="{Binding AskCommand}" />
+                                    </TextBox.InputBindings>
+                                </TextBox>
+                            </DockPanel>
+                            <WrapPanel Margin="0,14,0,0">
+                                <Button Content="Anota una tarea" Style="{StaticResource Chip}" Command="{Binding ExampleCommand}" CommandParameter="Anota una tarea: " />
+                                <Button Content="Enfócate 25 minutos" Style="{StaticResource Chip}" Command="{Binding ExampleCommand}" CommandParameter="Enfócate 25 minutos" />
+                                <Button Content="Ordena mis Descargas" Style="{StaticResource Chip}" Command="{Binding ExampleCommand}" CommandParameter="Ordena mis Descargas" />
+                                <Button Content="Resume mi correo" Style="{StaticResource Chip}" Command="{Binding ExampleCommand}" CommandParameter="Resume mi correo importante" />
+                                <Button Content="Convierte la última foto a PDF" Style="{StaticResource Chip}" Command="{Binding ExampleCommand}" CommandParameter="Convierte a PDF la última foto de mis Descargas" />
+                            </WrapPanel>
+                        </StackPanel>
                     </Border>
 
-                    <!-- Escribe o habla con Kroko -->
-                    <Border Style="{StaticResource Kroko.Card}" Margin="0,12,0,0" Padding="12">
-                        <DockPanel>
-                            <Button DockPanel.Dock="Right" Content="Enviar" Command="{Binding AskCommand}" Style="{StaticResource Kroko.PrimaryButton}" Margin="8,0,0,0" />
-                            <Button DockPanel.Dock="Right" Command="{Binding TalkCommand}" Style="{StaticResource Kroko.Button}" Margin="8,0,0,0" ToolTip="Hablar (Ctrl+Espacio)">
-                                <TextBlock Text="&#xE720;" FontFamily="{StaticResource Kroko.Icons}" />
-                            </Button>
-                            <TextBox Text="{Binding AskText, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource Field}" VerticalContentAlignment="Center"
-                                     Tag="Escribe o habla con Kroko…">
-                                <TextBox.InputBindings>
-                                    <KeyBinding Key="Return" Command="{Binding AskCommand}" />
-                                </TextBox.InputBindings>
-                            </TextBox>
-                        </DockPanel>
-                    </Border>
-                    <WrapPanel Margin="0,10,0,0">
-                        <Button Content="«Anota una tarea: comprar pan»" Style="{StaticResource Chip}" Command="{Binding ExampleCommand}" CommandParameter="Anota una tarea: comprar pan" />
-                        <Button Content="«Tomé un vaso de agua»" Style="{StaticResource Chip}" Command="{Binding ExampleCommand}" CommandParameter="Tomé un vaso de agua" />
-                        <Button Content="«Recuérdame mañana a las 9 llamar al dentista»" Style="{StaticResource Chip}" Command="{Binding ExampleCommand}" CommandParameter="Recuérdame mañana a las 9 llamar al dentista" />
-                        <Button Content="«Enfócate 25 minutos»" Style="{StaticResource Chip}" Command="{Binding ExampleCommand}" CommandParameter="Enfócate 25 minutos" />
-                        <Button Content="«Ordena mi escritorio»" Style="{StaticResource Chip}" Command="{Binding ExampleCommand}" CommandParameter="Ordena mi escritorio" />
-                    </WrapPanel>
+                    <!-- Cuatro cifras del día -->
+                    <UniformGrid Columns="4" Margin="-6,14,-6,0">
+                        <Border Style="{StaticResource Kroko.Card}" Margin="6,0" Padding="18">
+                            <DockPanel>
+                                <Grid Width="40" Height="40" DockPanel.Dock="Left" Margin="0,0,12,0">
+                                    <Ellipse Stroke="#26262A" StrokeThickness="5" />
+                                    <Ellipse Stroke="{StaticResource Kroko.Accent}" StrokeThickness="5" StrokeDashCap="Round"
+                                             StrokeDashArray="{Binding DayProgress, Converter={StaticResource ProgressToDash}, ConverterParameter='40,5'}"
+                                             RenderTransformOrigin="0.5,0.5">
+                                        <Ellipse.RenderTransform><RotateTransform Angle="-90" /></Ellipse.RenderTransform>
+                                    </Ellipse>
+                                </Grid>
+                                <StackPanel VerticalAlignment="Center">
+                                    <TextBlock Text="{Binding HabitsDoneText}" FontSize="24" FontWeight="Bold" />
+                                    <TextBlock Text="hábitos de hoy" FontSize="13" Foreground="{StaticResource Kroko.TextMuted}" />
+                                </StackPanel>
+                            </DockPanel>
+                        </Border>
+                        <Border Style="{StaticResource Kroko.Card}" Margin="6,0" Padding="18">
+                            <StackPanel VerticalAlignment="Center">
+                                <TextBlock Text="{Binding PendingTasksValue}" FontSize="24" FontWeight="Bold" />
+                                <TextBlock Text="tareas pendientes" FontSize="13" Foreground="{StaticResource Kroko.TextMuted}" />
+                            </StackPanel>
+                        </Border>
+                        <Border Style="{StaticResource Kroko.Card}" Margin="6,0" Padding="18">
+                            <StackPanel VerticalAlignment="Center">
+                                <TextBlock Text="{Binding FocusMinutesText}" FontSize="24" FontWeight="Bold" />
+                                <TextBlock Text="de enfoque hoy" FontSize="13" Foreground="{StaticResource Kroko.TextMuted}" />
+                            </StackPanel>
+                        </Border>
+                        <Border Style="{StaticResource Kroko.Card}" Margin="6,0" Padding="18">
+                            <StackPanel VerticalAlignment="Center">
+                                <TextBlock Text="{Binding NextNoticeValue}" FontSize="24" FontWeight="Bold" Foreground="{StaticResource Kroko.Amber}" />
+                                <TextBlock FontSize="13" Foreground="{StaticResource Kroko.TextMuted}" TextTrimming="CharacterEllipsis">
+                                    <Run Text="próximo aviso · " /><Run Text="{Binding NextNoticeLabel, Mode=OneWay}" />
+                                </TextBlock>
+                            </StackPanel>
+                        </Border>
+                    </UniformGrid>
 
-                    <!-- Hábitos de hoy, rápido -->
-                    <TextBlock Text="Hábitos de hoy" Style="{StaticResource Group}" />
-                    <TextBlock Style="{StaticResource Sub}" Visibility="{Binding HasNoHabits, Converter={StaticResource BoolToVisible}}"
-                               Text="Aún no sigues ningún hábito. Ve a Hábitos o dime «quiero tomar 8 vasos de agua al día»." />
-                    <ItemsControl ItemsSource="{Binding Habits}">
-                        <ItemsControl.ItemTemplate>
-                            <DataTemplate>
-                                <Border Style="{StaticResource Row}">
-                                    <DockPanel>
-                                        <Button DockPanel.Dock="Right" Content="{Binding AddText}" Command="{Binding AddCommand}" Style="{StaticResource Kroko.PrimaryButton}" MinWidth="56" Margin="10,0,0,0" />
-                                        <TextBlock DockPanel.Dock="Left" Text="{Binding Emoji}" FontSize="20" Width="36" VerticalAlignment="Center" />
-                                        <StackPanel VerticalAlignment="Center">
-                                            <TextBlock Text="{Binding Name}" FontSize="13.5" />
-                                            <TextBlock Style="{StaticResource Sub}">
-                                                <Run Text="{Binding CountText, Mode=OneWay}" /><Run Text="  ·  " /><Run Text="{Binding StreakText, Mode=OneWay}" />
-                                            </TextBlock>
-                                        </StackPanel>
-                                    </DockPanel>
-                                </Border>
-                            </DataTemplate>
-                        </ItemsControl.ItemTemplate>
-                    </ItemsControl>
+                    <!-- Tareas de hoy · Lo que hizo Kroko -->
+                    <UniformGrid Columns="2" Margin="-6,14,-6,0">
+                        <Border Style="{StaticResource Kroko.Card}" Margin="6,0">
+                            <StackPanel>
+                                <DockPanel Margin="0,0,0,12">
+                                    <Button DockPanel.Dock="Right" Content="Ver todas" Command="{Binding OpenSectionCommand}" CommandParameter="tareas"
+                                            Style="{StaticResource Kroko.TextButton}" Padding="2,0" FontWeight="Normal" FontSize="13" />
+                                    <TextBlock Text="Tareas de hoy" FontSize="16" FontWeight="SemiBold" />
+                                </DockPanel>
+                                <TextBlock Text="Nada pendiente. Dime «anota…» y la agrego." FontSize="13" Foreground="{StaticResource Kroko.TextMuted}"
+                                           Visibility="{Binding HasNoTasks, Converter={StaticResource BoolToVisible}}" />
+                                <ItemsControl ItemsSource="{Binding TodayTasks}">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <CheckBox IsChecked="{Binding Done}" Command="{Binding ToggleCommand}" Style="{StaticResource Kroko.Check}" Margin="0,0,0,10">
+                                                <TextBlock x:Name="T" Text="{Binding Text}" FontSize="14" TextTrimming="CharacterEllipsis" />
+                                            </CheckBox>
+                                            <DataTemplate.Triggers>
+                                                <DataTrigger Binding="{Binding Done}" Value="True">
+                                                    <Setter TargetName="T" Property="TextDecorations" Value="Strikethrough" />
+                                                    <Setter TargetName="T" Property="Foreground" Value="{StaticResource Kroko.TextMuted}" />
+                                                </DataTrigger>
+                                            </DataTemplate.Triggers>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </StackPanel>
+                        </Border>
+                        <Border Style="{StaticResource Kroko.Card}" Margin="6,0">
+                            <StackPanel>
+                                <DockPanel Margin="0,0,0,12">
+                                    <TextBlock DockPanel.Dock="Right" Text="todo se puede deshacer" FontSize="12" Foreground="{StaticResource Kroko.TextMuted}" VerticalAlignment="Center" />
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Text="Lo que hizo Kroko" FontSize="16" FontWeight="SemiBold" />
+                                        <Border Style="{StaticResource NewTag}" Margin="8,0,0,0"><TextBlock Text="NUEVO" FontSize="10" FontWeight="Bold" Foreground="#000000" /></Border>
+                                    </StackPanel>
+                                </DockPanel>
+                                <TextBlock Text="Hoy todavía no hice nada. Pídeme algo y aquí lo verás." FontSize="13" Foreground="{StaticResource Kroko.TextMuted}"
+                                           TextWrapping="Wrap" Visibility="{Binding HasNoActivity, Converter={StaticResource BoolToVisible}}" />
+                                <ItemsControl ItemsSource="{Binding Activity.Items}">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <DockPanel Margin="0,0,0,10">
+                                                <Button DockPanel.Dock="Right" Content="{Binding ActionLabel}" Command="{Binding RunCommand}" Style="{StaticResource Mini}"
+                                                        Visibility="{Binding HasAction, Converter={StaticResource BoolToVisible}}" />
+                                                <TextBlock DockPanel.Dock="Left" Text="{Binding TimeText}" FontSize="12" Width="44" Foreground="{StaticResource Kroko.TextMuted}" VerticalAlignment="Center" />
+                                                <TextBlock Text="{Binding Text}" FontSize="14" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+                                            </DockPanel>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </StackPanel>
+                        </Border>
+                    </UniformGrid>
+
+                    <!-- Bandeja -->
+                    <Border Style="{StaticResource Kroko.Card}" Margin="0,14,0,0" AllowDrop="True" Drop="Tray_Drop" DragOver="Tray_DragOver">
+                        <StackPanel>
+                            <DockPanel Margin="0,0,0,12">
+                                <TextBlock DockPanel.Dock="Right" Text="Archivos estacionados en la isla. Arrástralos a cualquier app." FontSize="13"
+                                           Foreground="{StaticResource Kroko.TextMuted}" VerticalAlignment="Center" />
+                                <TextBlock Text="Bandeja" FontSize="16" FontWeight="SemiBold" />
+                            </DockPanel>
+                            <WrapPanel>
+                                <ItemsControl ItemsSource="{Binding Tray.Items}" ItemTemplate="{StaticResource TrayTile}">
+                                    <ItemsControl.ItemsPanel><ItemsPanelTemplate><WrapPanel /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+                                </ItemsControl>
+                                <ContentControl Template="{StaticResource DropHere}" />
+                            </WrapPanel>
+                        </StackPanel>
+                    </Border>
                 </StackPanel>
             </ScrollViewer>
         </TabItem>
@@ -388,7 +519,7 @@
         <!-- ============================== Tareas ============================== -->
         <TabItem>
             <TabItem.Header>
-                <StackPanel Orientation="Horizontal"><Border Style="{StaticResource IconDot}"><TextBlock Text="&#xE73A;" Style="{StaticResource Icon}" /></Border><TextBlock Text="Tareas" VerticalAlignment="Center" /></StackPanel>
+                <DockPanel LastChildFill="True"><Border DockPanel.Dock="Right" Style="{StaticResource NavCount}" Visibility="{Binding PendingTasksBadgeVisible, Converter={StaticResource BoolToVisible}}"><TextBlock Text="{Binding PendingTasksValue}" FontSize="12" FontWeight="Bold" Foreground="{StaticResource Kroko.NavText}" /></Border><Border DockPanel.Dock="Left" Style="{StaticResource IconDot}"><TextBlock Text="&#xE73A;" Style="{StaticResource Icon}" /></Border><TextBlock Text="Tareas" VerticalAlignment="Center" /></DockPanel>
             </TabItem.Header>
             <ScrollViewer>
                 <StackPanel>
@@ -682,6 +813,40 @@
                     </ItemsControl>
                 </StackPanel>
             </ScrollViewer>
+        </TabItem>
+
+        <!-- ============================== Bandeja (diseño Kroko 2, 18/11/2026) ============================== -->
+        <TabItem>
+            <TabItem.Header>
+                <DockPanel LastChildFill="True"><Border DockPanel.Dock="Right" Style="{StaticResource NewTag}"><TextBlock Text="NUEVO" FontSize="10" FontWeight="Bold" Foreground="#000000" /></Border><Border DockPanel.Dock="Left" Style="{StaticResource IconDot}"><TextBlock Text="&#xE7B8;" Style="{StaticResource Icon}" /></Border><TextBlock Text="Bandeja" VerticalAlignment="Center" /></DockPanel>
+            </TabItem.Header>
+            <DockPanel>
+                <DockPanel DockPanel.Dock="Top" Margin="0,0,0,18">
+                    <Button DockPanel.Dock="Right" Content="Vaciar" Command="{Binding ClearTrayCommand}" Style="{StaticResource Kroko.Button}" VerticalAlignment="Bottom"
+                            Visibility="{Binding HasNoTrayFiles, Converter={StaticResource BoolToVisible}, ConverterParameter=invert}" />
+                    <StackPanel>
+                        <TextBlock Text="Bandeja" FontSize="32" FontWeight="Bold" />
+                        <TextBlock FontSize="14" Foreground="{StaticResource Kroko.TextMuted}" Margin="0,4,0,0" TextWrapping="Wrap"
+                                   Text="Deja archivos aquí mientras cambias de ventana y sácalos arrastrando cuando los necesites. Se vacía sola a las 24 h (sin borrar los originales)." />
+                    </StackPanel>
+                </DockPanel>
+                <Border Style="{StaticResource Kroko.Card}" AllowDrop="True" Drop="Tray_Drop" DragOver="Tray_DragOver" VerticalAlignment="Top">
+                    <StackPanel>
+                        <DockPanel Margin="0,0,0,12">
+                            <TextBlock DockPanel.Dock="Right" Text="{Binding TrayCountText}" FontSize="13" Foreground="{StaticResource Kroko.TextMuted}" VerticalAlignment="Center" />
+                            <TextBlock Text="Estacionados" FontSize="16" FontWeight="SemiBold" />
+                        </DockPanel>
+                        <WrapPanel>
+                            <ItemsControl ItemsSource="{Binding Tray.Items}" ItemTemplate="{StaticResource TrayTile}">
+                                <ItemsControl.ItemsPanel><ItemsPanelTemplate><WrapPanel /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+                            </ItemsControl>
+                            <ContentControl Template="{StaticResource DropHere}" />
+                        </WrapPanel>
+                        <TextBlock FontSize="12" Foreground="{StaticResource Kroko.TextMuted}" Margin="0,6,0,0" TextWrapping="Wrap"
+                                   Text="Doble clic abre el archivo; clic derecho para mostrarlo en su carpeta o quitarlo. Al soltar un archivo sobre la isla, «Guardar en la bandeja» lo trae aquí." />
+                    </StackPanel>
+                </Border>
+            </DockPanel>
         </TabItem>
 
         <!-- ============================== Mi PC ============================== -->

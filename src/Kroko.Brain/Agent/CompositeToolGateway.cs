@@ -81,7 +81,11 @@ public sealed class CompositeToolGateway(
         {
             try
             {
-                await channel.SendAsync(new BadgeMessage { SessionId = channel.SessionId, Text = word }, ct);
+                var what = Badges.Describe(name, call.Arguments, result.Json);
+                await channel.SendAsync(new BadgeMessage
+                {
+                    SessionId = channel.SessionId, Text = word, Tool = name, Detail = what?.Detail, Url = what?.Url,
+                }, ct);
             }
             catch (Exception ex) when (ex is not OperationCanceledException) { } // un adorno nunca rompe la orden
         }

@@ -115,6 +115,8 @@ public partial class App : Application
                 services.AddTransient<KrokoPanelWindow>();
                 services.AddSingleton<Kroko.App.Services.LanShare.PhoneShare>();
                 services.AddSingleton<MediaSessionService>();
+                services.AddSingleton<ActivityFeed>();
+                services.AddSingleton<FileTray>();
                 services.AddTransient<MusicPlayerViewModel>();
                 services.AddTransient<MusicPlayer>();
                 services.AddTransient<DropPanelViewModel>();

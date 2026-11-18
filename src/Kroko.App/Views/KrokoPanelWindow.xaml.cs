@@ -34,6 +34,58 @@ public partial class KrokoPanelWindow : Window
 
     public KrokoPanelViewModel ViewModel => (KrokoPanelViewModel)DataContext;
 
+    // ---------------------------------------------------------------- Bandeja y archivos (Kroko 2, 18/11/2026)
+
+    private static string[] Files(DragEventArgs e) =>
+        e.Data.GetDataPresent(DataFormats.FileDrop) && e.Data.GetData(DataFormats.FileDrop) is string[] f ? f : [];
+
+    private void Tray_DragOver(object sender, DragEventArgs e)
+    {
+        e.Effects = Files(e).Length > 0 ? DragDropEffects.Copy : DragDropEffects.None;
+        e.Handled = true;
+    }
+
+    private void Tray_Drop(object sender, DragEventArgs e)
+    {
+        e.Handled = true;
+        ViewModel.AddToTray(Files(e));
+    }
+
+    /// <summary>Soltar un archivo en el cuadro de «Escribe…»: se abre el panel de archivos (Convertir, Analizar…).</summary>
+    private void AskBox_PreviewDragOver(object sender, DragEventArgs e)
+    {
+        if (Files(e).Length == 0) return;
+        e.Effects = DragDropEffects.Copy;
+        e.Handled = true;
+    }
+
+    private void AskBox_PreviewDrop(object sender, DragEventArgs e)
+    {
+        if (Files(e) is not { Length: > 0 } files) return;
+        e.Handled = true;
+        ViewModel.OpenDrop(files);
+    }
+
+    private Point _trayPress;
+    private Services.TrayFile? _trayPressed;
+
+    private void TrayTile_MouseDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
+    {
+        _trayPress = e.GetPosition(this);
+        _trayPressed = (sender as FrameworkElement)?.DataContext as Services.TrayFile;
+    }
+
+    /// <summary>Arrastrar un archivo de la bandeja a cualquier app (pasados 4 px, así el doble clic sigue abriéndolo).</summary>
+    private void TrayTile_MouseMove(object sender, System.Windows.Input.MouseEventArgs e)
+    {
+        if (e.LeftButton != System.Windows.Input.MouseButtonState.Pressed || _trayPressed is null) return;
+        var d = e.GetPosition(this) - _trayPress;
+        if (Math.Abs(d.X) < 4 && Math.Abs(d.Y) < 4) return;
+        var file = _trayPressed;
+        _trayPressed = null;
+        Services.FileTray.DragOut((DependencyObject)sender, file);
+    }
+
     public bool IsAttached => _attached;
 
     public bool IsClosing => _closing;
@@ -56,8 +108,8 @@ public partial class KrokoPanelWindow : Window
         ShowInTaskbar = false;
         Topmost = true;
         WindowStartupLocation = WindowStartupLocation.Manual;
-        Width = 820;
-        Height = 560;
+        Width = 1080;
+        Height = 690;
         MinWidth = 0;
         MinHeight = 0;
 

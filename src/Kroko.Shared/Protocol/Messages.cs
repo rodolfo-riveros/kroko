@@ -294,6 +294,15 @@ public static class KrokoProtocol
 public sealed record BadgeMessage : KrokoMessage
 {
     public string Text { get; init; } = "";
+
+    /// <summary>Herramienta que lo hizo (18/11/2026, «Lo que hizo Kroko»).</summary>
+    public string? Tool { get; init; }
+
+    /// <summary>La frase para la actividad: «Creó una página en Notion: Pendientes».</summary>
+    public string? Detail { get; init; }
+
+    /// <summary>Enlace para «Ver» (página de Notion, evento del calendario…), si lo hay.</summary>
+    public string? Url { get; init; }
 }
 
 /// <summary>

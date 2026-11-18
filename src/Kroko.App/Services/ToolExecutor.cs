@@ -45,6 +45,9 @@ public sealed class ToolExecutor
         if (missing.Count > 0) _log.LogWarning("Herramientas del catálogo sin implementación: {Missing}", missing);
     }
 
+    /// <summary>Una herramienta terminó bien (nombre, argumentos y resultado): para «Lo que hizo Kroko» y la isla.</summary>
+    public event Action<string, JsonElement, JsonElement?>? ToolDone;
+
     /// <summary>Pausa de emergencia activa: no se ejecuta ninguna herramienta.</summary>
     public bool IsPaused { get; private set; }
 
@@ -119,6 +122,7 @@ public sealed class ToolExecutor
             outcome.Ok, outcome.Ok ? Summarize(outcome.Data) : outcome.Error ?? "", watch.ElapsedMilliseconds));
 
         var data = outcome.Ok && outcome.Data is not null ? JsonSerializer.SerializeToElement(outcome.Data, Json) : (JsonElement?)null;
+        if (outcome.Ok) ToolDone?.Invoke(call.Name, call.Args, data);
         if (data is { } d && Cards.FromToolResult(call.Name, d) is { } card) CardReady?.Invoke(card);
 
         return new ToolResultMessage

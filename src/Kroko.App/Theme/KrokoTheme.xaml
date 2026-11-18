@@ -18,7 +18,7 @@
     <Color x:Key="Kroko.PurpleColor">#A85FF7</Color>
     <Color x:Key="Kroko.PanelColor">#EB0F0F0F</Color>
     <Color x:Key="Kroko.TextColor">#FFFFFF</Color>
-    <Color x:Key="Kroko.TextMutedColor">#D1D1D6</Color>
+    <Color x:Key="Kroko.TextMutedColor">#A1A1AA</Color>
 
     <SolidColorBrush x:Key="Kroko.Body" Color="{StaticResource Kroko.BodyColor}" />
     <SolidColorBrush x:Key="Kroko.BodyEdge" Color="{StaticResource Kroko.BodyEdgeColor}" />
@@ -34,27 +34,31 @@
     <SolidColorBrush x:Key="Kroko.Text" Color="{StaticResource Kroko.TextColor}" />
     <SolidColorBrush x:Key="Kroko.TextMuted" Color="{StaticResource Kroko.TextMutedColor}" />
 
-    <FontFamily x:Key="Kroko.Font">Segoe UI Variable Text, Segoe UI</FontFamily>
+    <FontFamily x:Key="Kroko.Font">Inter, Segoe UI Variable Text, Segoe UI</FontFamily>
 
-    <SolidColorBrush x:Key="Kroko.Window" Color="#0E0E0E" />
+    <SolidColorBrush x:Key="Kroko.Window" Color="#0B0B0C" />
     <!-- Liquid Glass (17/11/2026): superficies de vidrio blanco translúcido sobre el tinte oscuro de la ventana -->
-    <SolidColorBrush x:Key="Kroko.Surface" Color="#17FFFFFF" />
-    <SolidColorBrush x:Key="Kroko.SurfaceHover" Color="#26FFFFFF" />
+    <SolidColorBrush x:Key="Kroko.Surface" Color="#111113" />
+    <SolidColorBrush x:Key="Kroko.SurfaceHover" Color="#151517" />
     <!-- Tinte sobre el vidrio del sistema: deja ver el escritorio desenfocado y mantiene las letras blancas legibles -->
-    <SolidColorBrush x:Key="Kroko.GlassTint" Color="#C2101012" />
+    <SolidColorBrush x:Key="Kroko.GlassTint" Color="#0B0B0C" />
     <!-- Brillo del borde del vidrio: más claro arriba, como la luz sobre un cristal -->
     <LinearGradientBrush x:Key="Kroko.GlassEdge" StartPoint="0,0" EndPoint="0,1">
-        <GradientStop Color="#40FFFFFF" Offset="0" />
-        <GradientStop Color="#14FFFFFF" Offset="1" />
+        <GradientStop Color="#232326" Offset="0" />
+        <GradientStop Color="#232326" Offset="1" />
     </LinearGradientBrush>
-    <SolidColorBrush x:Key="Kroko.Line" Color="#2EFFFFFF" />
+    <SolidColorBrush x:Key="Kroko.Line" Color="#232326" />
     <SolidColorBrush x:Key="Kroko.OnAccent" Color="#0F0F0F" />
 
     <!-- Tema Troko (17/11/2026, colores medidos de sus capturas): isla negra pura, cajas internas, píldora de estado,
          resplandor verde en tarjetas y morado de gráficos -->
     <SolidColorBrush x:Key="Kroko.Island" Color="#000000" />
-    <SolidColorBrush x:Key="Kroko.Inset" Color="#141414" />
-    <SolidColorBrush x:Key="Kroko.Pill" Color="#1C1C20" />
+    <SolidColorBrush x:Key="Kroko.Inset" Color="#0B0B0C" />
+    <SolidColorBrush x:Key="Kroko.Pill" Color="#1F1F22" />
+    <SolidColorBrush x:Key="Kroko.ChipLine" Color="#2E2E32" />
+    <SolidColorBrush x:Key="Kroko.NavText" Color="#D4D4D8" />
+    <SolidColorBrush x:Key="Kroko.AccentHover" Color="#D4FF7A" />
+    <SolidColorBrush x:Key="Kroko.Amber" Color="#FFB547" />
     <SolidColorBrush x:Key="Kroko.Violet" Color="#6445B2" />
     <SolidColorBrush x:Key="Kroko.VioletIcon" Color="#835BEC" />
     <SolidColorBrush x:Key="Kroko.AccentSoft" Color="#26B6F23A" />
@@ -69,8 +73,8 @@
         <Setter Property="Background" Value="{StaticResource Kroko.Surface}" />
         <Setter Property="BorderBrush" Value="{StaticResource Kroko.Line}" />
         <Setter Property="BorderThickness" Value="1" />
-        <Setter Property="CornerRadius" Value="10" />
-        <Setter Property="Padding" Value="16" />
+        <Setter Property="CornerRadius" Value="18" />
+        <Setter Property="Padding" Value="18" />
     </Style>
 
     <!-- Etiqueta de sección estilo "mono" -->
@@ -89,8 +93,8 @@
     -->
     <Style x:Key="Kroko.Button" TargetType="Button">
         <Setter Property="Foreground" Value="{StaticResource Kroko.Text}" />
-        <Setter Property="Background" Value="#262626" />
-        <Setter Property="BorderBrush" Value="#33F5F1E9" />
+        <Setter Property="Background" Value="#1F1F22" />
+        <Setter Property="BorderBrush" Value="#2E2E32" />
         <Setter Property="Padding" Value="14,0" />
         <Setter Property="MinHeight" Value="32" />
         <Setter Property="MinWidth" Value="72" />
@@ -303,15 +307,15 @@
     <Style x:Key="Kroko.Field" TargetType="TextBox">
         <Setter Property="Background" Value="{StaticResource Kroko.Window}" />
         <Setter Property="Foreground" Value="{StaticResource Kroko.Text}" />
-        <Setter Property="BorderBrush" Value="{StaticResource Kroko.Line}" />
+        <Setter Property="BorderBrush" Value="{StaticResource Kroko.ChipLine}" />
         <Setter Property="CaretBrush" Value="{StaticResource Kroko.Accent}" />
         <Setter Property="SelectionBrush" Value="{StaticResource Kroko.Accent}" />
-        <Setter Property="Padding" Value="8,6" />
+        <Setter Property="Padding" Value="12,9" />
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="TextBox">
                     <Border x:Name="Bd" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}"
-                            BorderThickness="1" CornerRadius="6">
+                            BorderThickness="1" CornerRadius="12">
                         <Grid>
                             <!-- Texto de ayuda (Tag) mientras el campo está vacío: «Nueva tarea…», «Escribe o habla con Kroko…» -->
                             <TextBlock x:Name="Hint" Text="{TemplateBinding Tag}" Margin="{TemplateBinding Padding}" Padding="2,0,0,0"
@@ -661,43 +665,87 @@
         </Setter>
     </Style>
 
+    <!-- Botones de la barra de título Kroko 2 (18/11/2026): iconos grises discretos; cerrar se pone rojo -->
+    <Style x:Key="Kroko.ChromeButton" TargetType="Button">
+        <Setter Property="Width" Value="40" />
+        <Setter Property="Height" Value="32" />
+        <Setter Property="Foreground" Value="{StaticResource Kroko.TextMuted}" />
+        <Setter Property="Cursor" Value="Hand" />
+        <Setter Property="Focusable" Value="False" />
+        <Setter Property="WindowChrome.IsHitTestVisibleInChrome" Value="True" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Button">
+                    <Border x:Name="Bd" Background="Transparent" CornerRadius="8">
+                        <TextBlock Text="{TemplateBinding Content}" FontFamily="{StaticResource Kroko.Icons}" FontSize="10"
+                                   Foreground="{TemplateBinding Foreground}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="Bd" Property="Background" Value="#151517" />
+                            <Setter Property="Foreground" Value="{StaticResource Kroko.Text}" />
+                        </Trigger>
+                        <MultiTrigger>
+                            <MultiTrigger.Conditions>
+                                <Condition Property="IsMouseOver" Value="True" />
+                                <Condition Property="Tag" Value="cerrar" />
+                            </MultiTrigger.Conditions>
+                            <Setter TargetName="Bd" Property="Background" Value="#E5484D" />
+                        </MultiTrigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!--
+        Ventana Kroko 2 (18/11/2026, diseño «Kroko 2»): fondo negro #0B0B0C liso, barra de título con la carita de Kroko
+        y el nombre a la izquierda y minimizar / agrandar / cerrar discretos a la derecha. Se llama MacWindow por historia.
+    -->
     <Style x:Key="Kroko.MacWindow" TargetType="Window">
         <Setter Property="WindowStyle" Value="None" />
-        <!-- Sin transparencia por píxel: así Windows 11 puede poner su vidrio acrílico detrás (Glass.cs) -->
         <Setter Property="AllowsTransparency" Value="False" />
         <Setter Property="v:Glass.Enabled" Value="True" />
-        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="Background" Value="{StaticResource Kroko.Window}" />
         <Setter Property="ResizeMode" Value="CanResize" />
         <Setter Property="Foreground" Value="{StaticResource Kroko.Text}" />
         <Setter Property="FontFamily" Value="{StaticResource Kroko.Font}" />
         <Setter Property="FontSize" Value="13" />
         <Setter Property="WindowChrome.WindowChrome">
             <Setter.Value>
-                <WindowChrome CaptionHeight="44" ResizeBorderThickness="6" GlassFrameThickness="-1" CornerRadius="0" UseAeroCaptionButtons="False" />
+                <WindowChrome CaptionHeight="40" ResizeBorderThickness="6" GlassFrameThickness="-1" CornerRadius="0" UseAeroCaptionButtons="False" />
             </Setter.Value>
         </Setter>
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="Window">
-                    <Border Background="{DynamicResource Kroko.GlassTint}">
+                    <Border Background="{StaticResource Kroko.Window}" Padding="{TemplateBinding Padding}">
                         <DockPanel>
-                            <Grid DockPanel.Dock="Top" Height="44">
-                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="16,0,0,0">
-                                    <Button Style="{StaticResource Kroko.MacLight}" Background="#FF5F57" Content="×" ToolTip="Cerrar"
-                                            Command="{x:Static SystemCommands.CloseWindowCommand}" CommandTarget="{Binding RelativeSource={RelativeSource TemplatedParent}}" />
-                                    <Button Style="{StaticResource Kroko.MacLight}" Background="#FEBC2E" Content="–" ToolTip="Minimizar"
+                            <DockPanel DockPanel.Dock="Top" Height="40" Margin="14,0,4,0">
+                                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center">
+                                    <Button Style="{StaticResource Kroko.ChromeButton}" Content="&#xE921;" ToolTip="Minimizar"
                                             Command="{x:Static SystemCommands.MinimizeWindowCommand}" CommandTarget="{Binding RelativeSource={RelativeSource TemplatedParent}}" />
-                                    <Button Style="{StaticResource Kroko.MacLight}" Background="#28C840" Content="+" ToolTip="Agrandar"
+                                    <Button Style="{StaticResource Kroko.ChromeButton}" Content="&#xE922;" ToolTip="Agrandar"
                                             Command="{x:Static SystemCommands.MaximizeWindowCommand}" CommandTarget="{Binding RelativeSource={RelativeSource TemplatedParent}}" />
+                                    <Button Style="{StaticResource Kroko.ChromeButton}" Content="&#xE8BB;" ToolTip="Cerrar" Tag="cerrar"
+                                            Command="{x:Static SystemCommands.CloseWindowCommand}" CommandTarget="{Binding RelativeSource={RelativeSource TemplatedParent}}" />
                                 </StackPanel>
-                                <TextBlock Text="{TemplateBinding Title}" HorizontalAlignment="Center" VerticalAlignment="Center"
-                                           FontWeight="SemiBold" FontSize="13" Foreground="{StaticResource Kroko.Text}" />
-                            </Grid>
+                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                    <v:KrokoMark Width="22" Height="17" Margin="0,0,10,0" />
+                                    <TextBlock Text="{TemplateBinding Title}" VerticalAlignment="Center"
+                                               FontWeight="SemiBold" FontSize="13" Foreground="{StaticResource Kroko.Text}" />
+                                </StackPanel>
+                            </DockPanel>
                             <AdornerDecorator>
                                 <ContentPresenter />
                             </AdornerDecorator>
                         </DockPanel>
                     </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="WindowState" Value="Maximized">
+                            <Setter Property="Padding" Value="7" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
                 </ControlTemplate>
             </Setter.Value>
         </Setter>

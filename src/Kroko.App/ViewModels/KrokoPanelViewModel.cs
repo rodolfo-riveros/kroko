@@ -73,7 +73,7 @@ public sealed record StatBar(string Name, string Value, double Fraction);
 /// </summary>
 public sealed partial class KrokoPanelViewModel : ObservableObject, IDisposable
 {
-    public static readonly string[] Sections = ["inicio", "chat", "tareas", "habitos", "enfoque", "correo", "mipc"];
+    public static readonly string[] Sections = ["inicio", "chat", "tareas", "habitos", "enfoque", "correo", "bandeja", "mipc"];
 
     private readonly BrainApiClient _api;
     private readonly CompanionBehavior _behavior;
@@ -85,8 +85,13 @@ public sealed partial class KrokoPanelViewModel : ObservableObject, IDisposable
     private readonly BrainConnection _brain;
 
     public KrokoPanelViewModel(BrainApiClient api, CompanionBehavior behavior, PanelViewModel chat, VoiceController voice,
-        WindowService windows, TimerService timers, IOptions<KrokoOptions> options, BrainConnection brain)
+        WindowService windows, TimerService timers, IOptions<KrokoOptions> options, BrainConnection brain,
+        ActivityFeed activity, FileTray tray)
     {
+        Activity = activity;
+        Tray = tray;
+        activity.Items.CollectionChanged += (_, _) => OnPropertyChanged(nameof(HasNoActivity));
+        tray.Items.CollectionChanged += (_, _) => { OnPropertyChanged(nameof(HasNoTrayFiles)); OnPropertyChanged(nameof(TrayCountText)); };
         _brain = brain;
         // Cuando Kroko responde, la sección Chat se pone al día sola
         brain.MessageReceived += OnBrainMessage;
@@ -105,6 +110,28 @@ public sealed partial class KrokoPanelViewModel : ObservableObject, IDisposable
     }
 
     public TimerService Timers { get; }
+
+    // ---- Kroko 2 (18/11/2026): lo que hizo hoy y la bandeja
+    public ActivityFeed Activity { get; }
+    public FileTray Tray { get; }
+    public bool HasNoActivity => Activity.Items.Count == 0;
+    public bool HasNoTrayFiles => Tray.Items.Count == 0;
+    public string TrayCountText => Tray.CountText;
+    public string WeekdayDateText => char.ToUpper(DateText.FirstOrDefault()) + (DateText.Length > 1 ? DateText[1..] : "");
+
+    /// <summary>Hasta 4 tareas para «Tareas de hoy» (las de hoy primero).</summary>
+    public ObservableCollection<TaskRow> TodayTasks { get; } = [];
+    [ObservableProperty] public partial string HabitsDoneText { get; set; } = "—";
+    [ObservableProperty] public partial string FocusMinutesText { get; set; } = "0 min";
+
+    [RelayCommand]
+    private void ClearTray() => Tray.Clear();
+
+    /// <summary>Archivos soltados en el panel: el mismo panel de archivos que al soltarlos sobre la isla.</summary>
+    public void OpenDrop(IReadOnlyList<string> files) => _windows.ShowDrop(files);
+
+    /// <summary>Estaciona archivos soltados sobre la bandeja del panel.</summary>
+    public int AddToTray(IEnumerable<string> paths) => Tray.Add(paths);
 
     [ObservableProperty] public partial int SelectedSection { get; set; }
 
@@ -135,12 +162,15 @@ public sealed partial class KrokoPanelViewModel : ObservableObject, IDisposable
     [ObservableProperty] public partial string NewHabitUnit { get; set; } = "";
     public bool HasNoHabits => Habits.Count == 0;
     public bool HasNoTasks => Tasks.Count == 0;
+    public bool PendingTasksBadgeVisible => PendingTasksValue is not ("0" or "" or "—");
+    partial void OnPendingTasksValueChanged(string value) => OnPropertyChanged(nameof(PendingTasksBadgeVisible));
     public bool HasNoReminders => Reminders.Count == 0;
 
     // ---- Mi PC
     public ObservableCollection<StatBar> PcStats { get; } = [];
     [ObservableProperty] public partial string PcSummary { get; set; } = "";
 
+    [RelayCommand]
     public void OpenSection(string? section)
     {
         var i = Array.FindIndex(Sections, s => s.Equals(section, StringComparison.OrdinalIgnoreCase));
@@ -164,6 +194,7 @@ public sealed partial class KrokoPanelViewModel : ObservableObject, IDisposable
     {
         var now = DateTime.Now;
         DateText = now.ToString("dddd d 'de' MMMM", System.Globalization.CultureInfo.GetCultureInfo("es-PE"));
+        OnPropertyChanged(nameof(WeekdayDateText));
         Greeting = now.Hour switch { < 12 => "Buenos días", < 19 => "Buenas tardes", _ => "Buenas noches" };
         try
         {
@@ -184,6 +215,7 @@ public sealed partial class KrokoPanelViewModel : ObservableObject, IDisposable
         var r = day.Resumen;
         DayProgress = r.HabitosTotal == 0 ? 0 : (double)r.HabitosHechos / r.HabitosTotal;
         DayProgressText = r.HabitosTotal == 0 ? "—" : $"{r.HabitosHechos}/{r.HabitosTotal}";
+        HabitsDoneText = r.HabitosTotal == 0 ? "—" : $"{r.HabitosHechos} de {r.HabitosTotal}";
 
         // El hábito principal: el primero con meta de varias veces (los vasos de agua), si no el primero
         var main = day.Habitos.FirstOrDefault(h => h.Meta > 1) ?? day.Habitos.FirstOrDefault();
@@ -195,6 +227,7 @@ public sealed partial class KrokoPanelViewModel : ObservableObject, IDisposable
 
         Sync(Habits, day.Habitos.Select(h => new HabitCard(h, this)));
         Sync(Tasks, day.Tareas.Select(t => new TaskRow(t, this)));
+        Sync(TodayTasks, Tasks.OrderBy(t => t.Done).ThenBy(t => t.Detail.Length == 0).Take(4));
         Sync(Reminders, day.Recordatorios.Select(x => new ReminderRow(x, this)));
         OnPropertyChanged(nameof(HasNoHabits));
         OnPropertyChanged(nameof(HasNoTasks));
@@ -225,6 +258,17 @@ public sealed partial class KrokoPanelViewModel : ObservableObject, IDisposable
             [new(1, "Comprar pan", null, false), new(2, "Enviar el informe a Ana", "2026-11-15", false), new(3, "Pagar la luz", "2026-11-14", true)],
             [new(1, "Llamar al dentista", "2026-11-15 13:30", "nunca"), new(2, "Hábito: Beber agua", "2026-11-15 16:00", "diario")]));
         Celebration = "💧  ¡Meta cumplida! Beber agua · 4 días seguidos";
+        OnPropertyChanged(nameof(WeekdayDateText));
+        FocusMinutesText = "50 min";
+        var today = DateTime.Today;
+        Activity.Add(new ActivityItem { Time = today.AddHours(16).AddMinutes(5), Text = "Creó una página en Notion", ActionLabel = "Ver" });
+        Activity.Add(new ActivityItem { Time = today.AddHours(17).AddMinutes(40), Text = "Convirtió 3 fotos a fotos.pdf", ActionLabel = "Abrir" });
+        Activity.Add(new ActivityItem { Time = today.AddHours(17).AddMinutes(52), Text = "Ordenó 24 archivos de Descargas", ActionLabel = "Deshacer" });
+        var dir = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "kroko-muestra-bandeja");
+        System.IO.Directory.CreateDirectory(dir);
+        var samples = new[] { "logo-sin-fondo.png", "convocatoria.docx", "fotos.pdf" }.Select(n => System.IO.Path.Combine(dir, n)).ToList();
+        foreach (var s in samples) if (!System.IO.File.Exists(s)) System.IO.File.WriteAllText(s, "muestra");
+        Tray.Add(samples);
         PcStats.Add(new StatBar("Procesador", "12 %", 0.12));
         PcStats.Add(new StatBar("Memoria", "58 % · 6,7 GB libres", 0.58));
         PcStats.Add(new StatBar("Disco C:", "212 GB libres de 476 GB", 0.55));
@@ -384,6 +428,7 @@ public sealed partial class KrokoPanelViewModel : ObservableObject, IDisposable
             FocusBars.Add(new FocusBar(letters[(int)d.DayOfWeek], Math.Max(0.06, minutes / (double)max), d == DateTime.Today, $"{minutes} min"));
         }
         var (todayMin, todayBlocks) = Timers.History.On(DateTime.Today);
+        FocusMinutesText = todayMin < 60 ? $"{todayMin} min" : $"{todayMin / 60} h {todayMin % 60:00} min";
         TodayFocusText = todayBlocks == 0 && todayMin == 0 ? "Aún no te enfocas hoy"
             : $"{todayBlocks} {(todayBlocks == 1 ? "bloque" : "bloques")} · {todayMin} min";
     }

@@ -11,7 +11,7 @@ namespace Kroko.App.Views;
 /// <summary>Herramienta de desarrollo (--snapshot): dibuja cada pestaña de Ajustes.</summary>
 public static class SettingsWindowSnapshot
 {
-    private const int W = 980, H = 700;
+    private const int W = 1160, H = 760;
 
     public static IEnumerable<string> Render(IServiceProvider services, string outputDir)
     {

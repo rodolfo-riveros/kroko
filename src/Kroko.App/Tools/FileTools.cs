@@ -409,9 +409,12 @@ public static class OrderUndo
                 .OrderByDescending(f => f, StringComparer.Ordinal).FirstOrDefault()
             : null;
 
-    public static Result? UndoLast()
+    public static Result? UndoLast() => LastLog() is { } log ? Undo(log) : null;
+
+    /// <summary>Deshace un orden concreto (el botón «Deshacer» de la isla o de «Lo que hizo Kroko»).</summary>
+    public static Result? Undo(string log)
     {
-        if (LastLog() is not { } log) return null;
+        if (!File.Exists(log)) return null;
         using var doc = JsonDocument.Parse(File.ReadAllText(log));
         var folder = doc.RootElement.GetProperty("carpeta").GetString() ?? "";
         int back = 0, failed = 0;
