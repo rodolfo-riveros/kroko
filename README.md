@@ -11,6 +11,19 @@ y controla tu PC, tus tareas, tu correo, tu calendario y tus apps. El cerebro vi
 
 ![Sus caras](docs/expresiones.png)
 
+## Qué hace
+
+- **Habla contigo:** «Oye Kroko», el atajo `Ctrl+Espacio` o escribiéndole; responde con la voz de Gemini (también en tiempo real).
+- **Controla tu PC:** abre programas y archivos, ordena carpetas (con «Deshacer»), volumen, brillo, apagar, capturas,
+  clics y teclado en cualquier ventana. Lo irreversible siempre pide permiso.
+- **Suelta archivos sobre Kroko:** convertir imágenes (PNG, JPG, a PDF) y audio, analizarlos con Gemini, ordenarlos o
+  mandarlos a tu Telegram o a tu celular con un QR (por tu Wi-Fi, un solo uso).
+- **Música en la isla:** lo que suena en Spotify, YouTube o el navegador, con portada y botones; la cara se pone a bailar.
+- **Tu día:** tareas, recordatorios, hábitos con racha, enfoque (pomodoro), correo, Notion, Google, Trello, Todoist.
+- **Asistente proactivo:** hasta 3 avisos útiles al día por Telegram (resumen, pendientes, sugerencias).
+- **IA mixta:** lo simple lo piensa tu PC (Qwen 3 4B con llama.cpp, opcional) y lo difícil Gemini.
+- **Vive donde quieras:** en la isla de arriba (se esconde sola), en la esquina o libre por el escritorio.
+
 ## Descargar Kroko (Windows 10/11)
 
 **[⬇ Descargar el instalador (KrokoApp-win-Setup.exe)](https://github.com/rodolfo-riveros/kroko/releases/latest/download/KrokoApp-win-Setup.exe)**
@@ -38,7 +51,7 @@ Solo necesitas la carpeta `deploy/` (con tu `.env`). Guías: [VPS propio](docs/V
 ## Tus claves nunca van al repositorio
 
 - Las API keys y cuentas se ponen en **Configurar Kroko** (clic derecho sobre Kroko), nunca en el código.
-- **Las claves de IA (Gemini, DeepSeek) viven solo en tu PC**, cifradas con Windows (`%LOCALAPPDATA%Krokoaves-ia.dat`):
+- **Las claves de IA (Gemini, DeepSeek) viven solo en tu PC**, cifradas con Windows (`%LOCALAPPDATA%\Kroko\claves-ia.dat`):
   la App se las presta al cerebro al conectarse y el cerebro las tiene **solo en memoria** (no las lee del `.env` ni
   las guarda). Gmail, Telegram y las apps se guardan cifradas en el servidor (`/data/Kroko/secretos.dat`).
 - `.env`, `secretos.dat`, bases de datos y `settings.json` están en `.gitignore` y `.dockerignore`.
