@@ -95,9 +95,10 @@ public static class ToolCatalog
         {
             Name = "musica",
             Description = "Controla la música o el video que suena en la PC (Spotify, YouTube, cualquier reproductor): " +
-                          "pausar/reanudar, siguiente, anterior o detener con las teclas multimedia; o \"poner\" música abriendo " +
-                          "la búsqueda en Spotify (si está instalado) o YouTube Music. Para el volumen usa volumen.",
-            Parameters = """{"type":"object","properties":{"accion":{"type":"string","enum":["pausar_reanudar","siguiente","anterior","detener","poner"]},"consulta":{"type":"string","description":"Qué poner: canción, artista, playlist o género (solo con poner)"},"servicio":{"type":"string","enum":["spotify","youtube_music"]}},"required":["accion"]}""",
+                          "pausar/reanudar, siguiente, anterior o detener (con el control multimedia de Windows); \"que_suena\" dice título, " +
+                          "artista y app de lo que suena; o \"poner\" música abriendo la búsqueda en Spotify (si está instalado) o " +
+                          "YouTube Music. Para el volumen usa volumen.",
+            Parameters = """{"type":"object","properties":{"accion":{"type":"string","enum":["pausar_reanudar","siguiente","anterior","detener","que_suena","poner"]},"consulta":{"type":"string","description":"Qué poner: canción, artista, playlist o género (solo con poner)"},"servicio":{"type":"string","enum":["spotify","youtube_music"]}},"required":["accion"]}""",
             Risk = ToolRisk.Write,
         },
         new()

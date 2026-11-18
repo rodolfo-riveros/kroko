@@ -33,7 +33,10 @@ public sealed class KrokoOptions
     /// </summary>
     public string Look { get; set; } = "isla";
 
-    public bool IsIsland => !string.Equals(Look?.Trim(), "burbuja", StringComparison.OrdinalIgnoreCase);
+    /// <summary>"libre" (17/11/2026): la burbuja donde la dejes, imantada a los bordes.</summary>
+    public bool IsFree => string.Equals(Look?.Trim(), "libre", StringComparison.OrdinalIgnoreCase);
+
+    public bool IsIsland => !IsFree && !string.Equals(Look?.Trim(), "burbuja", StringComparison.OrdinalIgnoreCase);
 
     /// <summary>La isla se esconde cuando no la usas y sale al llamarla o al pasar el cursor por arriba (17/11/2026).</summary>
     public bool IslandAutoHide { get; set; } = true;

@@ -49,6 +49,7 @@ public sealed class CompanionBehavior : IDisposable
     private bool _brainOk = true;
     private bool _emergencyPaused;
     private bool _focusMode;
+    private bool _music;
     private DateTime? _brainDownSince;
     private readonly ExpressionLibrary _library;
 
@@ -71,7 +72,7 @@ public sealed class CompanionBehavior : IDisposable
     /// <summary>La cara de la burbuja.</summary>
     public FaceAnimator Face { get; }
 
-    private string RestingKey => _emergencyPaused ? "paused" : _focusMode ? "focus" : _online && _brainOk ? "idle" : "offline";
+    private string RestingKey => _emergencyPaused ? "paused" : _focusMode ? "focus" : _online && _brainOk ? (_music ? "music" : "idle") : "offline";
 
     private bool IsAsleep => Face.BaseKey is "sleepy" or "sleeping";
 
@@ -243,12 +244,20 @@ public sealed class CompanionBehavior : IDisposable
     }
 
     /// <summary>Pomodoro (trabajo) o modo concentración: Kroko se queda con cara de foco y no se distrae.</summary>
+    /// <summary>Suena música en la PC (17/11/2026): en reposo pone la cara «music» y no se duerme.</summary>
+    public void SetMusicPlaying(bool on)
+    {
+        if (_music == on) return;
+        _music = on;
+        if (Face.BaseKey is "idle" or "music") Face.SetBase(RestingKey);
+    }
+
     public void SetFocusMode(bool on)
     {
         if (_focusMode == on) return;
         _focusMode = on;
         Face.StopDistraction();
-        if (Face.BaseKey is "idle" or "offline" or "focus") Face.SetBase(RestingKey);
+        if (Face.BaseKey is "idle" or "music" or "offline" or "focus") Face.SetBase(RestingKey);
     }
 
     /// <summary>Interruptor de emergencia: Kroko queda en pausa hasta que se reanude.</summary>
@@ -291,7 +300,7 @@ public sealed class CompanionBehavior : IDisposable
         // Sueño: reposo → sueño → dormido
         var idleMin = (now - _lastInteraction).TotalMinutes;
         var threshold = IsNight(now) ? _opt.NightSleepAfterMinutes : _opt.SleepAfterMinutes;
-        if (Face.BaseKey == RestingKey && !_focusMode && !Face.IsPlayingOneShot && idleMin >= threshold)
+        if (Face.BaseKey == RestingKey && !_focusMode && !_music && !Face.IsPlayingOneShot && idleMin >= threshold)
         {
             Face.StopDistraction();
             Face.SetBase("sleepy");
@@ -304,7 +313,7 @@ public sealed class CompanionBehavior : IDisposable
         }
 
         // Un minuto sin actividad después de hablar: se duerme y se esconde de una vez (sigue escuchando «Oye Kroko»)
-        if (_opt.HideAfterIdleSeconds > 0 && !_dozed && !_focusMode && !_emergencyPaused && Face.BaseKey == RestingKey
+        if (_opt.HideAfterIdleSeconds > 0 && !_dozed && !_focusMode && !_music && !_emergencyPaused && Face.BaseKey == RestingKey
             && !Face.IsPlayingOneShot && !Face.Hover && (now - _lastInteraction).TotalSeconds >= _opt.HideAfterIdleSeconds
             && KeepAwake?.Invoke() != true)
         {
@@ -324,7 +333,7 @@ public sealed class CompanionBehavior : IDisposable
         }
 
         // Si el usuario volvió al estado normal desde la galería, alineamos el reposo con la conexión
-        if (Face.BaseKey is "idle" or "offline" or "paused" or "focus" && Face.BaseKey != RestingKey)
+        if (Face.BaseKey is "idle" or "music" or "offline" or "paused" or "focus" && Face.BaseKey != RestingKey)
             Face.SetBase(RestingKey);
 
         // Distracciones: solo en reposo, cada 10–20 min, nunca interrumpen

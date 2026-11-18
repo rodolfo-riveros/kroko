@@ -125,3 +125,38 @@ public sealed class DropFilesTests : IDisposable
     public void Solo_comparte_en_la_red_de_casa(string ip, bool privada) =>
         Assert.Equal(privada, PhoneShare.IsPrivate(IPAddress.Parse(ip)));
 }
+
+public class FreeKrokoTests
+{
+    private static Kroko.App.Native.NativeMethods.RECT R(int l, int t, int r, int b) => new() { Left = l, Top = t, Right = r, Bottom = b };
+
+    [Fact]
+    public void Se_pega_al_borde_si_queda_a_12_px_o_menos()
+    {
+        var work = R(0, 0, 1920, 1040);
+        Assert.Equal((-10, 0), Kroko.App.Services.EdgeSnap.Offset(R(10, 500, 118, 576), work, 12));       // izquierda
+        Assert.Equal((5, 6), Kroko.App.Services.EdgeSnap.Offset(R(1807, 958, 1915, 1034), work, 12));     // esquina abajo a la derecha
+        Assert.Equal((0, 0), Kroko.App.Services.EdgeSnap.Offset(R(400, 400, 508, 476), work, 12));         // en medio: no se mueve
+    }
+
+    [Theory]
+    [InlineData("isla", true, false)]
+    [InlineData("burbuja", false, false)]
+    [InlineData("libre", false, true)]
+    [InlineData("Libre ", false, true)]
+    public void Donde_vive_Kroko(string look, bool isla, bool libre)
+    {
+        var o = new Kroko.App.Services.KrokoOptions { Look = look };
+        Assert.Equal(isla, o.IsIsland);
+        Assert.Equal(libre, o.IsFree);
+    }
+
+    [Theory]
+    [InlineData("Spotify.exe", "Spotify")]
+    [InlineData("SpotifyAB.SpotifyMusic_zpdnekdrzrea0!Spotify", "Spotify")]
+    [InlineData("Chrome", "Chrome")]
+    [InlineData("MSEdge", "Edge")]
+    [InlineData("", "")]
+    public void Nombre_de_la_app_que_suena(string id, string nombre) =>
+        Assert.Equal(nombre, Kroko.App.Services.MediaSessionService.AppName(id));
+}

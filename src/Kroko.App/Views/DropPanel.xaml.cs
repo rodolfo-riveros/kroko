@@ -58,25 +58,7 @@ public partial class DropPanel : Window
         Activate();
     }
 
-    /// <summary>Debajo de la isla, centrado; con la burbuja, encima de ella y sin salirse de la pantalla.</summary>
-    private void Place()
-    {
-        if (!_geometry.IsKnown) return;
-        var hwnd = new WindowInteropHelper(this).Handle;
-        if (hwnd == 0) return;
-        var s = _geometry.MonitorScale;
-        var w = (int)Math.Round(ActualWidth * s);
-        var h = (int)Math.Round(ActualHeight * s);
-        var body = _geometry.Body;
-        var work = _geometry.WorkArea;
-        var left = (body.Left + body.Right) / 2 - w / 2;
-        var top = _geometry.IsIsland ? body.Bottom + (int)Math.Round(6 * s) : body.Top - h - (int)Math.Round(8 * s);
-        if (!_geometry.IsIsland && top < work.Top) top = body.Bottom + (int)Math.Round(8 * s);
-        left = Math.Clamp(left, work.Left, Math.Max(work.Left, work.Right - w));
-        top = Math.Clamp(top, work.Top, Math.Max(work.Top, work.Bottom - h));
-        NativeMethods.SetWindowPos(hwnd, 0, left, top, 0, 0,
-            NativeMethods.SWP_NOSIZE | NativeMethods.SWP_NOZORDER | NativeMethods.SWP_NOACTIVATE);
-    }
+    private void Place() => HangingPanel.Place(this, _geometry);
 
     private void AnimateOpen()
     {

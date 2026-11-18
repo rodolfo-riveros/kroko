@@ -49,6 +49,11 @@ public partial class BubbleWindow : Window
         _placementStore = placementStore;
         _geometry = geometry;
         DataContext = viewModel;
+        viewModel.HookMusic();
+        // «Volver arriba al centro» solo tiene sentido fuera de la isla
+        if (_options.IsIsland && FindResource("KrokoMenu") is System.Windows.Controls.ContextMenu menu)
+            foreach (var item in menu.Items.OfType<System.Windows.Controls.MenuItem>().Where(i => "volver".Equals(i.Tag)))
+                item.Visibility = Visibility.Collapsed;
         viewModel.VisibilityToggleRequested += ToggleUserVisibility;
         viewModel.Behavior.LongSleep += FadeAwayAsleep;
         viewModel.Behavior.Woke += ReturnFromSleep;
@@ -170,6 +175,32 @@ public partial class BubbleWindow : Window
     }
 
 
+    /// <summary>Kroko libre (17/11/2026): si el cuerpo queda a 12 px o menos de un borde de la pantalla, se pega a él.</summary>
+    private void SnapToEdges()
+    {
+        if (!NativeMethods.GetWindowRect(_hwnd, out var r) || r.Width <= 0) return;
+        var center = new NativeMethods.POINT((r.Left + r.Right) / 2, (r.Top + r.Bottom) / 2);
+        var monitor = NativeMethods.MonitorFromPoint(center, NativeMethods.MONITOR_DEFAULTTONEAREST);
+        if (!NativeMethods.TryGetMonitorInfo(monitor, out var mi)) return;
+        var (dx, dy) = EdgeSnap.Offset(BodyRect(r), mi.rcWork, (int)Math.Round(EdgeSnap.DistanceDip * NativeMethods.GetMonitorScale(monitor)));
+        if (dx == 0 && dy == 0) return;
+        NativeMethods.SetWindowPos(_hwnd, 0, r.Left + dx, r.Top + dy, 0, 0,
+            NativeMethods.SWP_NOSIZE | NativeMethods.SWP_NOZORDER | NativeMethods.SWP_NOACTIVATE);
+    }
+
+    /// <summary>El cuerpo visible dentro del lienzo de la ventana (que es más grande, transparente).</summary>
+    private static NativeMethods.RECT BodyRect(NativeMethods.RECT r)
+    {
+        var unit = r.Width / FaceRenderer.CanvasWidth;
+        return new NativeMethods.RECT
+        {
+            Left = r.Left + (int)Math.Round((FaceRenderer.CenterX - FaceRenderer.BodyHalfWidth) * unit),
+            Top = r.Top + (int)Math.Round(FaceRenderer.BodyTop * unit),
+            Right = r.Left + (int)Math.Round((FaceRenderer.CenterX + FaceRenderer.BodyHalfWidth) * unit),
+            Bottom = r.Top + (int)Math.Round((FaceRenderer.CenterY + FaceRenderer.Radius) * unit),
+        };
+    }
+
     /// <summary>Publica dónde está el cuerpo (para que el panel se coloque encima).</summary>
     private void UpdateGeometry()
     {
@@ -264,6 +295,7 @@ public partial class BubbleWindow : Window
         EndPress();
         if (wasDragging)
         {
+            if (_options.IsFree) SnapToEdges();
             SavePlacement();
             _vm.Behavior.OnDragEnded();
         }
@@ -515,6 +547,7 @@ public partial class BubbleWindow : Window
     private void Island_MouseEnter(object sender, MouseEventArgs e)
     {
         _islandHover = true;
+        _vm.IslandHover = true;
         _vm.Behavior.OnHoverChanged(true);
         RefreshIsland();
     }
@@ -522,6 +555,7 @@ public partial class BubbleWindow : Window
     private void Island_MouseLeave(object sender, MouseEventArgs e)
     {
         _islandHover = false;
+        _vm.IslandHover = false;
         _vm.Behavior.OnHoverChanged(false);
         RefreshIsland();
     }

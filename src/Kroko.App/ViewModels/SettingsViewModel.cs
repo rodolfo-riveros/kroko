@@ -75,6 +75,7 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
         SoundVolume = o.SoundVolume;
         HideOnFullscreen = o.HideOnFullscreen;
         IslandLook = o.IsIsland;
+        FreeLook = o.IsFree;
         IslandAutoHide = o.IslandAutoHide;
         StartHidden = o.StartHidden;
         HideAfterIdle = o.HideAfterIdleSeconds > 0;
@@ -204,6 +205,9 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
     public bool BubbleOptionsEnabled => !IslandLook;
 
     partial void OnIslandLookChanged(bool value) => OnPropertyChanged(nameof(BubbleOptionsEnabled));
+
+    /// <summary>Fuera de la isla: Kroko libre (donde lo dejes, imantado a los bordes) en vez de la esquina fija.</summary>
+    [ObservableProperty] public partial bool FreeLook { get; set; }
     [ObservableProperty] public partial bool IslandAutoHide { get; set; }
     [ObservableProperty] public partial bool StartHidden { get; set; }
     [ObservableProperty] public partial bool HideAfterIdle { get; set; }
@@ -439,7 +443,7 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
     private static readonly HashSet<string> Persisted =
     [
         nameof(BubbleScale), nameof(SoundsEnabled), nameof(SoundVolume), nameof(HideOnFullscreen),
-        nameof(IslandLook), nameof(StartHidden), nameof(HideAfterIdle), nameof(IslandAutoHide),
+        nameof(IslandLook), nameof(FreeLook), nameof(StartHidden), nameof(HideAfterIdle), nameof(IslandAutoHide),
         nameof(BrainUrl), nameof(BrainToken), nameof(LaunchLocalBrain),
         nameof(DistractionsEnabled), nameof(SleepAfterMinutes), nameof(NightSleepAfterMinutes), nameof(HideAfterSleepMinutes),
         nameof(NightStartHour), nameof(NightEndHour),
@@ -450,7 +454,7 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
     /// <summary>Lo que solo se nota al reiniciar Kroko.</summary>
     private static readonly HashSet<string> NeedRestart =
     [
-        nameof(BubbleScale), nameof(IslandLook), nameof(BrainUrl), nameof(BrainToken), nameof(LaunchLocalBrain),
+        nameof(BubbleScale), nameof(IslandLook), nameof(FreeLook), nameof(BrainUrl), nameof(BrainToken), nameof(LaunchLocalBrain),
         nameof(DistractionsEnabled), nameof(SleepAfterMinutes), nameof(NightSleepAfterMinutes), nameof(HideAfterSleepMinutes),
         nameof(NightStartHour), nameof(NightEndHour), nameof(Hotkey), nameof(PushToTalk), nameof(MicrophoneIndex),
         nameof(AliasesText), nameof(ScriptsText), nameof(DocumentsEnabled), nameof(DocumentFoldersText), "Tools",
@@ -494,7 +498,7 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
         var problems = new List<string>();
         var k = UserSettings.LoadKrokoSection();
 
-        k["Look"] = IslandLook ? "isla" : "burbuja";
+        k["Look"] = IslandLook ? "isla" : FreeLook ? "libre" : "burbuja";
         k["IslandAutoHide"] = IslandAutoHide;
         k["StartHidden"] = StartHidden;
         k["HideAfterIdleSeconds"] = HideAfterIdle ? 60 : 0;

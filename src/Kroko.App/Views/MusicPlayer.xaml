@@ -1,0 +1,124 @@
+<Window x:Class="Kroko.App.Views.MusicPlayer"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:v="clr-namespace:Kroko.App.Views"
+        Title="Kroko — Música"
+        Width="380" SizeToContent="Height"
+        WindowStyle="None" AllowsTransparency="True" Background="Transparent"
+        ResizeMode="NoResize" Topmost="True" ShowInTaskbar="False"
+        WindowStartupLocation="Manual"
+        Foreground="{StaticResource Kroko.Text}"
+        FontFamily="{StaticResource Kroko.Font}"
+        FontSize="13">
+
+    <Window.Resources>
+        <v:EmptyToCollapsedConverter x:Key="EmptyToCollapsed" />
+        <v:FractionConverter x:Key="Fraction" />
+        <Style x:Key="Round" TargetType="Button">
+            <Setter Property="Foreground" Value="{StaticResource Kroko.Text}" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Bd" Width="40" Height="40" CornerRadius="20" Background="Transparent">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Bd" Property="Background" Value="#1FFFFFFF" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </Window.Resources>
+
+    <Border x:Name="Frame" Background="{StaticResource Kroko.Island}" CornerRadius="20" BorderThickness="1"
+            BorderBrush="#262626" Margin="14,0,14,18" Padding="18" RenderTransformOrigin="0.5,0">
+        <Border.RenderTransform>
+            <ScaleTransform />
+        </Border.RenderTransform>
+        <Border.Effect>
+            <DropShadowEffect BlurRadius="24" ShadowDepth="6" Direction="270" Opacity="0.45" Color="Black" />
+        </Border.Effect>
+
+        <StackPanel>
+            <DockPanel>
+                <!-- Portada grande -->
+                <Border Width="96" Height="96" CornerRadius="14" Background="{StaticResource Kroko.Pill}" ClipToBounds="True" Margin="0,0,16,0">
+                    <Grid>
+                        <TextBlock Text="&#xEC4F;" FontFamily="{StaticResource Kroko.Icons}" FontSize="30"
+                                   Foreground="{StaticResource Kroko.Accent}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        <Image Source="{Binding Cover}" Stretch="UniformToFill" />
+                    </Grid>
+                </Border>
+                <StackPanel VerticalAlignment="Center">
+                    <TextBlock Text="{Binding Title}" FontSize="16" FontWeight="SemiBold" TextWrapping="Wrap" MaxHeight="44" TextTrimming="CharacterEllipsis" />
+                    <TextBlock Text="{Binding Artist}" Foreground="{StaticResource Kroko.TextMuted}" Margin="0,3,0,0" TextTrimming="CharacterEllipsis"
+                               Visibility="{Binding Artist, Converter={StaticResource EmptyToCollapsed}}" />
+                    <TextBlock Text="{Binding App}" Style="{StaticResource Kroko.Label}" Margin="0,6,0,0"
+                               Visibility="{Binding App, Converter={StaticResource EmptyToCollapsed}}" />
+                </StackPanel>
+            </DockPanel>
+
+            <!-- Progreso lima -->
+            <Grid Margin="0,16,0,0" Visibility="{Binding DurationText, Converter={StaticResource EmptyToCollapsed}}">
+                <Border x:Name="Track" Height="4" CornerRadius="2" Background="#2E2E2E" />
+                <Border Height="4" CornerRadius="2" Background="{StaticResource Kroko.Accent}" HorizontalAlignment="Left">
+                    <Border.Width>
+                        <MultiBinding Converter="{x:Static v:MusicPlayer.WidthOf}">
+                            <Binding Path="Progress" />
+                            <Binding Path="ActualWidth" ElementName="Track" />
+                        </MultiBinding>
+                    </Border.Width>
+                </Border>
+            </Grid>
+            <DockPanel Margin="0,4,0,0" Visibility="{Binding DurationText, Converter={StaticResource EmptyToCollapsed}}">
+                <TextBlock DockPanel.Dock="Right" Text="{Binding DurationText}" Foreground="{StaticResource Kroko.TextMuted}" FontSize="11" />
+                <TextBlock Text="{Binding PositionText}" Foreground="{StaticResource Kroko.TextMuted}" FontSize="11" />
+            </DockPanel>
+
+            <!-- Anterior / play / siguiente -->
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,10,0,6">
+                <Button Style="{StaticResource Round}" Command="{Binding PreviousCommand}" ToolTip="Anterior">
+                    <TextBlock Text="&#xE892;" FontFamily="{StaticResource Kroko.Icons}" FontSize="16" />
+                </Button>
+                <Button Command="{Binding PlayPauseCommand}" Cursor="Hand" Margin="18,0" ToolTip="Pausar / reanudar">
+                    <Button.Template>
+                        <ControlTemplate TargetType="Button">
+                            <Border Width="52" Height="52" CornerRadius="26" Background="{StaticResource Kroko.Accent}">
+                                <TextBlock FontFamily="{StaticResource Kroko.Icons}" FontSize="18" Foreground="{StaticResource Kroko.OnAccent}"
+                                           HorizontalAlignment="Center" VerticalAlignment="Center">
+                                    <TextBlock.Style>
+                                        <Style TargetType="TextBlock">
+                                            <Setter Property="Text" Value="&#xE768;" />
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding Playing}" Value="True">
+                                                    <Setter Property="Text" Value="&#xE769;" />
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </TextBlock.Style>
+                                </TextBlock>
+                            </Border>
+                        </ControlTemplate>
+                    </Button.Template>
+                </Button>
+                <Button Style="{StaticResource Round}" Command="{Binding NextCommand}" ToolTip="Siguiente">
+                    <TextBlock Text="&#xE893;" FontFamily="{StaticResource Kroko.Icons}" FontSize="16" />
+                </Button>
+            </StackPanel>
+
+            <!-- Volumen de Windows -->
+            <DockPanel Margin="0,8,0,0">
+                <TextBlock DockPanel.Dock="Left" Text="&#xE767;" FontFamily="{StaticResource Kroko.Icons}" FontSize="14"
+                           Foreground="{StaticResource Kroko.TextMuted}" VerticalAlignment="Center" Margin="0,0,10,0" />
+                <TextBlock DockPanel.Dock="Right" Text="{Binding Volume}" Foreground="{StaticResource Kroko.TextMuted}" FontSize="11"
+                           Width="26" TextAlignment="Right" VerticalAlignment="Center" />
+                <Slider Minimum="0" Maximum="100" Value="{Binding Volume}" IsMoveToPointEnabled="True" VerticalAlignment="Center"
+                        Foreground="{StaticResource Kroko.Accent}" />
+            </DockPanel>
+        </StackPanel>
+    </Border>
+</Window>

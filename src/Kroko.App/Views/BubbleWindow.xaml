@@ -25,6 +25,7 @@
             <MenuItem Header="Tareas y avisos" Command="{Binding OpenPanelCommand}" CommandParameter="tareas" />
             <MenuItem Header="Enfoque (pomodoro)" Command="{Binding OpenPanelCommand}" CommandParameter="enfoque" />
             <Separator />
+            <MenuItem Header="Volver arriba al centro" Tag="volver" Command="{Binding ReturnToTopCommand}" />
             <MenuItem Header="Configuración" Command="{Binding OpenSettingsCommand}" />
             <MenuItem Header="Pausar / reanudar" InputGestureText="Ctrl+Alt+K" Command="{Binding TogglePauseCommand}" />
             <MenuItem Header="Esconder (descansa)" Command="{Binding RestCommand}" />

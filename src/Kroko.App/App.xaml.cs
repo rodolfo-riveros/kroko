@@ -114,6 +114,9 @@ public partial class App : Application
                 services.AddTransient<KrokoPanelViewModel>();
                 services.AddTransient<KrokoPanelWindow>();
                 services.AddSingleton<Kroko.App.Services.LanShare.PhoneShare>();
+                services.AddSingleton<MediaSessionService>();
+                services.AddTransient<MusicPlayerViewModel>();
+                services.AddTransient<MusicPlayer>();
                 services.AddTransient<DropPanelViewModel>();
                 services.AddTransient<DropPanel>();
                 services.AddSingleton<TrayService>();
@@ -199,6 +202,7 @@ public partial class App : Application
         _ = _host.Services.GetRequiredService<LocalAiKeys>().SendAsync();
         // La IA de la PC (si la descargaste y está encendida) arranca en segundo plano
         _ = _host.Services.GetRequiredService<LocalAiService>().StartAsync();
+        _ = _host.Services.GetRequiredService<MediaSessionService>().StartAsync();
         _host.Services.GetRequiredService<ToolExecutor>();  // escucha las herramientas que pide el Brain
         _host.Services.GetRequiredService<ForegroundTracker>(); // recuerda tu última ventana (Fase 4)
         _host.Services.GetRequiredService<AuditLog>().LoadRecent();

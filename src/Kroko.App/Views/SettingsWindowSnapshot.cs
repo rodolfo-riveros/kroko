@@ -32,7 +32,54 @@ public static class SettingsWindowSnapshot
         paths.AddRange(RenderTabs(attached, islandVm, "isla-panel", outputDir));
         islandVm.Dispose();
         panelVm.Dispose();
+
+        // Soltar archivos y el reproductor (17/11/2026): cada vista del panel
+        var sample = Path.Combine(Path.GetTempPath(), "Foto de muestra.png");
+        if (!File.Exists(sample)) WriteSamplePng(sample);
+        var drop = services.GetRequiredService<DropPanel>();
+        drop.ViewModel.Load([sample]);
+        foreach (var mode in new[] { "inicio", "convertir", "analizar", "ordenar", "enviar" })
+        {
+            drop.ViewModel.ShowCommand.Execute(mode);
+            paths.Add(RenderLoose(drop, $"soltar-{mode}", outputDir));
+        }
+        drop.Close();
+        var player = services.GetRequiredService<MusicPlayer>();
+        paths.Add(RenderLoose(player, "musica", outputDir));
+        player.Close();
         return paths;
+    }
+
+    /// <summary>Una ventana que cuelga de Kroko (tamaño propio), abierta fuera de la pantalla.</summary>
+    private static string RenderLoose(Window window, string name, string outputDir)
+    {
+        window.WindowStartupLocation = WindowStartupLocation.Manual;
+        window.Left = -30000;
+        window.Top = -30000;
+        window.ShowActivated = false;
+        if (!window.IsVisible) window.Show();
+        window.UpdateLayout();
+        System.Windows.Threading.Dispatcher.CurrentDispatcher.Invoke(() => { }, System.Windows.Threading.DispatcherPriority.Background);
+        var bmp = Capture(window, (FrameworkElement)window.Content);
+        Directory.CreateDirectory(outputDir);
+        var path = Path.Combine(outputDir, name + ".png");
+        using var fs = File.Create(path);
+        var enc = new PngBitmapEncoder();
+        enc.Frames.Add(BitmapFrame.Create(bmp));
+        enc.Save(fs);
+        return path;
+    }
+
+    private static void WriteSamplePng(string path)
+    {
+        var v = new DrawingVisual();
+        using (var dc = v.RenderOpen()) dc.DrawRectangle(Brushes.SteelBlue, null, new Rect(0, 0, 64, 48));
+        var bmp = new RenderTargetBitmap(64, 48, 96, 96, PixelFormats.Pbgra32);
+        bmp.Render(v);
+        using var fs = File.Create(path);
+        var enc = new PngBitmapEncoder();
+        enc.Frames.Add(BitmapFrame.Create(bmp));
+        enc.Save(fs);
     }
 
     /// <summary>Dibuja cada pestaña de una ventana con navegación lateral (y otra vez desplazada si es larga).</summary>

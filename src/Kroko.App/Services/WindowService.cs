@@ -18,6 +18,24 @@ public sealed class WindowService(IServiceProvider services)
     private KrokoPanelWindow? _panel;
     private DropPanel? _drop;
 
+    private MusicPlayer? _player;
+
+    public bool IsPlayerOpen => _player is { IsLoaded: true };
+
+    /// <summary>El reproductor grande que cuelga de la isla (clic en la portada).</summary>
+    public void ShowPlayer()
+    {
+        if (_player is { IsLoaded: true })
+        {
+            _player.CloseAnimated();
+            return;
+        }
+        _player = services.GetRequiredService<MusicPlayer>();
+        _player.Closed += (_, _) => _player = null;
+        _player.Show();
+        _player.Activate();
+    }
+
     /// <summary>Soltaste archivos sobre Kroko: el panel Convertir / Analizar / Ordenar / Enviar.</summary>
     public void ShowDrop(IEnumerable<string> files)
     {

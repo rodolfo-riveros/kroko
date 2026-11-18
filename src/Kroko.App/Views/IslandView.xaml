@@ -10,6 +10,24 @@
     -->
     <UserControl.Resources>
         <v:BoolToVisibleConverter x:Key="BoolToVisible" />
+        <Style x:Key="IslandIcon" TargetType="Button">
+            <Setter Property="Foreground" Value="{StaticResource Kroko.Text}" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Bd" Width="22" Height="22" CornerRadius="11" Background="Transparent">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Bd" Property="Background" Value="#26FFFFFF" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
     </UserControl.Resources>
 
     <Border CornerRadius="0,0,17,17" Background="{StaticResource Kroko.Island}" BorderBrush="#262626" BorderThickness="1,0,1,1">
@@ -26,7 +44,22 @@
                                Canvas.Left="-6" Canvas.Top="-12" IsHitTestVisible="False" />
             </Canvas>
 
-            <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center" Margin="8,0,0,0">
+            <DockPanel Grid.Column="1" VerticalAlignment="Center" Margin="8,0,0,0" LastChildFill="True">
+                <!-- Música (17/11/2026): portada de 22 px; clic = reproductor grande -->
+                <Button Command="{Binding OpenPlayerCommand}" Margin="0,0,7,0" Cursor="Hand" ToolTip="Abrir el reproductor"
+                        Visibility="{Binding IslandMusic, Converter={StaticResource BoolToVisible}}">
+                    <Button.Template>
+                        <ControlTemplate TargetType="Button">
+                            <Border Width="22" Height="22" CornerRadius="5" Background="{StaticResource Kroko.Pill}" ClipToBounds="True">
+                                <Grid>
+                                    <TextBlock Text="&#xEC4F;" FontFamily="{StaticResource Kroko.Icons}" FontSize="11"
+                                               Foreground="{StaticResource Kroko.Accent}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                    <Image Source="{Binding MusicCover}" Stretch="UniformToFill" />
+                                </Grid>
+                            </Border>
+                        </ControlTemplate>
+                    </Button.Template>
+                </Button>
                 <Border Width="16" Height="16" CornerRadius="8" Margin="0,0,6,0" VerticalAlignment="Center"
                         Background="{StaticResource Kroko.Accent}"
                         Visibility="{Binding IslandCheck, Converter={StaticResource BoolToVisible}}">
@@ -49,10 +82,44 @@
                         </Style>
                     </TextBlock.Style>
                 </TextBlock>
+            </DockPanel>
+
+            <!-- Con música: anterior y siguiente (al pasar el cursor) y play/pausa verde -->
+            <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center"
+                        Visibility="{Binding IslandMusic, Converter={StaticResource BoolToVisible}}">
+                <Button Style="{StaticResource IslandIcon}" Command="{Binding MusicPreviousCommand}" ToolTip="Anterior"
+                        Visibility="{Binding IslandHover, Converter={StaticResource BoolToVisible}}">
+                    <TextBlock Text="&#xE892;" FontFamily="{StaticResource Kroko.Icons}" FontSize="11" />
+                </Button>
+                <Button Command="{Binding MusicPlayPauseCommand}" Cursor="Hand" Margin="4,0" ToolTip="Pausar / reanudar">
+                    <Button.Template>
+                        <ControlTemplate TargetType="Button">
+                            <Border Width="22" Height="22" CornerRadius="11" Background="{StaticResource Kroko.Accent}">
+                                <TextBlock FontFamily="{StaticResource Kroko.Icons}" FontSize="10" Foreground="{StaticResource Kroko.OnAccent}"
+                                           HorizontalAlignment="Center" VerticalAlignment="Center">
+                                    <TextBlock.Style>
+                                        <Style TargetType="TextBlock">
+                                            <Setter Property="Text" Value="&#xE768;" />
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding MusicPlaying}" Value="True">
+                                                    <Setter Property="Text" Value="&#xE769;" />
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </TextBlock.Style>
+                                </TextBlock>
+                            </Border>
+                        </ControlTemplate>
+                    </Button.Template>
+                </Button>
+                <Button Style="{StaticResource IslandIcon}" Command="{Binding MusicNextCommand}" ToolTip="Siguiente"
+                        Visibility="{Binding IslandHover, Converter={StaticResource BoolToVisible}}">
+                    <TextBlock Text="&#xE893;" FontFamily="{StaticResource Kroko.Icons}" FontSize="11" />
+                </Button>
             </StackPanel>
 
-            <!-- Luz de conexión: lima con el cerebro, gris sin él -->
-            <Ellipse Grid.Column="2" Width="7" Height="7" VerticalAlignment="Center">
+            <!-- Luz de conexión: lima con el cerebro, gris sin él (con música, la reemplazan los botones) -->
+            <Ellipse Grid.Column="2" Visibility="{Binding IslandMusic, Converter={StaticResource BoolToVisible}, ConverterParameter=invert}" Width="7" Height="7" VerticalAlignment="Center">
                 <Ellipse.Style>
                     <Style TargetType="Ellipse">
                         <Setter Property="Fill" Value="#5A5A5A" />
