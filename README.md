@@ -9,6 +9,10 @@ y controla tu PC, tus tareas, tu correo, tu calendario y tus apps. El cerebro vi
 |---|---|
 | ![Panel Kroko](docs/panel-kroko.png) | ![Configuración](docs/configuracion.png) |
 
+| Suelta archivos sobre Kroko | Música en la isla |
+|---|---|
+| ![Soltar archivos](docs/soltar-archivos.png) | ![Reproductor](docs/musica.png) |
+
 ![Sus caras](docs/expresiones.png)
 
 ## Qué hace

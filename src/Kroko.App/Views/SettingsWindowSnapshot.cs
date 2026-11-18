@@ -60,7 +60,11 @@ public static class SettingsWindowSnapshot
         if (!window.IsVisible) window.Show();
         window.UpdateLayout();
         System.Windows.Threading.Dispatcher.CurrentDispatcher.Invoke(() => { }, System.Windows.Threading.DispatcherPriority.Background);
-        var bmp = Capture(window, (FrameworkElement)window.Content);
+        var full = Capture(window, (FrameworkElement)window.Content);
+        // Solo la ventana (con un poco de escritorio alrededor), no el lienzo entero
+        var w = Math.Min(W, (int)Math.Ceiling(window.ActualWidth) + 16);
+        var h = Math.Min(H, (int)Math.Ceiling(window.ActualHeight) + 16);
+        var bmp = new CroppedBitmap(full, new Int32Rect(0, 0, w, h));
         Directory.CreateDirectory(outputDir);
         var path = Path.Combine(outputDir, name + ".png");
         using var fs = File.Create(path);
@@ -137,9 +141,26 @@ public static class SettingsWindowSnapshot
         return paths;
     }
 
+    /// <summary>Quita las animaciones de entrada (desvanecer, escalar) para capturar la ventana ya abierta del todo.</summary>
+    private static void FinishAnimations(DependencyObject node)
+    {
+        if (node is UIElement el)
+        {
+            el.BeginAnimation(UIElement.OpacityProperty, null);
+            if (el.RenderTransform is ScaleTransform s && !s.IsFrozen)
+            {
+                s.BeginAnimation(ScaleTransform.ScaleXProperty, null);
+                s.BeginAnimation(ScaleTransform.ScaleYProperty, null);
+            }
+        }
+        for (var i = 0; i < VisualTreeHelper.GetChildrenCount(node); i++) FinishAnimations(VisualTreeHelper.GetChild(node, i));
+        if (node is Window w) w.UpdateLayout();
+    }
+
     /// <summary>El contenido con el fondo de la ventana detrás (como se ve en pantalla).</summary>
     private static RenderTargetBitmap Capture(Window window, FrameworkElement content)
     {
+        FinishAnimations(window);
         // La ventana entera con su marco (semáforo y título) si lo tiene
         if (VisualTreeHelper.GetChildrenCount(window) > 0 && VisualTreeHelper.GetChild(window, 0) is FrameworkElement root) content = root;
         var visual = new DrawingVisual();

@@ -12,7 +12,11 @@ namespace Kroko.App.Views;
 /// </summary>
 public static class IslandSnapshot
 {
-    private sealed record Sample(FaceAnimator Face, string IslandText, bool IslandCheck, bool IslandBusy, bool IslandOnline, double Width);
+    private sealed record Sample(FaceAnimator Face, string IslandText, bool IslandCheck, bool IslandBusy, bool IslandOnline, double Width,
+        bool IslandMusic = false, bool MusicPlaying = false, bool IslandHover = false)
+    {
+        public ImageSource? MusicCover => null;
+    }
 
     public static string Render(ExpressionLibrary library, string outputDir)
     {
@@ -31,6 +35,7 @@ public static class IslandSnapshot
             new(Face("thinking"), "Pensando…", false, true, true, 250),
             new(Face("success"), "Anotado", true, true, true, 250),
             new(Face("focus"), "24:12 · Enfoque", false, true, true, 250),
+            new(Face("music"), "Lofi Beats — Chillhop", false, false, true, 280, IslandMusic: true, MusicPlaying: true, IslandHover: true),
             new(Face("sleeping"), "Durmiendo", false, false, true, 150),
             new(Face("offline"), "Sin conexión", false, true, false, 250),
         ];
