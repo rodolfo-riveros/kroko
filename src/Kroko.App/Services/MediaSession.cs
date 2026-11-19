@@ -115,7 +115,11 @@ public sealed class MediaSessionService(ILogger<MediaSessionService> log) : IDis
     {
         Now = snapshot;
         Changed?.Invoke();
-        if (newTrack) TrackChanged?.Invoke();
+        if (newTrack)
+        {
+            RememberTrack(snapshot);
+            TrackChanged?.Invoke();
+        }
     }
 
     private static async Task<BitmapSource?> ReadCoverAsync(IRandomAccessStreamReference? thumbnail)
@@ -165,6 +169,54 @@ public sealed class MediaSessionService(ILogger<MediaSessionService> log) : IDis
     public async Task<bool> NextAsync() => _session is { } s && await s.TrySkipNextAsync();
     public async Task<bool> PreviousAsync() => _session is { } s && await s.TrySkipPreviousAsync();
     public async Task<bool> StopAsync() => _session is { } s && await s.TryStopAsync();
+    public async Task<bool> PauseAsync() => _session is { } s && await s.TryPauseAsync();
+    public async Task<bool> ShuffleAsync(bool on) => _session is { } s && await s.TryChangeShuffleActiveAsync(on);
+    public async Task<bool> RepeatAsync(bool on) => _session is { } s && await s.TryChangeAutoRepeatModeAsync(on
+        ? Windows.Media.MediaPlaybackAutoRepeatMode.List : Windows.Media.MediaPlaybackAutoRepeatMode.None);
+
+    // ---------------------------------------------------------------- recientes y «Apagar en» (Kroko 2, 18/11/2026)
+
+    /// <summary>Lo que sonó (Spotify no comparte su cola con Windows: esto es lo que Kroko vio pasar).</summary>
+    public System.Collections.ObjectModel.ObservableCollection<Snapshot> Recent { get; } = [];
+
+    private System.Windows.Threading.DispatcherTimer? _sleep;
+    private bool _sleepAtEnd;
+
+    /// <summary>"no", "15", "30" (minutos) o "fin" (al terminar la canción).</summary>
+    public string SleepMode { get; private set; } = "no";
+
+    public void SetSleep(string mode)
+    {
+        _sleep?.Stop();
+        _sleepAtEnd = mode == "fin";
+        SleepMode = mode;
+        if (int.TryParse(mode, out var minutes))
+        {
+            _sleep = new System.Windows.Threading.DispatcherTimer { Interval = TimeSpan.FromMinutes(minutes) };
+            _sleep.Tick += async (_, _) =>
+            {
+                _sleep?.Stop();
+                SleepMode = "no";
+                await PauseAsync();
+            };
+            _sleep.Start();
+        }
+    }
+
+    private void RememberTrack(Snapshot s)
+    {
+        if (_sleepAtEnd && Recent.Count > 0)
+        {
+            _sleepAtEnd = false;
+            SleepMode = "no";
+            _ = PauseAsync();
+        }
+        System.Windows.Application.Current?.Dispatcher.BeginInvoke(() =>
+        {
+            Recent.Insert(0, s);
+            while (Recent.Count > 8) Recent.RemoveAt(Recent.Count - 1);
+        });
+    }
 
     /// <summary>Volumen general de Windows (0–100).</summary>
     public static int Volume

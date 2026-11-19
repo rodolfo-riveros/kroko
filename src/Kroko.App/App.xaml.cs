@@ -118,6 +118,11 @@ public partial class App : Application
                 services.AddSingleton<QuickFiles>();
                 services.AddSingleton<ClipboardWatcher>();
                 services.AddSingleton<IslandViewModel>();
+                services.AddSingleton<GlobalHotkeys>();
+                services.AddSingleton<MusicDucker>();
+                services.AddTransient<CommandPaletteViewModel>();
+                services.AddTransient<CommandPalette>();
+                services.AddTransient<ClipboardPanel>();
                 services.AddTransient<MusicPlayerViewModel>();
                 services.AddTransient<MusicPlayer>();
                 services.AddTransient<DropPanelViewModel>();
@@ -204,10 +209,17 @@ public partial class App : Application
         // La IA de la PC (si la descargaste y está encendida) arranca en segundo plano
         _ = _host.Services.GetRequiredService<LocalAiService>().StartAsync();
         _ = _host.Services.GetRequiredService<MediaSessionService>().StartAsync();
+        _host.Services.GetRequiredService<MusicDucker>(); // baja la música mientras Kroko habla
         _host.Services.GetRequiredService<ToolExecutor>();  // escucha las herramientas que pide el Brain
         _host.Services.GetRequiredService<ForegroundTracker>(); // recuerda tu última ventana (Fase 4)
         _host.Services.GetRequiredService<AuditLog>().LoadRecent();
         _host.Services.GetRequiredService<EmergencyHotkey>().Start();
+        // Kroko 2 (18/11/2026): barra de comandos y portapapeles; el dictado y la burbuja de texto se registran en sus servicios
+        var kopt = _host.Services.GetRequiredService<Microsoft.Extensions.Options.IOptions<KrokoOptions>>().Value;
+        var hotkeys = _host.Services.GetRequiredService<GlobalHotkeys>();
+        var winSvc = _host.Services.GetRequiredService<WindowService>();
+        hotkeys.Register(kopt.CommandsHotkey, winSvc.ShowCommands, "Barra de comandos");
+        hotkeys.Register(kopt.ClipboardHotkey, winSvc.ShowClipboard, "Portapapeles");
         _host.Services.GetRequiredService<VoiceController>().Start();
 
         var bubbleVm = _host.Services.GetRequiredService<BubbleViewModel>();

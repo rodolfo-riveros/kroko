@@ -3,7 +3,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:v="clr-namespace:Kroko.App.Views"
         Title="Kroko — Música"
-        Width="380" SizeToContent="Height"
+        Width="760" SizeToContent="Height"
         WindowStyle="None" AllowsTransparency="True" Background="Transparent"
         ResizeMode="NoResize" Topmost="True" ShowInTaskbar="False"
         WindowStartupLocation="Manual"
@@ -13,7 +13,8 @@
 
     <Window.Resources>
         <v:EmptyToCollapsedConverter x:Key="EmptyToCollapsed" />
-        <v:FractionConverter x:Key="Fraction" />
+        <v:BoolToVisibleConverter x:Key="BoolToVisible" />
+        <v:EqualsToVisibleConverter x:Key="Is" />
         <Style x:Key="Round" TargetType="Button">
             <Setter Property="Foreground" Value="{StaticResource Kroko.Text}" />
             <Setter Property="Cursor" Value="Hand" />
@@ -32,93 +33,222 @@
                 </Setter.Value>
             </Setter>
         </Style>
+        <!-- Píldora de pestaña / opción: blanca la elegida -->
+        <Style x:Key="Choice" TargetType="RadioButton">
+            <Setter Property="Foreground" Value="{StaticResource Kroko.Text}" />
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="Margin" Value="0,0,6,6" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="RadioButton">
+                        <Border x:Name="Bd" CornerRadius="14" Padding="12,5" Background="Transparent" BorderThickness="1" BorderBrush="#2E2E32">
+                            <ContentPresenter />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsChecked" Value="True">
+                                <Setter TargetName="Bd" Property="Background" Value="#FFFFFF" />
+                                <Setter TargetName="Bd" Property="BorderBrush" Value="#FFFFFF" />
+                                <Setter Property="Foreground" Value="#000000" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        <Style x:Key="SleepChoice" TargetType="RadioButton" BasedOn="{StaticResource Choice}">
+            <Style.Triggers>
+                <Trigger Property="IsChecked" Value="True">
+                    <Setter Property="Foreground" Value="#000000" />
+                </Trigger>
+            </Style.Triggers>
+        </Style>
     </Window.Resources>
 
-    <Border x:Name="Frame" Background="{StaticResource Kroko.Island}" CornerRadius="20" BorderThickness="1"
-            BorderBrush="#262626" Margin="14,0,14,18" Padding="18" RenderTransformOrigin="0.5,0">
+    <Border x:Name="Frame" Background="#000000" CornerRadius="22" BorderThickness="1" BorderBrush="#262626" Margin="14,0,14,18" Padding="20"
+            RenderTransformOrigin="0.5,0">
         <Border.RenderTransform>
             <ScaleTransform />
         </Border.RenderTransform>
         <Border.Effect>
-            <DropShadowEffect BlurRadius="24" ShadowDepth="6" Direction="270" Opacity="0.45" Color="Black" />
+            <DropShadowEffect BlurRadius="28" ShadowDepth="6" Direction="270" Opacity="0.5" Color="Black" />
         </Border.Effect>
 
-        <StackPanel>
-            <DockPanel>
-                <!-- Portada grande -->
-                <Border Width="96" Height="96" CornerRadius="14" Background="{StaticResource Kroko.Pill}" ClipToBounds="True" Margin="0,0,16,0">
+        <Grid>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="300" />
+                <ColumnDefinition Width="22" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+
+            <!-- ============ Izquierda: lo que suena ============ -->
+            <StackPanel>
+                <Border Height="190" CornerRadius="16" Background="{StaticResource Kroko.Accent}" ClipToBounds="True">
                     <Grid>
-                        <TextBlock Text="&#xEC4F;" FontFamily="{StaticResource Kroko.Icons}" FontSize="30"
-                                   Foreground="{StaticResource Kroko.Accent}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        <TextBlock Text="&#xEC4F;" FontFamily="{StaticResource Kroko.Icons}" FontSize="96" Foreground="#5A7A1C" HorizontalAlignment="Right"
+                                   VerticalAlignment="Center" Margin="0,0,24,0" />
                         <Image Source="{Binding Cover}" Stretch="UniformToFill" />
                     </Grid>
                 </Border>
-                <StackPanel VerticalAlignment="Center">
-                    <TextBlock Text="{Binding Title}" FontSize="16" FontWeight="SemiBold" TextWrapping="Wrap" MaxHeight="44" TextTrimming="CharacterEllipsis" />
-                    <TextBlock Text="{Binding Artist}" Foreground="{StaticResource Kroko.TextMuted}" Margin="0,3,0,0" TextTrimming="CharacterEllipsis"
-                               Visibility="{Binding Artist, Converter={StaticResource EmptyToCollapsed}}" />
-                    <TextBlock Text="{Binding App}" Style="{StaticResource Kroko.Label}" Margin="0,6,0,0"
-                               Visibility="{Binding App, Converter={StaticResource EmptyToCollapsed}}" />
-                </StackPanel>
-            </DockPanel>
+                <DockPanel Margin="0,14,0,0">
+                    <v:KrokoMark DockPanel.Dock="Right" Width="34" Height="26" VerticalAlignment="Center" />
+                    <StackPanel>
+                        <TextBlock Text="{Binding Title}" FontSize="16" FontWeight="Bold" TextTrimming="CharacterEllipsis" />
+                        <TextBlock Text="{Binding Artist}" Foreground="{StaticResource Kroko.TextMuted}" FontSize="12" Margin="0,2,0,0" TextTrimming="CharacterEllipsis" />
+                    </StackPanel>
+                </DockPanel>
 
-            <!-- Progreso lima -->
-            <Grid Margin="0,16,0,0" Visibility="{Binding DurationText, Converter={StaticResource EmptyToCollapsed}}">
-                <Border x:Name="Track" Height="4" CornerRadius="2" Background="#2E2E2E" />
-                <Border Height="4" CornerRadius="2" Background="{StaticResource Kroko.Accent}" HorizontalAlignment="Left">
-                    <Border.Width>
-                        <MultiBinding Converter="{x:Static v:MusicPlayer.WidthOf}">
-                            <Binding Path="Progress" />
-                            <Binding Path="ActualWidth" ElementName="Track" />
-                        </MultiBinding>
-                    </Border.Width>
-                </Border>
-            </Grid>
-            <DockPanel Margin="0,4,0,0" Visibility="{Binding DurationText, Converter={StaticResource EmptyToCollapsed}}">
-                <TextBlock DockPanel.Dock="Right" Text="{Binding DurationText}" Foreground="{StaticResource Kroko.TextMuted}" FontSize="11" />
-                <TextBlock Text="{Binding PositionText}" Foreground="{StaticResource Kroko.TextMuted}" FontSize="11" />
-            </DockPanel>
+                <!-- Onda de progreso: lima lo que ya sonó -->
+                <ItemsControl ItemsSource="{Binding Bars}" Margin="0,14,0,0" Height="24">
+                    <ItemsControl.ItemsPanel><ItemsPanelTemplate><UniformGrid Rows="1" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <Border x:Name="B" Width="3" Height="{Binding Height}" CornerRadius="1.5" Background="#3A3A3F" VerticalAlignment="Center" />
+                            <DataTemplate.Triggers>
+                                <DataTrigger Binding="{Binding Played}" Value="True">
+                                    <Setter TargetName="B" Property="Background" Value="{StaticResource Kroko.Accent}" />
+                                </DataTrigger>
+                            </DataTemplate.Triggers>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+                <DockPanel Margin="0,6,0,0" Visibility="{Binding DurationText, Converter={StaticResource EmptyToCollapsed}}">
+                    <TextBlock DockPanel.Dock="Right" Text="{Binding DurationText}" Foreground="{StaticResource Kroko.TextMuted}" FontSize="11" />
+                    <TextBlock Text="{Binding PositionText}" Foreground="{StaticResource Kroko.TextMuted}" FontSize="11" />
+                </DockPanel>
 
-            <!-- Anterior / play / siguiente -->
-            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,10,0,6">
-                <Button Style="{StaticResource Round}" Command="{Binding PreviousCommand}" ToolTip="Anterior">
-                    <TextBlock Text="&#xE892;" FontFamily="{StaticResource Kroko.Icons}" FontSize="16" />
-                </Button>
-                <Button Command="{Binding PlayPauseCommand}" Cursor="Hand" Margin="18,0" ToolTip="Pausar / reanudar">
-                    <Button.Template>
-                        <ControlTemplate TargetType="Button">
-                            <Border Width="52" Height="52" CornerRadius="26" Background="{StaticResource Kroko.Accent}">
-                                <TextBlock FontFamily="{StaticResource Kroko.Icons}" FontSize="18" Foreground="{StaticResource Kroko.OnAccent}"
-                                           HorizontalAlignment="Center" VerticalAlignment="Center">
-                                    <TextBlock.Style>
-                                        <Style TargetType="TextBlock">
-                                            <Setter Property="Text" Value="&#xE768;" />
-                                            <Style.Triggers>
-                                                <DataTrigger Binding="{Binding Playing}" Value="True">
-                                                    <Setter Property="Text" Value="&#xE769;" />
-                                                </DataTrigger>
-                                            </Style.Triggers>
-                                        </Style>
-                                    </TextBlock.Style>
-                                </TextBlock>
-                            </Border>
-                        </ControlTemplate>
-                    </Button.Template>
-                </Button>
-                <Button Style="{StaticResource Round}" Command="{Binding NextCommand}" ToolTip="Siguiente">
-                    <TextBlock Text="&#xE893;" FontFamily="{StaticResource Kroko.Icons}" FontSize="16" />
-                </Button>
+                <!-- Aleatorio / anterior / play / siguiente / repetir -->
+                <DockPanel Margin="0,10,0,0">
+                    <Button DockPanel.Dock="Left" Style="{StaticResource Round}" Command="{Binding ToggleShuffleCommand}" ToolTip="Aleatorio">
+                        <TextBlock x:Name="ShuffleIcon" Text="&#xE8B1;" FontFamily="{StaticResource Kroko.Icons}" FontSize="14">
+                            <TextBlock.Style>
+                                <Style TargetType="TextBlock">
+                                    <Setter Property="Foreground" Value="{StaticResource Kroko.TextMuted}" />
+                                    <Style.Triggers><DataTrigger Binding="{Binding Shuffle}" Value="True"><Setter Property="Foreground" Value="{StaticResource Kroko.Accent}" /></DataTrigger></Style.Triggers>
+                                </Style>
+                            </TextBlock.Style>
+                        </TextBlock>
+                    </Button>
+                    <Button DockPanel.Dock="Right" Style="{StaticResource Round}" Command="{Binding ToggleRepeatCommand}" ToolTip="Repetir">
+                        <TextBlock Text="&#xE8EE;" FontFamily="{StaticResource Kroko.Icons}" FontSize="14">
+                            <TextBlock.Style>
+                                <Style TargetType="TextBlock">
+                                    <Setter Property="Foreground" Value="{StaticResource Kroko.TextMuted}" />
+                                    <Style.Triggers><DataTrigger Binding="{Binding Repeat}" Value="True"><Setter Property="Foreground" Value="{StaticResource Kroko.Accent}" /></DataTrigger></Style.Triggers>
+                                </Style>
+                            </TextBlock.Style>
+                        </TextBlock>
+                    </Button>
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                        <Button Style="{StaticResource Round}" Command="{Binding PreviousCommand}" ToolTip="Anterior">
+                            <TextBlock Text="&#xE892;" FontFamily="{StaticResource Kroko.Icons}" FontSize="16" />
+                        </Button>
+                        <Button Command="{Binding PlayPauseCommand}" Cursor="Hand" Margin="14,0" ToolTip="Pausar / reanudar">
+                            <Button.Template>
+                                <ControlTemplate TargetType="Button">
+                                    <Border Width="54" Height="54" CornerRadius="27" Background="{StaticResource Kroko.Accent}">
+                                        <TextBlock FontFamily="{StaticResource Kroko.Icons}" FontSize="18" Foreground="#000000" HorizontalAlignment="Center" VerticalAlignment="Center">
+                                            <TextBlock.Style>
+                                                <Style TargetType="TextBlock">
+                                                    <Setter Property="Text" Value="&#xE768;" />
+                                                    <Style.Triggers><DataTrigger Binding="{Binding Playing}" Value="True"><Setter Property="Text" Value="&#xE769;" /></DataTrigger></Style.Triggers>
+                                                </Style>
+                                            </TextBlock.Style>
+                                        </TextBlock>
+                                    </Border>
+                                </ControlTemplate>
+                            </Button.Template>
+                        </Button>
+                        <Button Style="{StaticResource Round}" Command="{Binding NextCommand}" ToolTip="Siguiente">
+                            <TextBlock Text="&#xE893;" FontFamily="{StaticResource Kroko.Icons}" FontSize="16" />
+                        </Button>
+                    </StackPanel>
+                </DockPanel>
+
+                <!-- Volumen -->
+                <DockPanel Margin="0,12,0,0">
+                    <TextBlock DockPanel.Dock="Left" Text="&#xE767;" FontFamily="{StaticResource Kroko.Icons}" FontSize="14"
+                               Foreground="{StaticResource Kroko.TextMuted}" VerticalAlignment="Center" Margin="0,0,10,0" />
+                    <TextBlock DockPanel.Dock="Right" Text="{Binding Volume}" Foreground="{StaticResource Kroko.TextMuted}" FontSize="11"
+                               Width="26" TextAlignment="Right" VerticalAlignment="Center" />
+                    <Slider Minimum="0" Maximum="100" Value="{Binding Volume}" IsMoveToPointEnabled="True" VerticalAlignment="Center" />
+                </DockPanel>
             </StackPanel>
 
-            <!-- Volumen de Windows -->
-            <DockPanel Margin="0,8,0,0">
-                <TextBlock DockPanel.Dock="Left" Text="&#xE767;" FontFamily="{StaticResource Kroko.Icons}" FontSize="14"
-                           Foreground="{StaticResource Kroko.TextMuted}" VerticalAlignment="Center" Margin="0,0,10,0" />
-                <TextBlock DockPanel.Dock="Right" Text="{Binding Volume}" Foreground="{StaticResource Kroko.TextMuted}" FontSize="11"
-                           Width="26" TextAlignment="Right" VerticalAlignment="Center" />
-                <Slider Minimum="0" Maximum="100" Value="{Binding Volume}" IsMoveToPointEnabled="True" VerticalAlignment="Center"
-                        Foreground="{StaticResource Kroko.Accent}" />
-            </DockPanel>
-        </StackPanel>
+            <!-- ============ Derecha: recientes, salida, apagar en ============ -->
+            <StackPanel Grid.Column="2">
+                <Border CornerRadius="17" Background="#0B0B0C" BorderBrush="#232326" BorderThickness="1" Padding="4" HorizontalAlignment="Left">
+                    <StackPanel Orientation="Horizontal">
+                        <RadioButton Content="Recientes" Style="{StaticResource Choice}" Margin="0" GroupName="tab" IsChecked="True"
+                                     Command="{Binding ShowTabCommand}" CommandParameter="recientes" BorderThickness="0" />
+                        <RadioButton Content="Salida de audio" Style="{StaticResource Choice}" Margin="4,0,0,0" GroupName="tab"
+                                     Command="{Binding ShowTabCommand}" CommandParameter="salida" />
+                    </StackPanel>
+                </Border>
+
+                <!-- Recientes -->
+                <StackPanel Margin="0,12,0,0" Visibility="{Binding Tab, Converter={StaticResource Is}, ConverterParameter=recientes}">
+                    <TextBlock Text="Sonó hace poco" FontSize="12" Foreground="{StaticResource Kroko.TextMuted}" Margin="0,0,0,8" />
+                    <TextBlock Text="Aquí verás lo que vaya sonando. (Spotify no comparte su cola ni las letras con Windows.)" TextWrapping="Wrap"
+                               FontSize="12" Foreground="{StaticResource Kroko.TextMuted}" Visibility="{Binding HasNoRecent, Converter={StaticResource BoolToVisible}}" />
+                    <ItemsControl ItemsSource="{Binding Recent}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Border CornerRadius="12" Background="#111113" Padding="8" Margin="0,0,0,6">
+                                    <DockPanel>
+                                        <Border Width="34" Height="34" CornerRadius="7" Background="#A85FF7" Margin="0,0,10,0" ClipToBounds="True">
+                                            <Image Source="{Binding Cover}" Stretch="UniformToFill" />
+                                        </Border>
+                                        <StackPanel VerticalAlignment="Center">
+                                            <TextBlock Text="{Binding Title}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
+                                            <TextBlock FontSize="11" Foreground="{StaticResource Kroko.TextMuted}" TextTrimming="CharacterEllipsis">
+                                                <Run Text="{Binding Artist, Mode=OneWay}" /><Run Text=" · " /><Run Text="{Binding App, Mode=OneWay}" />
+                                            </TextBlock>
+                                        </StackPanel>
+                                    </DockPanel>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </StackPanel>
+
+                <!-- Salida de audio -->
+                <StackPanel Margin="0,12,0,0" Visibility="{Binding Tab, Converter={StaticResource Is}, ConverterParameter=salida}">
+                    <ItemsControl ItemsSource="{Binding Outputs}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Border CornerRadius="12" Background="#111113" Padding="12,10" Margin="0,0,0,6">
+                                    <DockPanel>
+                                        <TextBlock DockPanel.Dock="Right" Text="en uso" FontSize="11" Foreground="{StaticResource Kroko.Accent}" VerticalAlignment="Center"
+                                                   Visibility="{Binding IsDefault, Converter={StaticResource BoolToVisible}}" />
+                                        <TextBlock Text="&#xE7F5;" FontFamily="{StaticResource Kroko.Icons}" Margin="0,0,10,0" VerticalAlignment="Center" />
+                                        <TextBlock Text="{Binding Name}" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
+                                    </DockPanel>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                    <Button Content="Cambiar en Windows" Command="{Binding OpenSoundSettingsCommand}" Style="{StaticResource Kroko.Button}" HorizontalAlignment="Left" Margin="0,4,0,0" />
+                </StackPanel>
+
+                <Border Height="1" Background="#1F1F22" Margin="0,14,0,12" />
+                <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                    <TextBlock Text="Apagar en" FontWeight="SemiBold" VerticalAlignment="Center" />
+                    <Border Background="{StaticResource Kroko.Accent}" CornerRadius="4" Padding="5,1" Margin="8,0,0,0" VerticalAlignment="Center">
+                        <TextBlock Text="NUEVO" FontSize="10" FontWeight="Bold" Foreground="#000000" />
+                    </Border>
+                </StackPanel>
+                <WrapPanel>
+                    <RadioButton Content="No" Style="{StaticResource SleepChoice}" GroupName="sleep" Command="{Binding SleepCommand}" CommandParameter="no" IsChecked="True" />
+                    <RadioButton Content="15 min" Style="{StaticResource SleepChoice}" GroupName="sleep" Command="{Binding SleepCommand}" CommandParameter="15" />
+                    <RadioButton Content="30 min" Style="{StaticResource SleepChoice}" GroupName="sleep" Command="{Binding SleepCommand}" CommandParameter="30" />
+                    <RadioButton Content="Fin de canción" Style="{StaticResource SleepChoice}" GroupName="sleep" Command="{Binding SleepCommand}" CommandParameter="fin" />
+                </WrapPanel>
+                <CheckBox IsChecked="{Binding Ducking}" Style="{StaticResource Kroko.Check}" Margin="0,8,0,0">
+                    <TextBlock Text="Bajar el volumen cuando Kroko habla y pausar al terminar un enfoque" TextWrapping="Wrap" MaxWidth="320" FontSize="12.5" />
+                </CheckBox>
+            </StackPanel>
+        </Grid>
     </Border>
 </Window>

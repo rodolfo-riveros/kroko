@@ -71,6 +71,7 @@ public partial class BubbleWindow : Window
         SourceInitialized += (_, _) =>
         {
             _hwnd = new WindowInteropHelper(this).Handle;
+            _island.AttachClipboard(this); // la isla sugiere qué hacer con lo que copias
             this.MakeToolWindowNoActivate();
             RestorePlacement();
             UpdateGeometry();

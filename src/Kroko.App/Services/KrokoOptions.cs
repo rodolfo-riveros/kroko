@@ -44,6 +44,12 @@ public sealed class KrokoOptions
     /// <summary>La isla sugiere qué hacer con lo que copias (enlace, texto, imagen). Kroko 2, 18/11/2026.</summary>
     public bool ClipboardSuggestions { get; set; } = true;
 
+    /// <summary>Atajos de Kroko 2: barra de comandos, portapapeles, dictado en cualquier app y burbuja de texto seleccionado.</summary>
+    public string CommandsHotkey { get; set; } = "Ctrl+Shift+Space";
+    public string ClipboardHotkey { get; set; } = "Ctrl+Shift+V";
+    public string DictationHotkey { get; set; } = "Ctrl+Shift+D";
+    public string SelectionHotkey { get; set; } = "Ctrl+Shift+K";
+
     /// <summary>Escala de la burbuja: 0.75 a 1.5.</summary>
     public double BubbleScale { get; set; } = 1.0;
 

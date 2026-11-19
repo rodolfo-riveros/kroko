@@ -1,0 +1,88 @@
+<Window x:Class="Kroko.App.Views.ClipboardPanel"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:v="clr-namespace:Kroko.App.Views"
+        Title="Kroko — Portapapeles"
+        Width="440" SizeToContent="Height"
+        WindowStyle="None" AllowsTransparency="True" Background="Transparent"
+        ResizeMode="NoResize" Topmost="True" ShowInTaskbar="False"
+        WindowStartupLocation="Manual"
+        Foreground="{StaticResource Kroko.Text}"
+        FontFamily="{StaticResource Kroko.Font}" FontSize="13">
+
+    <Window.Resources>
+        <v:BoolToVisibleConverter x:Key="BoolToVisible" />
+        <Style x:Key="Key" TargetType="Border">
+            <Setter Property="Background" Value="#1F1F22" />
+            <Setter Property="BorderBrush" Value="#2E2E32" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="CornerRadius" Value="5" />
+            <Setter Property="Padding" Value="6,1" />
+            <Setter Property="Margin" Value="4,0,0,0" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+        </Style>
+        <Style x:Key="Pill" TargetType="Button" BasedOn="{StaticResource Kroko.Button}">
+            <Setter Property="MinHeight" Value="28" />
+            <Setter Property="MinWidth" Value="0" />
+            <Setter Property="Padding" Value="12,0" />
+            <Setter Property="Margin" Value="0,0,6,0" />
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="BorderBrush" Value="Transparent" />
+        </Style>
+        <Style x:Key="PillLime" TargetType="Button" BasedOn="{StaticResource Pill}">
+            <Setter Property="Background" Value="{StaticResource Kroko.Accent}" />
+            <Setter Property="Foreground" Value="#000000" />
+        </Style>
+    </Window.Resources>
+
+    <Border Background="#0B0B0C" CornerRadius="18" BorderThickness="1" BorderBrush="#2A2A2E" Margin="16,0,16,22" Padding="14">
+        <Border.Effect>
+            <DropShadowEffect BlurRadius="30" ShadowDepth="8" Direction="270" Opacity="0.55" Color="Black" />
+        </Border.Effect>
+        <StackPanel>
+            <DockPanel Margin="2,0,0,12">
+                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                    <Border Style="{StaticResource Key}"><TextBlock Text="Ctrl" FontSize="11" Foreground="{StaticResource Kroko.NavText}" /></Border>
+                    <Border Style="{StaticResource Key}"><TextBlock Text="Shift" FontSize="11" Foreground="{StaticResource Kroko.NavText}" /></Border>
+                    <Border Style="{StaticResource Key}"><TextBlock Text="V" FontSize="11" Foreground="{StaticResource Kroko.NavText}" /></Border>
+                </StackPanel>
+                <TextBlock Text="&#xE77F;" FontFamily="{StaticResource Kroko.Icons}" FontSize="14" Foreground="{StaticResource Kroko.Accent}" VerticalAlignment="Center" Margin="0,0,10,0" />
+                <TextBlock Text="Portapapeles" FontWeight="Bold" FontSize="14" VerticalAlignment="Center" />
+            </DockPanel>
+            <TextBlock Text="Aún no copiaste nada desde que abriste Kroko. Lo que copies aparece aquí (solo en memoria)." TextWrapping="Wrap"
+                       FontSize="12" Foreground="{StaticResource Kroko.TextMuted}" Margin="2,0,0,4" x:Name="Empty" />
+            <ItemsControl x:Name="List">
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <Border CornerRadius="12" Background="#111113" BorderBrush="#232326" BorderThickness="1" Padding="12,10" Margin="0,0,0,8"
+                                Cursor="Hand" MouseLeftButtonUp="Item_Click" ToolTip="Clic para pegarlo donde estabas">
+                            <StackPanel>
+                                <DockPanel>
+                                    <TextBlock DockPanel.Dock="Right" Text="{Binding Ago}" FontSize="11" Foreground="{StaticResource Kroko.TextMuted}" VerticalAlignment="Center" Margin="8,0,0,0" />
+                                    <Border Width="36" Height="26" CornerRadius="5" Background="#3A3A55" Margin="0,0,10,0"
+                                            Visibility="{Binding IsImage, Converter={StaticResource BoolToVisible}}" ClipToBounds="True">
+                                        <Image Source="{Binding Image}" Stretch="UniformToFill" />
+                                    </Border>
+                                    <TextBlock Text="{Binding Preview}" FontSize="13" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
+                                </DockPanel>
+                                <WrapPanel Margin="0,10,0,0">
+                                    <Button Content="Pegar" Style="{StaticResource PillLime}" Click="Paste_Click" />
+                                    <Button Content="Resumir página" Style="{StaticResource Pill}" Tag="resumir" Click="Action_Click"
+                                            Visibility="{Binding IsLink, Converter={StaticResource BoolToVisible}}" />
+                                    <Button Content="Resumir" Style="{StaticResource Pill}" Tag="resumir" Click="Action_Click"
+                                            Visibility="{Binding IsText, Converter={StaticResource BoolToVisible}}" />
+                                    <Button Content="Traducir" Style="{StaticResource Pill}" Tag="traducir" Click="Action_Click"
+                                            Visibility="{Binding IsText, Converter={StaticResource BoolToVisible}}" />
+                                    <Button Content="Extraer texto" Style="{StaticResource Pill}" Tag="texto" Click="Action_Click"
+                                            Visibility="{Binding IsImage, Converter={StaticResource BoolToVisible}}" />
+                                    <Button Content="Al celular" Style="{StaticResource Pill}" Tag="celular" Click="Action_Click" />
+                                </WrapPanel>
+                            </StackPanel>
+                        </Border>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+        </StackPanel>
+    </Border>
+</Window>

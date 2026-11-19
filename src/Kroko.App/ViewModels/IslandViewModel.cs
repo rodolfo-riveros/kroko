@@ -84,6 +84,9 @@ public sealed partial class IslandViewModel : ObservableObject
         };
     }
 
+    /// <summary>El portapapeles avisa a esta ventana (necesita su identificador de Windows).</summary>
+    public void AttachClipboard(Window window) => _clipboard.Attach(window);
+
     public FaceAnimator Face => _behavior.Face;
     public TimerService Timers { get; }
     public PanelViewModel Panel => _panel;
@@ -295,6 +298,19 @@ public sealed partial class IslandViewModel : ObservableObject
     private async Task RetryAsync() => await _brain.ReconnectNowAsync();
 
     // ---- portapapeles
+
+    /// <summary>Desde el panel del portapapeles: lo mismo que los botones de la isla, para cualquier cosa del historial.</summary>
+    public void RunClip(ClipItem item, string action)
+    {
+        ClipItem = item;
+        switch (action)
+        {
+            case "celular": ClipToPhone(); break;
+            case "resumir": ClipSummarize(); break;
+            case "texto": ClipExtractText(); break;
+            case "traducir": ClipTranslate(); break;
+        }
+    }
 
     [RelayCommand]
     private void ClipToPhone()

@@ -37,6 +37,28 @@ public sealed class WindowService(IServiceProvider services)
     /// <summary>Soltaste archivos sobre Kroko: el panel Convertir / Analizar / Ordenar / Enviar.</summary>
     public void ShowDrop(IEnumerable<string> files, string? mode = null) => Drop().Open(files, mode);
 
+    /// <summary>Barra de comandos (Ctrl+Shift+Espacio): una sola a la vez.</summary>
+    public void ShowCommands()
+    {
+        if (_commands is { IsLoaded: true }) { _commands.Activate(); return; }
+        _commands = services.GetRequiredService<CommandPalette>();
+        _commands.Closed += (_, _) => _commands = null;
+        _commands.Open();
+    }
+
+    /// <summary>Historial del portapapeles (Ctrl+Shift+V).</summary>
+    public void ShowClipboard()
+    {
+        if (_clipboardPanel is { IsLoaded: true }) { _clipboardPanel.Activate(); return; }
+        _clipboardPanel = services.GetRequiredService<ClipboardPanel>();
+        _clipboardPanel.Closed += (_, _) => _clipboardPanel = null;
+        _clipboardPanel.Show();
+        _clipboardPanel.Activate();
+    }
+
+    private CommandPalette? _commands;
+    private ClipboardPanel? _clipboardPanel;
+
     /// <summary>Lo que copiaste, al celular: enlace o texto en un QR; una imagen, como archivo por tu Wi-Fi.</summary>
     public void ShowClipboardPhone(ClipItem clip)
     {

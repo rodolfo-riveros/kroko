@@ -1085,6 +1085,11 @@
                                 <Border Style="{StaticResource Card}">
                                     <StackPanel>
                                         <DockPanel Style="{StaticResource Row}">
+                                            <CheckBox IsChecked="{Binding ClipboardSuggestions}" Style="{StaticResource Toggle}" />
+                                            <StackPanel Style="{StaticResource Text}"><TextBlock Text="Sugerencias del portapapeles" Style="{StaticResource Label}" /><TextBlock Text="Al copiar un enlace, texto o imagen, la isla te ofrece qué hacer (al celular, resumir, extraer texto). Lo copiado vive solo en memoria y no sale de tu PC salvo que pulses un botón. Nunca guarda lo que parece contraseña o tarjeta." Style="{StaticResource Sub}" /></StackPanel>
+                                        </DockPanel>
+                                        <Border Style="{StaticResource Sep}" />
+                                        <DockPanel Style="{StaticResource Row}">
                                             <Button Content="Abrir" Command="{Binding OpenMemoryCommand}" Style="{StaticResource Btn}" />
                                             <StackPanel Style="{StaticResource Text}"><TextBlock Text="Lo que sabe de ti" Style="{StaticResource Label}" /><TextBlock Text="Recuerdos, rutinas, buzón de mejoras y la conversación. Puedes borrar lo que quieras." Style="{StaticResource Sub}" /></StackPanel>
                                         </DockPanel>
