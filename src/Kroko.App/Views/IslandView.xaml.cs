@@ -14,6 +14,16 @@ public partial class IslandView : UserControl
 
     private IslandViewModel? Vm => DataContext as IslandViewModel;
 
+    /// <summary>La respuesta larga se va desplazando sola hasta el final mientras Kroko escribe.</summary>
+    protected override void OnInitialized(EventArgs e)
+    {
+        base.OnInitialized(e);
+        ReplyScroll.ScrollChanged += (_, args) =>
+        {
+            if (args.ExtentHeightChange > 0) ReplyScroll.ScrollToEnd();
+        };
+    }
+
     /// <summary>Para las capturas: dibuja la cara ya, sin esperar al refresco de pantalla.</summary>
     internal void RenderFaceNow() => Face.RenderNow();
 

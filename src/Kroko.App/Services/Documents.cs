@@ -38,7 +38,7 @@ public static class DocumentText
         return sb.ToString();
     }
 
-    private static string Docx(string path)
+    internal static string Docx(string path)
     {
         using var zip = ZipFile.OpenRead(path);
         var entry = zip.GetEntry("word/document.xml") ?? throw new InvalidDataException("No es un documento de Word válido.");

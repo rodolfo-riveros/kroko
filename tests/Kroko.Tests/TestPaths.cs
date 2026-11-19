@@ -41,6 +41,7 @@ internal static class TestPaths
             ["Mcp:Enabled"] = "false", // las pruebas nunca lanzan navegadores ni conectan servicios reales
             ["Productivity:DailySummaryHour"] = "-1", // ni mandan el resumen del día en mitad de una prueba
             ["Proactive:Enabled"] = "false", // ni revisan calendarios o correos reales
+            ["Productivity:SeedCoach"] = "false", // ni corre el asistente de las 7:30, 13:00 y 20:00 en mitad de una prueba
         };
     }
 

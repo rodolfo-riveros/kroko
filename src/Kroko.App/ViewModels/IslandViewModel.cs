@@ -19,7 +19,7 @@ public sealed partial class IslandViewModel : ObservableObject
 {
     public const string Idle = "reposo", Listening = "escuchando", Thinking = "pensando", Done = "listo", Focus = "enfoque",
         Music = "musica", Reminder = "recordatorio", Near = "cerca", Clip = "portapapeles", Offline = "sin-conexion",
-        Working = "trabajando", Result = "resultado", Dictating = "dictando", Meeting = "reunion";
+        Working = "trabajando", Result = "resultado", Dictating = "dictando", Meeting = "reunion", Reply = "respuesta", Confirm = "confirmar";
 
     private readonly CompanionBehavior _behavior;
     private readonly PanelViewModel _panel;
@@ -54,6 +54,8 @@ public sealed partial class IslandViewModel : ObservableObject
 
         activity.Added += a =>
         {
+            // Personalidad (Kroko 2): cada cosa que termina la celebra con una cara distinta
+            behavior.PlayExpression(Celebrations[Random.Shared.Next(Celebrations.Length)]);
             DoneItem = a;
             DoneText = a.Short.Length > 0 ? a.Short : a.Text;
             _doneUntil = DateTime.Now.AddSeconds(ActivityFeed.UndoSeconds);
@@ -73,15 +75,19 @@ public sealed partial class IslandViewModel : ObservableObject
                 Application.Current?.Dispatcher.BeginInvoke(() =>
                 {
                     ReminderText = n.Text.Length > 0 ? n.Text : n.Title;
+                    behavior.PlayExpression("surprised");
                     AlertAction = "";
                     _reminderUntil = DateTime.Now.AddMinutes(2);
                 });
         };
+        panel.ShowRequested += _ => _replyShown = true;
+        panel.HideRequested += () => _replyShown = false;
         clipboard.Copied += c =>
         {
             if (_panel.IsListening || _panel.IsThinking) return;
             ClipItem = c;
             _clipUntil = DateTime.Now.AddSeconds(7);
+            behavior.PlayExpression("idea");
         };
     }
 
@@ -99,6 +105,19 @@ public sealed partial class IslandViewModel : ObservableObject
     public bool Wanted { get; private set; }
 
     [ObservableProperty] public partial bool Hover { get; set; }
+    /// <summary>Con el mouse encima, la respuesta no se esconde (igual que la burbuja de antes).</summary>
+    partial void OnHoverChanged(bool value) => _panel.IsPointerOver = value;
+    private bool _replyShown;
+
+    [RelayCommand]
+    private void Approve() => _panel.ApproveCommand.Execute(null);
+
+    [RelayCommand]
+    private void Deny() => _panel.DenyCommand.Execute(null);
+
+    /// <summary>Clic en la respuesta: el chat completo en el panel Kroko.</summary>
+    [RelayCommand]
+    private void OpenChat() => _windows.ShowPanel("chat");
     [ObservableProperty] public partial string Clock { get; set; } = "";
     [ObservableProperty] public partial bool Online { get; set; } = true;
 
@@ -165,7 +184,9 @@ public sealed partial class IslandViewModel : ObservableObject
 
     private string Pick(DateTime now)
     {
+        if (!_panel.IsThinking) _toolFace = "";
         if (DictationApp.Length > 0) return Dictating;
+        if (_panel.IsConfirming) return Confirm;
         if (_work is not null) return Working;
         if (ResultData is not null || ResultError.Length > 0)
         {
@@ -179,9 +200,16 @@ public sealed partial class IslandViewModel : ObservableObject
         if (_panel.IsThinking)
         {
             ToolChip = _panel.CurrentTool;
+            if (ToolChip != _toolFace)
+            {
+                _toolFace = ToolChip;
+                if (ToolFace(ToolChip) is { } face) _behavior.PlayExpression(face);
+            }
             ThinkingText = ToolChip.Length > 0 ? FriendlyTool(ToolChip) : "Pensando…";
             return Thinking;
         }
+        // La respuesta va en la isla (no hay burbuja aparte): mientras escribe y hasta que se esconde sola
+        if (_replyShown && (_panel.ReplyText.Length > 0 || _panel.HasCard || _panel.UserText.Length > 0)) return Reply;
         if (now < _doneUntil && DoneText.Length > 0) return Done;
         if (_badge.BadgeText.Length > 0)
         {
@@ -205,6 +233,24 @@ public sealed partial class IslandViewModel : ObservableObject
         if (MusicArtist != artist) MusicArtist = artist;
         if (MusicPlaying != n.Playing) MusicPlaying = n.Playing;
         if (!ReferenceEquals(MusicCover, n.Cover)) MusicCover = n.Cover;
+    }
+
+    private static readonly string[] Celebrations = ["success", "happy", "confident", "wink", "success", "cool", "laugh"];
+    private string _toolFace = "";
+
+    /// <summary>La cara mientras usa una herramienta (personalidad): idea al anotar, seguro al ordenar, guiño al enviar…</summary>
+    internal static string? ToolFace(string tool)
+    {
+        var t = tool.ToLowerInvariant();
+        return t switch
+        {
+            _ when t.StartsWith("notion", StringComparison.Ordinal) || t is "guardar_en_notion" or "recordar" or "crear_rutina" => "idea",
+            _ when t.StartsWith("correo_enviar", StringComparison.Ordinal) || t is "correo_responder" or "whatsapp_enviar" or "enviar_archivo" => "wink",
+            "ordenar_carpeta" or "mover_archivos" or "copiar_archivos" or "tarea_crear" or "recordatorio_crear" => "confident",
+            "captura_pantalla" or "ver_pantalla" or "ver_imagen" => "surprised",
+            "musica" => "happy",
+            _ => null,
+        };
     }
 
     /// <summary>«Abriendo Notion», «Buscando en internet»… a partir del nombre de la herramienta.</summary>
@@ -440,7 +486,7 @@ public sealed partial class IslandViewModel : ObservableObject
         }
 
         _work = new CancellationTokenSource();
-        var label = key switch { "pdf" => "Convirtiendo", "mp3" => "Convirtiendo", "transcribir" => "Transcribiendo", _ => "Guardando" };
+        var label = key switch { "pdf" or "mp3" or "docpdf" or "texto" => "Convirtiendo", "unir" => "Uniendo", "transcribir" => "Transcribiendo", _ => "Guardando" };
         WorkTitle = label + "…";
         WorkDetail = "";
         WorkProgress = 0;

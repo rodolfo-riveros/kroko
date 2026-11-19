@@ -66,6 +66,8 @@ public partial class ResponsePanel : Window
 
     private void ShowPanel(bool activate)
     {
+        // Kroko 2: en la isla todo se muestra dentro de ella (respuesta, confirmación, listas); escribir es en el panel Kroko → Chat
+        if (_geometry.IsIsland) return;
         _hiding = false;
         if (!IsVisible)
         {

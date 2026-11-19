@@ -45,7 +45,7 @@ public class Kroko2Tests
     {
         Assert.Equal("pdf", QuickFiles.PocketsFor(["a.png", "b.jpg"])[0].Key);
         Assert.Equal(["mp3", "transcribir", "bandeja"], QuickFiles.PocketsFor(["nota.m4a"]).Select(p => p.Key));
-        Assert.Equal("resumir", QuickFiles.PocketsFor(["informe.docx"])[0].Key);
+        Assert.Contains(QuickFiles.PocketsFor(["informe.docx"]), p => p.Key == "resumir");
         Assert.Contains(QuickFiles.PocketsFor(["x.zip"]), p => p.Key == "bandeja");
         Assert.All(QuickFiles.PocketsFor(["a.png"]), p => Assert.Single(p.GlyphText));
     }

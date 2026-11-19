@@ -28,6 +28,7 @@ namespace Kroko.Shared.Protocol;
 [JsonDerivedType(typeof(CredentialsMessage), MessageTypes.Credentials)]
 [JsonDerivedType(typeof(LocalLlmRequestMessage), MessageTypes.LocalLlmRequest)]
 [JsonDerivedType(typeof(LocalLlmResultMessage), MessageTypes.LocalLlmResult)]
+[JsonDerivedType(typeof(ContextNoteMessage), MessageTypes.ContextNote)]
 [JsonDerivedType(typeof(LiveStartMessage), MessageTypes.LiveStart)]
 [JsonDerivedType(typeof(LiveAudioMessage), MessageTypes.LiveAudio)]
 [JsonDerivedType(typeof(LiveStopMessage), MessageTypes.LiveStop)]
@@ -60,6 +61,7 @@ public static class MessageTypes
     public const string Credentials = "credentials";
     public const string LocalLlmRequest = "llm.local";
     public const string LocalLlmResult = "llm.local.result";
+    public const string ContextNote = "context.note";
     public const string LiveStart = "live.start";
     public const string LiveAudio = "live.audio";
     public const string LiveStop = "live.stop";
@@ -343,4 +345,14 @@ public sealed record LocalLlmResultMessage : KrokoMessage
     public bool Ok { get; init; }
     public string? Body { get; init; }
     public string? Error { get; init; }
+}
+
+/// <summary>
+/// App → cerebro (Kroko 2, 18/11/2026): algo que el dueño hizo con Kroko en la PC sin escribirle (convertir, transcribir,
+/// ordenar, guardar en la bandeja…). Entra al historial de la conversación sin pedir respuesta, así luego «léemelo» o
+/// «mándamelo» sabe de qué archivo se habla.
+/// </summary>
+public sealed record ContextNoteMessage : KrokoMessage
+{
+    public string Text { get; init; } = "";
 }

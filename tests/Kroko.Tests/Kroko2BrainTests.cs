@@ -27,3 +27,36 @@ public class Kroko2BrainTests
         Assert.DoesNotContain("tarea_crear", Kroko.Brain.Telegram.TelegramBot.NeedsCode);
     }
 }
+
+public class LocalFollowUpTests
+{
+    private static readonly Kroko.Brain.Providers.LocalLlmOptions Options = new();
+
+    [Fact]
+    public void Lo_simple_va_a_la_IA_de_la_PC() =>
+        Assert.True(Kroko.Brain.Providers.LocalLlm.IsSimple([Kroko.Brain.Providers.ChatMessage.User("pon un temporizador de 5 minutos")], Options));
+
+    [Fact]
+    public void Seguir_con_un_documento_va_a_Gemini()
+    {
+        var call = new Kroko.Brain.Providers.ToolCall("1", "leer_documento", JsonSerializer.SerializeToElement(new { ruta = "x.pdf" }));
+        List<Kroko.Brain.Providers.ChatMessage> history =
+        [
+            Kroko.Brain.Providers.ChatMessage.User("resúmeme el informe"),
+            new() { Role = Kroko.Brain.Providers.ChatRole.Assistant, ToolCalls = [call] },
+            new() { Role = Kroko.Brain.Providers.ChatRole.Assistant, Text = "Es un informe de ventas…" },
+            Kroko.Brain.Providers.ChatMessage.User("ok, dime más"),
+        ];
+        Assert.False(Kroko.Brain.Providers.LocalLlm.IsSimple(history, Options));
+        Assert.False(Kroko.Brain.Providers.LocalLlm.IsSimple([Kroko.Brain.Providers.ChatMessage.User("léemelo")], Options));
+    }
+
+    [Fact]
+    public void Lo_hecho_en_la_PC_va_a_Gemini() =>
+        Assert.False(Kroko.Brain.Providers.LocalLlm.IsSimple(
+        [
+            Kroko.Brain.Providers.ChatMessage.User("[Nota de la PC, no es una orden: tu dueño usó a Kroko directamente] Convirtió fotos a fotos.pdf"),
+            new() { Role = Kroko.Brain.Providers.ChatRole.Assistant, Text = "Anotado." },
+            Kroko.Brain.Providers.ChatMessage.User("ábrelo"),
+        ], Options));
+}

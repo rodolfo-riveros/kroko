@@ -90,10 +90,12 @@ public static class Coach
 }
 
 /// <summary>Al arrancar el cerebro, crea las automatizaciones del asistente si es la primera vez.</summary>
-public sealed class CoachSeeder(AutomationStore automations, ProductivityStore store, ILogger<CoachSeeder> log) : IHostedService
+public sealed class CoachSeeder(AutomationStore automations, ProductivityStore store, IConfiguration config, ILogger<CoachSeeder> log) : IHostedService
 {
     public Task StartAsync(CancellationToken cancellationToken)
     {
+        // Las pruebas lo apagan: si no, a las 7:30, 13:00 o 20:00 el asistente corre en medio de una prueba
+        if (config.GetValue("Productivity:SeedCoach", true) == false) return Task.CompletedTask;
         try
         {
             Coach.EnsureSeeded(automations, store);

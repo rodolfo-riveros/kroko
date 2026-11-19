@@ -109,7 +109,7 @@
                     <StackPanel>
                         <TextBlock Style="{StaticResource TileIcon}" Text="&#xE8AB;" />
                         <TextBlock Style="{StaticResource TileTitle}" Text="Convertir" />
-                        <TextBlock Style="{StaticResource TileNote}" Text="Imagen, PDF o audio" />
+                        <TextBlock Style="{StaticResource TileNote}" Text="Imagen, PDF, Word o audio" />
                     </StackPanel>
                 </Button>
                 <Button Style="{StaticResource Tile}" Command="{Binding ShowCommand}" CommandParameter="analizar">
@@ -145,6 +145,8 @@
                         <Button Style="{StaticResource Small}" Content="JPG" Command="{Binding ConvertImagesCommand}" CommandParameter="jpg" />
                         <Button Style="{StaticResource Small}" Content="BMP" Command="{Binding ConvertImagesCommand}" CommandParameter="bmp" />
                         <Button Style="{StaticResource SmallPrimary}" Content="Juntar en un PDF" Command="{Binding ImagesToPdfCommand}" />
+                        <Button Style="{StaticResource Small}" Content="ICO (icono)" Command="{Binding ImagesToIcoCommand}" />
+                        <Button Style="{StaticResource Small}" Content="Comprimir" Command="{Binding CompressImagesCommand}" />
                     </WrapPanel>
                 </StackPanel>
                 <StackPanel Visibility="{Binding AllAudio, Converter={StaticResource BoolToVisible}}">
@@ -160,7 +162,25 @@
                     </StackPanel>
                 </StackPanel>
                 <TextBlock Style="{StaticResource TileNote}" Visibility="{Binding CanConvert, Converter={StaticResource BoolToVisible}, ConverterParameter=invert}"
-                           Text="Por ahora convierto imágenes (PNG, JPG, BMP o a PDF) y audio (MP3, WAV, M4A). Suelta solo imágenes o solo audios." />
+                           Text="Convierto imágenes (PNG, JPG, BMP, ICO, PDF, comprimir), audio (MP3, WAV, M4A) y documentos (PDF, Word, Excel, PowerPoint, texto). Suelta archivos del mismo tipo." />
+                <!-- Documentos (Kroko 2) -->
+                <WrapPanel Style="{StaticResource Row}" Visibility="{Binding OnePdf, Converter={StaticResource BoolToVisible}}">
+                    <Button Style="{StaticResource SmallPrimary}" Content="A texto" Command="{Binding PdfToTextCommand}" />
+                    <Button Style="{StaticResource Small}" Content="Separar páginas" Command="{Binding SplitPdfCommand}" />
+                </WrapPanel>
+                <WrapPanel Style="{StaticResource Row}" Visibility="{Binding ManyPdf, Converter={StaticResource BoolToVisible}}">
+                    <Button Style="{StaticResource SmallPrimary}" Content="Unir en un PDF" Command="{Binding MergePdfsCommand}" />
+                </WrapPanel>
+                <StackPanel Visibility="{Binding OneOffice, Converter={StaticResource BoolToVisible}}">
+                    <WrapPanel Style="{StaticResource Row}">
+                        <Button Style="{StaticResource SmallPrimary}" Content="A PDF" Command="{Binding OfficeToPdfCommand}" />
+                        <Button Style="{StaticResource Small}" Content="A texto" Command="{Binding PdfToTextCommand}" Visibility="{Binding OneWord, Converter={StaticResource BoolToVisible}}" />
+                    </WrapPanel>
+                    <TextBlock Style="{StaticResource TileNote}" Text="A PDF usa tu Microsoft Office (o LibreOffice) sin abrirlo en pantalla." />
+                </StackPanel>
+                <WrapPanel Style="{StaticResource Row}" Visibility="{Binding OneText, Converter={StaticResource BoolToVisible}}">
+                    <Button Style="{StaticResource SmallPrimary}" Content="A PDF" Command="{Binding TextToPdfCommand}" />
+                </WrapPanel>
             </StackPanel>
 
             <!-- Analizar -->

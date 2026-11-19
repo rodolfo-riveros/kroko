@@ -12,7 +12,7 @@ namespace Kroko.App.ViewModels;
 /// Analizar, Ordenar y Enviar. Soltar y pulsar una acción ya es la confirmación del dueño; todo queda en la auditoría
 /// (nombre, acción y destino, nunca el contenido) y nada se borra.
 /// </summary>
-public sealed partial class DropPanelViewModel(PanelViewModel chat, AuditLog audit, Services.LanShare.PhoneShare phone) : ObservableObject
+public sealed partial class DropPanelViewModel(PanelViewModel chat, AuditLog audit, Services.LanShare.PhoneShare phone, ActivityFeed activity) : ObservableObject
 {
     public List<string> Files { get; private set; } = [];
 
@@ -32,7 +32,13 @@ public sealed partial class DropPanelViewModel(PanelViewModel chat, AuditLog aud
     public bool AllImages => Files.Count > 0 && Files.All(FileConvert.IsImage);
     public bool AllAudio => Files.Count > 0 && Files.All(FileConvert.IsAudio);
     public bool HasFfmpeg => FileConvert.FindFfmpeg() is not null;
-    public bool CanConvert => AllImages || AllAudio;
+    public bool AllPdf => Files.Count > 0 && Files.All(DocumentConvert.IsPdf);
+    public bool OnePdf => Files.Count == 1 && AllPdf;
+    public bool ManyPdf => Files.Count > 1 && AllPdf;
+    public bool OneOffice => Files.Count == 1 && DocumentConvert.IsOffice(Files[0]);
+    public bool OneWord => Files.Count == 1 && DocumentConvert.IsWord(Files[0]);
+    public bool OneText => Files.Count == 1 && DocumentConvert.IsText(Files[0]);
+    public bool CanConvert => AllImages || AllAudio || AllPdf || OneOffice || OneText;
 
     /// <summary>Se cerró o terminó: la ventana se va.</summary>
     public event Action? CloseRequested;
@@ -91,12 +97,13 @@ public sealed partial class DropPanelViewModel(PanelViewModel chat, AuditLog aud
     private async Task ConvertImagesAsync(string format) => await Run("convertir", format, async () =>
     {
         var made = await Task.Run(() => Files.Select(f => FileConvert.ImageTo(f, format)).ToList());
+        activity.AddCreatedFile($"Convirtió {made.Count} imagen(es) a {format.ToUpperInvariant()}", "Listo", made[^1]);
         return made.Count == 1 ? $"Listo: {Path.GetFileName(made[0])}" : $"Listo: {made.Count} imágenes en {format.ToUpperInvariant()}";
     });
 
     [RelayCommand]
     private async Task ImagesToPdfAsync() => await Run("convertir", "pdf", async () =>
-        $"Listo: {Path.GetFileName(await Task.Run(() => FileConvert.ImagesToPdf(Files)))}");
+        Made($"Juntó {Files.Count} imagen(es) en un PDF", await Task.Run(() => FileConvert.ImagesToPdf(Files))));
 
     [RelayCommand]
     private async Task ConvertAudioAsync(string format) => await Run("convertir", format, async () =>
@@ -110,6 +117,48 @@ public sealed partial class DropPanelViewModel(PanelViewModel chat, AuditLog aud
     [RelayCommand]
     private static void OpenFfmpegPage() =>
         System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo("https://ffmpeg.org/download.html") { UseShellExecute = true })?.Dispose();
+
+    // ---- documentos e imágenes (Kroko 2): cada resultado queda en «Lo que hizo Kroko» y el cerebro lo sabe
+
+    private string Made(string text, string path)
+    {
+        activity.AddCreatedFile(text, "Listo", path);
+        return $"Listo: {Path.GetFileName(path)}";
+    }
+
+    [RelayCommand]
+    private async Task PdfToTextAsync() => await Run("convertir", "texto", async () =>
+        Made($"Pasó {Path.GetFileName(Files[0])} a texto", await Task.Run(() => DocumentConvert.ToText(Files[0]))));
+
+    [RelayCommand]
+    private async Task MergePdfsAsync() => await Run("convertir", "unir PDF", async () =>
+        Made($"Unió {Files.Count} PDF en uno", await Task.Run(() => DocumentConvert.MergePdfs(Files))));
+
+    [RelayCommand]
+    private async Task SplitPdfAsync() => await Run("convertir", "separar PDF", async () =>
+        Made($"Separó {Path.GetFileName(Files[0])} en páginas", await Task.Run(() => DocumentConvert.SplitPdf(Files[0]))));
+
+    [RelayCommand]
+    private async Task OfficeToPdfAsync() => await Run("convertir", "pdf", async () =>
+        Made($"Pasó {Path.GetFileName(Files[0])} a PDF", await DocumentConvert.OfficeToPdfAsync(Files[0], CancellationToken.None)));
+
+    [RelayCommand]
+    private async Task TextToPdfAsync() => await Run("convertir", "pdf", async () =>
+        Made($"Pasó {Path.GetFileName(Files[0])} a PDF", await Task.Run(() => DocumentConvert.TextToPdf(Files[0]))));
+
+    [RelayCommand]
+    private async Task CompressImagesAsync() => await Run("convertir", "comprimir", async () =>
+    {
+        var made = await Task.Run(() => Files.Select(ImageExtras.Compress).ToList());
+        return Made($"Comprimió {made.Count} imagen(es)", made[^1]);
+    });
+
+    [RelayCommand]
+    private async Task ImagesToIcoAsync() => await Run("convertir", "ico", async () =>
+    {
+        var made = await Task.Run(() => Files.Select(ImageExtras.ToIco).ToList());
+        return Made($"Hizo {made.Count} icono(s)", made[^1]);
+    });
 
     // ---------------------------------------------------------------- Analizar (el contenido va a Gemini; se avisa en el mosaico)
 
@@ -215,6 +264,8 @@ public sealed partial class DropPanelViewModel(PanelViewModel chat, AuditLog aud
             Busy = false;
         }
         Record(action, target, ok, Status);
+        // Que el cerebro sepa qué hiciste (luego «léemelo», «mándamelo»…)
+        if (ok) activity.Note($"Soltó {string.Join(", ", Files.Select(f => $"«{f}»"))} sobre Kroko y eligió {action} {target}: {Status}");
     }
 
     private void Record(string action, string target, bool ok = true, string result = "") => audit.Record(new AuditEntry(

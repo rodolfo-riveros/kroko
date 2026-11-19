@@ -20,7 +20,18 @@ public static class IslandSnapshot
         public required string State { get; init; }
         public bool Hover { get; init; }
         public string Clock { get; init; } = "18:10";
-        public object Panel { get; init; } = new { UserText = "abre mi Notion y crea una página…", MicLevel = 0.7 };
+        public object Panel { get; init; } = new
+        {
+            UserText = "abre mi Notion y crea una página…", MicLevel = 0.7, IsReplyError = false, HasCard = false, CardTitle = "",
+            CardItems = Array.Empty<object>(),
+            ReplyText = "Listo, Pol: creé la página «Pendientes del lunes» en Notion con tus 4 tareas. ¿Quieres que te avise el lunes a las 8?",
+            ConfirmText = "Apagar la PC en 10 minutos.",
+        };
+        public string AlertAction { get; init; } = "";
+        public string DictationApp { get; init; } = "Word";
+        public string DictationText { get; init; } = "Estimado profesor, le envío el informe corregido, quedo atento";
+        public string MeetingClock { get; init; } = "12:04";
+        public string MeetingNote { get; init; } = "tomando nota";
         public string ThinkingText { get; init; } = "Abriendo Notion";
         public string ToolChip { get; init; } = "abrir_app";
         public string DoneText { get; init; } = "Ordené 24 archivos";
@@ -70,6 +81,10 @@ public static class IslandSnapshot
             ("Sin conexión", new Sample { Face = Face("offline"), State = "sin-conexion" }),
             ("Convirtiendo", new Sample { Face = Face("thinking"), State = "trabajando" }),
             ("Listo (archivo)", new Sample { Face = Face("success"), State = "resultado" }),
+            ("Respuesta", new Sample { Face = Face("happy"), State = "respuesta", DoneCanUndo = false }),
+            ("Confirmar", new Sample { Face = Face("alert"), State = "confirmar" }),
+            ("Dictando", new Sample { Face = Face("listening"), State = "dictando" }),
+            ("Reunión", new Sample { Face = Face("focus"), State = "reunion" }),
         ];
 
         const double stripWidth = 720, labelWidth = 130;

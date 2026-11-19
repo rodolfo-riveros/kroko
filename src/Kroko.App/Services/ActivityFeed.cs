@@ -75,10 +75,12 @@ public sealed class ActivityFeed
 {
     public const int UndoSeconds = 8;
     private readonly ILogger<ActivityFeed> _log;
+    private readonly BrainConnection _brain;
 
     public ActivityFeed(ToolExecutor tools, BrainConnection brain, ILogger<ActivityFeed> log)
     {
         _log = log;
+        _brain = brain;
         tools.ToolDone += (name, args, data) => Dispatch(() => FromTool(name, args, data));
         brain.MessageReceived += m =>
         {
@@ -205,12 +207,22 @@ public sealed class ActivityFeed
     }
 
     /// <summary>Un archivo que Kroko creó (convertir, juntar en PDF…): Abrir, y Deshacer = a la Papelera.</summary>
-    public void AddCreatedFile(string text, string shortText, string path) => Add(new ActivityItem
+    public void AddCreatedFile(string text, string shortText, string path) 
     {
-        Time = DateTime.Now, Text = text, Short = shortText, ActionLabel = "Abrir",
-        Open = () => OpenShell(path),
-        Undo = () => RecycleBin.Send(path) ? "Listo: lo mandé a la Papelera" : "Ya no estaba",
-    });
+        Add(new ActivityItem
+        {
+            Time = DateTime.Now, Text = text, Short = shortText, ActionLabel = "Abrir",
+            Open = () => OpenShell(path),
+            Undo = () => RecycleBin.Send(path) ? "Listo: lo mandé a la Papelera" : "Ya no estaba",
+        });
+        Note($"{text}. Archivo nuevo: «{path}».");
+    }
+
+    /// <summary>
+    /// Le cuenta al cerebro algo que hiciste con Kroko sin escribirle (soltar, convertir, ordenar…): entra a la conversación
+    /// sin respuesta, así «léemelo» o «mándamelo» sabe de qué archivo hablas.
+    /// </summary>
+    public void Note(string text) => _ = _brain.SendAsync(new ContextNoteMessage { Text = text });
 
     public static void OpenShell(string target, string? arguments = null)
     {

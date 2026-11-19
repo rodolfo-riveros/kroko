@@ -428,7 +428,7 @@ public partial class BubbleWindow : Window
     // vuelve a su tamaño mínimo. Con el autoocultado, sale cuando tiene algo que contar o al pasar el cursor por arriba.
 
     private const double IslandWindowWidth = 640;
-    private const double IslandWindowHeight = 240;
+    private const double IslandWindowHeight = 320;
     private const double IslandHideDelaySeconds = 2.5;
     private DispatcherTimer? _islandTimer;
     private bool _islandHover;
@@ -563,8 +563,13 @@ public partial class BubbleWindow : Window
     {
         // Los estados con botones (Deshacer, +10 min…) manejan su clic; el resto abre el panel «Kroko»
         if (e.Handled || _island.State is not (IslandViewModel.Idle or IslandViewModel.Thinking or IslandViewModel.Focus
-                or IslandViewModel.Offline or IslandViewModel.Done or IslandViewModel.Music)) return;
+                or IslandViewModel.Offline or IslandViewModel.Done or IslandViewModel.Music or IslandViewModel.Reply)) return;
         e.Handled = true;
+        if (_island.State == IslandViewModel.Reply)
+        {
+            _island.OpenChatCommand.Execute(null); // la respuesta completa, en el chat del panel
+            return;
+        }
         if (_island.State == IslandViewModel.Music)
         {
             _island.OpenPlayerCommand.Execute(null);

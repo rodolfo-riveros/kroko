@@ -1,5 +1,6 @@
 using System.Collections.Concurrent;
 using System.Net.WebSockets;
+using Kroko.Brain.Providers;
 using Kroko.Shared.Protocol;
 using Microsoft.Extensions.Options;
 
@@ -101,6 +102,14 @@ public sealed class SessionHandler(AgentLoop agent, Productivity.AppConnections 
                         await CancelCurrentAsync();
                         await StopLiveAsync();
                         await transport.SendAsync(new StateMessage { SessionId = channel.SessionId, State = FaceStates.Idle }, aborted);
+                        break;
+
+                    case ContextNoteMessage note when !string.IsNullOrWhiteSpace(note.Text):
+                        // Lo que hizo en la PC sin escribirle: al historial, sin respuesta (para que luego sepa de qué se habla)
+                        services.GetRequiredService<ConversationStore>().Get(channel.SessionId).Commit([
+                            ChatMessage.User("[Nota de la PC, no es una orden: tu dueño usó a Kroko directamente] " + note.Text.Trim()),
+                            new ChatMessage { Role = ChatRole.Assistant, Text = "Anotado." },
+                        ]);
                         break;
 
                     case UserTextMessage text when !string.IsNullOrWhiteSpace(text.Text):

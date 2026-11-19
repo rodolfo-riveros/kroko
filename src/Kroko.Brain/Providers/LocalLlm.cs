@@ -34,6 +34,8 @@ public sealed class LocalLlmOptions
         "correo", "email", "gmail", "notion", "drive", "calendar", "calendario", "evento", "reunión", "trello", "todoist",
         "whatsapp", "formulario", "página", "web", "pantalla", "captura", "ventana", "documento", "pdf", "traduce", "contacto",
         "automatiza", "cada día", "todos los días", "telegram", "archivo a", "mándame", "imagen", "foto", "analiza", "resúme", "puntos clave", "archivo «",
+        // Seguir con lo anterior («léemelo», «mándalo», «y eso?»): necesita la conversación completa y sus herramientas
+        "lee", "léem", "léel", "archivo", "eso", "esa ", "ese ", "anterior", "otra vez", "repite", "continúa", "sigue", "mándalo", "envíalo", "ábrelo",
     ];
 }
 
@@ -51,6 +53,13 @@ public static class LocalLlm
         if (text.StartsWith('[')) return false; // automatizaciones y avisos: con Gemini
         if (text.Length > o.MaxChars) return false;
         if (history.Any(m => m.ImageBase64 is not null)) return false;
+        // Si lo último que se habló usó herramientas que la PC no tiene, o hubo algo hecho en la PC, sigue con Gemini (tiene el contexto)
+        foreach (var m in history.TakeLast(8))
+        {
+            if (m.Text.StartsWith("[Nota de la PC", StringComparison.Ordinal)) return false;
+            if (m.ToolCalls.Any(c => !Allowed(c.Name, o))) return false;
+            if (m.ToolName is { } used && !Allowed(used, o)) return false;
+        }
         var lower = text.ToLowerInvariant();
         return !o.NeedsCloud.Any(k => lower.Contains(k, StringComparison.Ordinal));
     }

@@ -79,7 +79,9 @@ public partial class BubbleViewModel(CompanionBehavior behavior, PanelViewModel 
     public void OnDoubleClick()
     {
         Behavior.WakeUp();
-        panel.OpenForInput();
+        // En la isla no hay burbuja para escribir: se escribe en el chat del panel Kroko
+        if (windows.IsIslandMode) windows.ShowPanel("chat");
+        else panel.OpenForInput();
     }
 
     /// <summary>Lo mismo que el atajo de voz.</summary>

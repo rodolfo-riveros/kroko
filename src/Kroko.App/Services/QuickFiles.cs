@@ -33,6 +33,9 @@ public sealed class QuickFiles(FileTray tray, BrainApiClient api, ActivityFeed a
         if (files.Count > 0 && files.All(FileConvert.IsImage)) return [new("pdf", "Convertir a PDF", "E8AB"), celular, bandeja];
         if (files.Count > 0 && files.All(FileConvert.IsAudio))
             return [new("mp3", "Convertir a MP3", "E8D6"), new("transcribir", "Transcribir", "E8D2"), bandeja];
+        if (files.Count > 1 && files.All(DocumentConvert.IsPdf)) return [new("unir", "Unir en un PDF", "E8A5"), celular, bandeja];
+        if (files.Count == 1 && DocumentConvert.IsPdf(files[0])) return [new("resumir", "Resumir", "E9D9"), new("texto", "A texto", "E8A5"), bandeja];
+        if (files.Count == 1 && DocumentConvert.IsOffice(files[0])) return [new("docpdf", "Convertir a PDF", "E8AB"), new("resumir", "Resumir", "E9D9"), bandeja];
         if (files.Count == 1 && IsDocument(files[0])) return [new("resumir", "Resumir", "E9D9"), celular, bandeja];
         return [celular, new("telegram", "Enviar a Telegram", "E8BD"), bandeja];
     }
@@ -96,9 +99,25 @@ public sealed class QuickFiles(FileTray tray, BrainApiClient api, ActivityFeed a
                 return new QuickResult("Transcripción lista", txt, $"{words} palabras · en {FolderName(txt)}",
                     () => RecycleBin.Send(txt) ? "Listo: la mandé a la Papelera" : "Ya no estaba");
             }
+            case "texto" or "unir" or "docpdf":
+            {
+                progress.Report((0, 1, Path.GetFileName(files[0])));
+                var made = key switch
+                {
+                    "texto" => await Task.Run(() => DocumentConvert.ToText(files[0]), ct),
+                    "unir" => await Task.Run(() => DocumentConvert.MergePdfs(files), ct),
+                    _ => await DocumentConvert.OfficeToPdfAsync(files[0], ct),
+                };
+                progress.Report((1, 1, Path.GetFileName(made)));
+                var title = key switch { "texto" => "Texto listo", "unir" => "PDF unido", _ => "PDF listo" };
+                activity.AddCreatedFile($"{title}: {Path.GetFileName(made)}", title, made);
+                return new QuickResult(title, made, $"{DropSize([made])} · en {FolderName(made)}",
+                    () => RecycleBin.Send(made) ? "Listo: lo mandé a la Papelera" : "Ya no estaba");
+            }
             case "bandeja":
             {
                 var n = tray.Add(files);
+                activity.Note($"Guardó en la bandeja: {string.Join(", ", files.Select(f => $"«{f}»"))}.");
                 return new QuickResult(n == 0 ? "Ya estaba en la bandeja" : "En la bandeja", files.Count == 1 ? files[0] : null,
                     "Arrástralo desde el panel Kroko → Bandeja a cualquier app. Se vacía sola a las 24 h.");
             }

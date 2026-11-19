@@ -94,7 +94,7 @@
             <Setter Property="VerticalContentAlignment" Value="Center" />
             <Setter Property="DockPanel.Dock" Value="Right" />
             <Setter Property="VerticalAlignment" Value="Center" />
-            <Setter Property="Width" Value="300" />
+            <Setter Property="Width" Value="360" />
         </Style>
         <Style x:Key="RowSecret" TargetType="PasswordBox" BasedOn="{StaticResource Kroko.Secret}">
             <Setter Property="Height" Value="32" />
@@ -102,12 +102,11 @@
             <Setter Property="VerticalContentAlignment" Value="Center" />
             <Setter Property="DockPanel.Dock" Value="Right" />
             <Setter Property="VerticalAlignment" Value="Center" />
-            <Setter Property="Width" Value="300" />
+            <Setter Property="Width" Value="360" />
         </Style>
         <Style x:Key="Page" TargetType="StackPanel">
             <Setter Property="Margin" Value="28,4,28,28" />
-            <Setter Property="MaxWidth" Value="860" />
-            <Setter Property="HorizontalAlignment" Value="Left" />
+            <Setter Property="HorizontalAlignment" Value="Stretch" />
         </Style>
         <Style TargetType="ScrollViewer">
             <Setter Property="VerticalScrollBarVisibility" Value="Auto" />
@@ -887,25 +886,25 @@
                                     <StackPanel>
                                         <DockPanel Style="{StaticResource Row}">
                                             <Button Content="Quitar" Command="{Binding RemoveKeyCommand}" CommandParameter="1" Style="{StaticResource Btn}" />
-                                            <PasswordBox Style="{StaticResource RowSecret}" Width="250" v:PasswordBoxAssist.BoundPassword="{Binding GeminiKey}" />
+                                            <PasswordBox Style="{StaticResource RowSecret}" Width="360" v:PasswordBoxAssist.BoundPassword="{Binding GeminiKey}" />
                                             <StackPanel Style="{StaticResource Text}"><TextBlock Text="1 · Pensar y voz en tiempo real" Style="{StaticResource Label}" /><TextBlock Text="{Binding KeySlot1}" Style="{StaticResource Sub}" /></StackPanel>
                                         </DockPanel>
                                         <Border Style="{StaticResource Sep}" />
                                         <DockPanel Style="{StaticResource Row}">
                                             <Button Content="Quitar" Command="{Binding RemoveKeyCommand}" CommandParameter="2" Style="{StaticResource Btn}" />
-                                            <PasswordBox Style="{StaticResource RowSecret}" Width="250" v:PasswordBoxAssist.BoundPassword="{Binding GeminiKey2}" />
+                                            <PasswordBox Style="{StaticResource RowSecret}" Width="360" v:PasswordBoxAssist.BoundPassword="{Binding GeminiKey2}" />
                                             <StackPanel Style="{StaticResource Text}"><TextBlock Text="2 · Entender tu voz" Style="{StaticResource Label}" /><TextBlock Text="{Binding KeySlot2}" Style="{StaticResource Sub}" /></StackPanel>
                                         </DockPanel>
                                         <Border Style="{StaticResource Sep}" />
                                         <DockPanel Style="{StaticResource Row}">
                                             <Button Content="Quitar" Command="{Binding RemoveKeyCommand}" CommandParameter="3" Style="{StaticResource Btn}" />
-                                            <PasswordBox Style="{StaticResource RowSecret}" Width="250" v:PasswordBoxAssist.BoundPassword="{Binding GeminiKey3}" />
+                                            <PasswordBox Style="{StaticResource RowSecret}" Width="360" v:PasswordBoxAssist.BoundPassword="{Binding GeminiKey3}" />
                                             <StackPanel Style="{StaticResource Text}"><TextBlock Text="3 · Hablar" Style="{StaticResource Label}" /><TextBlock Text="{Binding KeySlot3}" Style="{StaticResource Sub}" /></StackPanel>
                                         </DockPanel>
                                         <Border Style="{StaticResource Sep}" />
                                         <DockPanel Style="{StaticResource Row}">
                                             <Button Content="Quitar" Command="{Binding RemoveKeyCommand}" CommandParameter="4" Style="{StaticResource Btn}" />
-                                            <PasswordBox Style="{StaticResource RowSecret}" Width="250" v:PasswordBoxAssist.BoundPassword="{Binding GeminiKey4}" />
+                                            <PasswordBox Style="{StaticResource RowSecret}" Width="360" v:PasswordBoxAssist.BoundPassword="{Binding GeminiKey4}" />
                                             <StackPanel Style="{StaticResource Text}"><TextBlock Text="4 · Buscar en internet y documentos" Style="{StaticResource Label}" /><TextBlock Text="{Binding KeySlot4}" Style="{StaticResource Sub}" /></StackPanel>
                                         </DockPanel>
                                     </StackPanel>
@@ -918,12 +917,12 @@
                                 <Border Style="{StaticResource Card}">
                                     <StackPanel>
                                         <DockPanel Style="{StaticResource Row}">
-                                            <PasswordBox Style="{StaticResource RowSecret}" Width="250" v:PasswordBoxAssist.BoundPassword="{Binding DeepSeekKey}" />
+                                            <PasswordBox Style="{StaticResource RowSecret}" Width="360" v:PasswordBoxAssist.BoundPassword="{Binding DeepSeekKey}" />
                                             <StackPanel Style="{StaticResource Text}"><TextBlock Text="DeepSeek (respaldo)" Style="{StaticResource Label}" /><TextBlock Text="{Binding DeepSeekState}" Style="{StaticResource Sub}" /></StackPanel>
                                         </DockPanel>
                                         <Border Style="{StaticResource Sep}" />
                                         <DockPanel Style="{StaticResource Row}">
-                                            <PasswordBox Style="{StaticResource RowSecret}" Width="250" v:PasswordBoxAssist.BoundPassword="{Binding TavilyKey}" />
+                                            <PasswordBox Style="{StaticResource RowSecret}" Width="360" v:PasswordBoxAssist.BoundPassword="{Binding TavilyKey}" />
                                             <StackPanel Style="{StaticResource Text}"><TextBlock Text="Tavily (búsqueda web)" Style="{StaticResource Label}" /><TextBlock Text="{Binding TavilyState}" Style="{StaticResource Sub}" /></StackPanel>
                                         </DockPanel>
                                     </StackPanel>

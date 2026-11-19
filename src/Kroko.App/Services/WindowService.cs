@@ -144,6 +144,8 @@ public sealed class WindowService(IServiceProvider services)
     // Kroko 2 (18/11/2026): ya no hay asistente ni ventana de conectores aparte; todo vive en Configuración.
     public const int SectionProfile = 4, SectionAccounts = 5, SectionAiKeys = 6, SectionBrain = 8;
 
+    public bool IsIslandMode => services.GetRequiredService<BubbleGeometry>().IsIsland;
+
     public bool IsSettingsOpen => _settings is { IsLoaded: true };
 
     /// <summary>Lo que antes abría el asistente «Configurar Kroko»: Configuración en Tu perfil.</summary>
