@@ -13,7 +13,8 @@ namespace Kroko.App.Audio;
 /// </summary>
 public sealed class VoiceRecorder(MicrophoneStream mic, ILogger<VoiceRecorder> log) : IDisposable
 {
-    private const string User = "grabacion";
+    /// <summary>Quién usa el micrófono compartido (la voz, el dictado y el modo reunión graban a la vez sin pisarse).</summary>
+    public string User { get; init; } = "grabacion";
     public static readonly WaveFormat Format = MicrophoneStream.Format;
 
     private MemoryStream? _pcm;

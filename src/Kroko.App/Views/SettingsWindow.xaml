@@ -298,6 +298,17 @@
                                     </StackPanel>
                                 </Border>
 
+                                <TextBlock Text="Atajos de Kroko" Style="{StaticResource CardTitle}" />
+                                <Border Style="{StaticResource Card}">
+                                    <DockPanel Style="{StaticResource Row}">
+                                        <StackPanel Style="{StaticResource Text}">
+                                            <TextBlock Text="Barra de comandos · Portapapeles · Dictado · Texto seleccionado" Style="{StaticResource Label}" />
+                                            <TextBlock Text="{Binding ShortcutsText}" Style="{StaticResource Sub}" FontFamily="Consolas" />
+                                            <TextBlock Text="Ctrl+Espacio sigue siendo para hablarle (se cambia en Voz y conversación)." Style="{StaticResource Sub}" />
+                                        </StackPanel>
+                                    </DockPanel>
+                                </Border>
+
                                 <TextBlock Text="Cuándo aparece" Style="{StaticResource CardTitle}" />
                                 <Border Style="{StaticResource Card}">
                                     <StackPanel>
@@ -549,6 +560,7 @@
                             <StackPanel Style="{StaticResource Page}">
                                 <TextBlock Text="Tu asistente" Style="{StaticResource CardTitle}" Margin="4,2,0,8" />
                                 <Border Style="{StaticResource Card}">
+                                    <StackPanel>
                                     <DockPanel Style="{StaticResource Row}">
                                         <CheckBox IsChecked="{Binding NoticeCoach}" Style="{StaticResource Toggle}" />
                                         <StackPanel Style="{StaticResource Text}">
@@ -556,6 +568,15 @@
                                             <TextBlock Text="7:30 tu plan del día con sugerencias · 13:00 seguimiento de lo pendiente (solo si hay algo) · 20:00 hábitos y rachas. Por Telegram y en la PC, máximo 3 al día. Cambia horas o textos pidiéndoselo: «el plan del día mándamelo a las 6»." Style="{StaticResource Sub}" />
                                         </StackPanel>
                                     </DockPanel>
+                                    <Border Style="{StaticResource Sep}" />
+                                    <DockPanel Style="{StaticResource Row}">
+                                        <CheckBox IsChecked="{Binding MorningBrief}" Style="{StaticResource Toggle}" />
+                                        <StackPanel Style="{StaticResource Text}">
+                                            <TextBlock Text="Resumen al prender la PC" Style="{StaticResource Label}" />
+                                            <TextBlock Text="La primera vez del día que enciendes la PC te cuenta, en menos de 30 segundos, el clima, tu agenda, los correos importantes y lo pendiente." Style="{StaticResource Sub}" />
+                                        </StackPanel>
+                                    </DockPanel>
+                                    </StackPanel>
                                 </Border>
 
                                 <TextBlock Text="Qué te avisa por su cuenta" Style="{StaticResource CardTitle}" />

@@ -44,6 +44,9 @@ public sealed class KrokoOptions
     /// <summary>La isla sugiere qué hacer con lo que copias (enlace, texto, imagen). Kroko 2, 18/11/2026.</summary>
     public bool ClipboardSuggestions { get; set; } = true;
 
+    /// <summary>Al prender la PC, el primer saludo del día trae clima, agenda, correos y pendientes (Kroko 2).</summary>
+    public bool MorningBrief { get; set; } = true;
+
     /// <summary>Atajos de Kroko 2: barra de comandos, portapapeles, dictado en cualquier app y burbuja de texto seleccionado.</summary>
     public string CommandsHotkey { get; set; } = "Ctrl+Shift+Space";
     public string ClipboardHotkey { get; set; } = "Ctrl+Shift+V";

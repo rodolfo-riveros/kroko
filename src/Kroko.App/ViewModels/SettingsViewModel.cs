@@ -80,6 +80,7 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
         FreeLook = o.IsFree;
         IslandAutoHide = o.IslandAutoHide;
         ClipboardSuggestions = o.ClipboardSuggestions;
+        MorningBrief = o.MorningBrief;
         StartHidden = o.StartHidden;
         HideAfterIdle = o.HideAfterIdleSeconds > 0;
 
@@ -213,6 +214,9 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
     [ObservableProperty] public partial bool FreeLook { get; set; }
     /// <summary>La isla sugiere qué hacer con lo que copias (Kroko 2). El historial vive solo en memoria.</summary>
     [ObservableProperty] public partial bool ClipboardSuggestions { get; set; }
+    [ObservableProperty] public partial bool MorningBrief { get; set; }
+    /// <summary>Los atajos de Kroko 2, para mostrarlos en General.</summary>
+    public string ShortcutsText => $"{_options.CommandsHotkey} · {_options.ClipboardHotkey} · {_options.DictationHotkey} · {_options.SelectionHotkey}";
     [ObservableProperty] public partial bool IslandAutoHide { get; set; }
     [ObservableProperty] public partial bool StartHidden { get; set; }
     [ObservableProperty] public partial bool HideAfterIdle { get; set; }
@@ -448,7 +452,7 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
     private static readonly HashSet<string> Persisted =
     [
         nameof(BubbleScale), nameof(SoundsEnabled), nameof(SoundVolume), nameof(HideOnFullscreen),
-        nameof(IslandLook), nameof(FreeLook), nameof(ClipboardSuggestions), nameof(StartHidden), nameof(HideAfterIdle), nameof(IslandAutoHide),
+        nameof(IslandLook), nameof(FreeLook), nameof(ClipboardSuggestions), nameof(MorningBrief), nameof(StartHidden), nameof(HideAfterIdle), nameof(IslandAutoHide),
         nameof(BrainUrl), nameof(BrainToken), nameof(LaunchLocalBrain),
         nameof(DistractionsEnabled), nameof(SleepAfterMinutes), nameof(NightSleepAfterMinutes), nameof(HideAfterSleepMinutes),
         nameof(NightStartHour), nameof(NightEndHour),
@@ -506,6 +510,7 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
         k["Look"] = IslandLook ? "isla" : FreeLook ? "libre" : "burbuja";
         k["IslandAutoHide"] = IslandAutoHide;
         k["ClipboardSuggestions"] = ClipboardSuggestions;
+        k["MorningBrief"] = MorningBrief;
         k["StartHidden"] = StartHidden;
         k["HideAfterIdleSeconds"] = HideAfterIdle ? 60 : 0;
         k["BubbleScale"] = Math.Round(Math.Clamp(BubbleScale, 0.75, 1.5), 2);

@@ -193,6 +193,8 @@ public sealed class TelegramBot(
             return;
         }
 
+        if (await TryAnswerCodeAsync(chat, m.Text, ct)) return;
+
         byte[]? audio = null;
         if (m.Voice is { } voice)
         {
@@ -315,6 +317,58 @@ public sealed class TelegramBot(
             ? Task.FromResult<bool?>(null)
             : AskAsync(options.CurrentValue.AllowedChatIds[0], text, ct);
 
+    // ---------------------------------------------------------------- código para lo irreversible (Kroko 2, 18/11/2026)
+
+    /// <summary>Lo que no tiene vuelta atrás desde el celular pide escribir un código (no basta un toque sin querer).</summary>
+    internal static readonly HashSet<string> NeedsCode = new(StringComparer.OrdinalIgnoreCase)
+        { "apagar", "reiniciar", "cerrar_sesion", "cerrar_programa", "enviar_a_papelera", "correo_papelera" };
+
+    private readonly System.Collections.Concurrent.ConcurrentDictionary<long, (string Code, TaskCompletionSource<bool> Answer)> _pendingCodes = new();
+
+    /// <summary>Pide escribir un código de 4 cifras (60 s). null = no respondió.</summary>
+    internal async Task<bool?> AskCodeAsync(long chat, string text, CancellationToken ct)
+    {
+        var code = System.Security.Cryptography.RandomNumberGenerator.GetInt32(1000, 10_000).ToString();
+        var tcs = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+        _pendingCodes[chat] = (code, tcs);
+        await _bot!.SendMessage(chat, $"¿Lo hago?\n{text}\n\n🔒 Esto no tiene vuelta atrás. Para confirmar, escribe el código {code} (o «no» para cancelar).",
+            cancellationToken: ct);
+        try
+        {
+            return await tcs.Task.WaitAsync(ToolConfirmation.Timeout, ct);
+        }
+        catch (TimeoutException)
+        {
+            return null;
+        }
+        finally
+        {
+            _pendingCodes.TryRemove(chat, out _);
+        }
+    }
+
+    /// <summary>¿El mensaje responde a un código pendiente? (lo consume y contesta).</summary>
+    private async Task<bool> TryAnswerCodeAsync(long chat, string? text, CancellationToken ct)
+    {
+        if (!_pendingCodes.TryGetValue(chat, out var pending) || text is null) return false;
+        var t = text.Trim().ToLowerInvariant();
+        if (t == pending.Code)
+        {
+            pending.Answer.TrySetResult(true);
+            await _bot!.SendMessage(chat, "✅ Código correcto. Voy.", cancellationToken: ct);
+        }
+        else if (t is "no" or "cancelar" or "cancela")
+        {
+            pending.Answer.TrySetResult(false);
+            await _bot!.SendMessage(chat, "❌ Cancelado.", cancellationToken: ct);
+        }
+        else
+        {
+            await _bot!.SendMessage(chat, $"Ese no es el código. Escribe {pending.Code} para confirmar o «no» para cancelar.", cancellationToken: ct);
+        }
+        return true;
+    }
+
     /// <summary>Pregunta con botones y espera la respuesta (60 s).</summary>
     internal async Task<bool?> AskAsync(long chat, string text, CancellationToken ct)
     {
@@ -417,7 +471,7 @@ internal sealed class TelegramChannel(TelegramBotClient bot, long chat, Telegram
         {
             case ConfirmRequestMessage confirm:
             {
-                var answer = await owner.AskAsync(chat, confirm.Text, ct);
+                var answer = TelegramBot.NeedsCode.Contains(confirm.Tool) ? await owner.AskCodeAsync(chat, confirm.Text, ct) : await owner.AskAsync(chat, confirm.Text, ct);
                 if (answer is null) return null;
                 if (answer.Value) _approved[callId] = true;
                 return new ConfirmResponseMessage { CallId = callId, Approved = answer.Value } as TResponse;

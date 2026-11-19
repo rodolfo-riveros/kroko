@@ -37,6 +37,9 @@ public sealed class WindowService(IServiceProvider services)
     /// <summary>Soltaste archivos sobre Kroko: el panel Convertir / Analizar / Ordenar / Enviar.</summary>
     public void ShowDrop(IEnumerable<string> files, string? mode = null) => Drop().Open(files, mode);
 
+    /// <summary>La mini barra del texto seleccionado (Ctrl+Shift+K).</summary>
+    public void ShowSelection(string text) => services.GetRequiredService<SelectionBar>().Open(text);
+
     /// <summary>Barra de comandos (Ctrl+Shift+Espacio): una sola a la vez.</summary>
     public void ShowCommands()
     {

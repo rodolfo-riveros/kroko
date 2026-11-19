@@ -44,6 +44,19 @@ public static class SettingsWindowSnapshot
             paths.Add(RenderLoose(drop, $"soltar-{mode}", outputDir));
         }
         drop.Close();
+        // Barra de comandos y portapapeles (Kroko 2)
+        var palette = services.GetRequiredService<CommandPalette>();
+        var pvm = (CommandPaletteViewModel)palette.DataContext;
+        pvm.Open();
+        pvm.Query = "conv";
+        paths.Add(RenderLoose(palette, "comandos", outputDir));
+        palette.Close();
+        var clips = services.GetRequiredService<Kroko.App.Services.ClipboardWatcher>();
+        clips.History.Add(new Kroko.App.Services.ClipItem { Kind = "enlace", Text = "https://www.notion.so/kroko/pendientes-del-lunes" });
+        clips.History.Add(new Kroko.App.Services.ClipItem { Kind = "texto", Text = "Reunión con Ana el viernes a las 10, llevar el informe impreso", Time = DateTime.Now.AddMinutes(-5) });
+        var clipPanel = services.GetRequiredService<ClipboardPanel>();
+        paths.Add(RenderLoose(clipPanel, "portapapeles", outputDir));
+        clipPanel.Close();
         var player = services.GetRequiredService<MusicPlayer>();
         paths.Add(RenderLoose(player, "musica", outputDir));
         player.Close();

@@ -41,7 +41,7 @@ public sealed partial class ForegroundTracker : IDisposable
     }
 
     [LibraryImport("user32.dll")]
-    private static partial uint GetWindowThreadProcessId(nint hWnd, out int processId);
+    internal static partial uint GetWindowThreadProcessId(nint hWnd, out int processId);
 
     [LibraryImport("user32.dll")]
     [return: MarshalAs(UnmanagedType.Bool)]

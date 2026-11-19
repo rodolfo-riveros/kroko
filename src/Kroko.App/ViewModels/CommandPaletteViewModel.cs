@@ -43,8 +43,12 @@ public sealed partial class CommandPaletteViewModel : ObservableObject
     private readonly List<(string Title, string Glyph, string Keywords, Action Run)> _actions;
     private List<FileInfo> _recent = [];
 
-    public CommandPaletteViewModel(PanelViewModel chat, WindowService windows, IslandViewModel island, TimerService timers)
+    private readonly DictationService _dictation;
+
+    public CommandPaletteViewModel(PanelViewModel chat, WindowService windows, IslandViewModel island, TimerService timers,
+        DictationService dictation)
     {
+        _dictation = dictation;
         _chat = chat;
         _windows = windows;
         _island = island;
@@ -60,6 +64,11 @@ public sealed partial class CommandPaletteViewModel : ObservableObject
             ("¿Qué hay en mi pantalla?", G("E7F4"), "pantalla error explicar captura ver", () => Ask("¿Qué hay en mi pantalla? Mírala con captura_pantalla y explícamelo.")),
             ("¿Por qué está lenta mi PC?", G("E9D9"), "lenta salud pc memoria disco batería", () => Ask("¿Por qué está lenta mi PC? Revisa estado_equipo y los procesos.")),
             ("¿Qué tengo hoy?", G("E787"), "hoy agenda resumen día", () => Ask("¿Qué tengo hoy?")),
+            ("Tomar nota de una reunión", G("E8F2"), "reunion meet zoom teams notas acta", () => Ask("Toma nota de esta reunión")),
+            ("Terminar la reunión", G("E71A"), "terminar reunion resumen acuerdos", () => Ask("Termina la reunión")),
+            ("Dictar en cualquier app", G("E720"), "dictar dictado escribir voz word", () => _dictation.Toggle()),
+            ("Crear una rutina…", G("E8FD"), "rutina modo trabajo estudio dormir", () => Ask("Ayúdame a crear una rutina (por ejemplo «modo trabajo»): pregúntame qué pasos quiero y cuándo.")),
+            ("Recordatorio al abrir una app…", G("E7ED"), "recordatorio contexto abrir app audifonos", () => Ask("Quiero un recordatorio para cuando abra una app: pregúntame cuál y qué recordar.")),
             ("Abrir la bandeja", G("E7B8"), "bandeja archivos estacionados", () => _windows.ShowPanel("bandeja")),
             ("Abrir el portapapeles", G("E77F"), "portapapeles copiado pegar historial", () => _windows.ShowClipboard()),
             ("Mi día", G("E706"), "mi dia agenda clima", _windows.ShowMyDay),

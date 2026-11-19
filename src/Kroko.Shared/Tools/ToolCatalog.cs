@@ -93,6 +93,24 @@ public static class ToolCatalog
         },
         new()
         {
+            Name = "recordatorio_contexto",
+            Description = "Recordatorios que no van por hora sino por lo que pasa en la PC: al abrir una app (\"cuando abra Excel, recuérdame " +
+                          "actualizar la hoja de ventas\"), al conectar audífonos o al prender la PC. accion: crear (cuando + texto, y app si cuando=app), " +
+                          "listar o borrar (id). repetir=no para que avise una sola vez. Para avisos a una hora usa recordatorio_crear.",
+            Parameters = """{"type":"object","properties":{"accion":{"type":"string","enum":["crear","listar","borrar"]},"cuando":{"type":"string","enum":["app","audifonos","inicio"]},"app":{"type":"string","description":"Excel, Word, Chrome, Spotify…"},"texto":{"type":"string"},"repetir":{"type":"string","enum":["si","no"]},"id":{"type":"string"}},"required":["accion"]}""",
+            Risk = ToolRisk.Write,
+        },
+        new()
+        {
+            Name = "modo_reunion",
+            Description = "Modo reunión: \"toma nota de esta reunión\" (iniciar) graba el micrófono y el audio de la PC (Meet, Zoom, Teams); " +
+                          "\"termina la reunión\" (terminar) lo transcribe, lo guarda en Documentos (carpeta Kroko, Reuniones) y luego te pide el " +
+                          "resumen, los acuerdos y las tareas. Recuérdale a tu dueño avisar a los demás que está tomando notas.",
+            Parameters = """{"type":"object","properties":{"accion":{"type":"string","enum":["iniciar","terminar"]}},"required":["accion"]}""",
+            Risk = ToolRisk.Write,
+        },
+        new()
+        {
             Name = "musica",
             Description = "Controla la música o el video que suena en la PC (Spotify, YouTube, cualquier reproductor): " +
                           "pausar/reanudar, siguiente, anterior o detener (con el control multimedia de Windows); \"que_suena\" dice título, " +

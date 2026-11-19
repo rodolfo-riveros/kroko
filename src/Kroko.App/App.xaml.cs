@@ -120,6 +120,13 @@ public partial class App : Application
                 services.AddSingleton<IslandViewModel>();
                 services.AddSingleton<GlobalHotkeys>();
                 services.AddSingleton<MusicDucker>();
+                services.AddSingleton<HealthWatcher>();
+                services.AddSingleton<MorningBriefing>();
+                services.AddSingleton<ContextReminders>();
+                services.AddSingleton<DictationService>();
+                services.AddSingleton<SelectionHelper>();
+                services.AddSingleton<MeetingRecorder>();
+                services.AddTransient<SelectionBar>();
                 services.AddTransient<CommandPaletteViewModel>();
                 services.AddTransient<CommandPalette>();
                 services.AddTransient<ClipboardPanel>();
@@ -184,6 +191,10 @@ public partial class App : Application
             Log.Information("Captura guardada en {Path}", MemoryWindowSnapshot.Render(dir));
             Log.Information("Captura guardada en {Path}", MyDayWindowSnapshot.Render(dir));
             foreach (var p in SettingsWindowSnapshot.Render(_host.Services, dir)) Log.Information("Captura guardada en {Path}", p);
+            // Comprobación: todo lo que se crea al arrancar se puede construir (sin dependencias circulares)
+            foreach (var t in new[] { typeof(BubbleWindow), typeof(HealthWatcher), typeof(MorningBriefing), typeof(ContextReminders), typeof(MeetingRecorder),
+                         typeof(DictationService), typeof(SelectionHelper), typeof(MusicDucker), typeof(ToolExecutor), typeof(ActivityFeed) })
+                Log.Information("Arranque OK: {Type}", _host.Services.GetRequiredService(t).GetType().Name);
             Shutdown();
             return;
         }
@@ -220,6 +231,12 @@ public partial class App : Application
         var winSvc = _host.Services.GetRequiredService<WindowService>();
         hotkeys.Register(kopt.CommandsHotkey, winSvc.ShowCommands, "Barra de comandos");
         hotkeys.Register(kopt.ClipboardHotkey, winSvc.ShowClipboard, "Portapapeles");
+        hotkeys.Register(kopt.DictationHotkey, _host.Services.GetRequiredService<DictationService>().Toggle, "Dictado en cualquier app");
+        hotkeys.Register(kopt.SelectionHotkey, _host.Services.GetRequiredService<SelectionHelper>().Show, "Burbuja del texto seleccionado");
+        _host.Services.GetRequiredService<HealthWatcher>();
+        _host.Services.GetRequiredService<MorningBriefing>();
+        _host.Services.GetRequiredService<ContextReminders>();
+        _host.Services.GetRequiredService<MeetingRecorder>();
         _host.Services.GetRequiredService<VoiceController>().Start();
 
         var bubbleVm = _host.Services.GetRequiredService<BubbleViewModel>();

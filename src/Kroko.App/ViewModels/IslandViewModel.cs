@@ -19,7 +19,7 @@ public sealed partial class IslandViewModel : ObservableObject
 {
     public const string Idle = "reposo", Listening = "escuchando", Thinking = "pensando", Done = "listo", Focus = "enfoque",
         Music = "musica", Reminder = "recordatorio", Near = "cerca", Clip = "portapapeles", Offline = "sin-conexion",
-        Working = "trabajando", Result = "resultado";
+        Working = "trabajando", Result = "resultado", Dictating = "dictando", Meeting = "reunion";
 
     private readonly CompanionBehavior _behavior;
     private readonly PanelViewModel _panel;
@@ -73,6 +73,7 @@ public sealed partial class IslandViewModel : ObservableObject
                 Application.Current?.Dispatcher.BeginInvoke(() =>
                 {
                     ReminderText = n.Text.Length > 0 ? n.Text : n.Title;
+                    AlertAction = "";
                     _reminderUntil = DateTime.Now.AddMinutes(2);
                 });
         };
@@ -164,6 +165,7 @@ public sealed partial class IslandViewModel : ObservableObject
 
     private string Pick(DateTime now)
     {
+        if (DictationApp.Length > 0) return Dictating;
         if (_work is not null) return Working;
         if (ResultData is not null || ResultError.Length > 0)
         {
@@ -187,6 +189,7 @@ public sealed partial class IslandViewModel : ObservableObject
             DoneText = _badge.BadgeText;
             return Done;
         }
+        if (MeetingClock.Length > 0) return Meeting;
         if (Timers.IsActive) return Focus;
         if (ClipItem is not null && now < _clipUntil) return Clip;
         if (MusicTitle.Length > 0 && (MusicPlaying || Hover)) return Music;
@@ -271,6 +274,46 @@ public sealed partial class IslandViewModel : ObservableObject
         MediaSessionService.Volume += delta > 0 ? 4 : -4;
     }
 
+    // ---- dictado en cualquier app y modo reunión (ideas Kroko 2)
+    [ObservableProperty] public partial string DictationApp { get; set; } = "";
+    [ObservableProperty] public partial string DictationText { get; set; } = "";
+    [ObservableProperty] public partial string MeetingClock { get; set; } = "";
+    [ObservableProperty] public partial string MeetingNote { get; set; } = "";
+    public Action? StopMeeting { get; set; }
+
+    [RelayCommand]
+    private void EndMeeting() => StopMeeting?.Invoke();
+
+    /// <summary>Para los servicios: dice algo corto en la isla («Escribí 24 palabras»).</summary>
+    public void Say(string text) => Application.Current?.Dispatcher.BeginInvoke(() => ShowSaid(text));
+
+    // ---- aviso general (salud de la PC, recordatorio por contexto, reunión): la forma del recordatorio con su propio botón
+    [ObservableProperty] public partial string AlertAction { get; set; } = "";
+    private Action? _alertRun;
+
+    /// <summary>Un aviso en la isla con ojos ámbar y un botón (o +10 min / Hecho si no trae botón). Dura 2 min o hasta que lo atiendas.</summary>
+    public void ShowAlert(string text, string? actionLabel = null, Action? action = null, int seconds = 120)
+    {
+        Application.Current?.Dispatcher.BeginInvoke(() =>
+        {
+            _behavior.WakeUp();
+            ReminderText = text;
+            AlertAction = actionLabel ?? "";
+            _alertRun = action;
+            _reminderUntil = DateTime.Now.AddSeconds(seconds);
+        });
+    }
+
+    [RelayCommand]
+    private void RunAlert()
+    {
+        var run = _alertRun;
+        ReminderText = "";
+        AlertAction = "";
+        _alertRun = null;
+        run?.Invoke();
+    }
+
     [RelayCommand]
     private async Task SnoozeAsync()
     {
@@ -291,6 +334,7 @@ public sealed partial class IslandViewModel : ObservableObject
     private void ReminderDone()
     {
         ReminderText = "";
+        AlertAction = "";
         ShowSaid("Hecho");
     }
 

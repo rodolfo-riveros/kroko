@@ -239,9 +239,16 @@
             <StackPanel Orientation="Horizontal" Height="40" Visibility="{Binding State, Converter={StaticResource StateIs}, ConverterParameter=recordatorio}">
                 <v:KrokoMark Width="28" Height="22" VerticalAlignment="Center" EyeBrush="{StaticResource Kroko.Amber}" LightBrush="{StaticResource Kroko.Amber}" />
                 <TextBlock Text="{Binding ReminderText}" Style="{StaticResource Strong}" Margin="10,0,6,0" MaxWidth="240" />
-                <TextBlock Text="ahora" Foreground="{StaticResource Kroko.Amber}" FontSize="12" VerticalAlignment="Center" Margin="0,0,6,0" />
-                <Button Content="+10 min" Command="{Binding SnoozeCommand}" Style="{StaticResource Pill}" />
-                <Button Content="Hecho" Command="{Binding ReminderDoneCommand}" Style="{StaticResource PillAmber}" />
+                <TextBlock Text="ahora" Foreground="{StaticResource Kroko.Amber}" FontSize="12" VerticalAlignment="Center" Margin="0,0,6,0"
+                           Visibility="{Binding AlertAction, Converter={StaticResource EmptyToCollapsed}, ConverterParameter=invert}" />
+                <Button Content="+10 min" Command="{Binding SnoozeCommand}" Style="{StaticResource Pill}"
+                        Visibility="{Binding AlertAction, Converter={StaticResource EmptyToCollapsed}, ConverterParameter=invert}" />
+                <Button Content="{Binding AlertAction}" Command="{Binding RunAlertCommand}" Style="{StaticResource PillAmber}"
+                        Visibility="{Binding AlertAction, Converter={StaticResource EmptyToCollapsed}}" />
+                <Button Content="Hecho" Command="{Binding ReminderDoneCommand}" Style="{StaticResource PillAmber}"
+                        Visibility="{Binding AlertAction, Converter={StaticResource EmptyToCollapsed}, ConverterParameter=invert}" />
+                <Button Content="Cerrar" Command="{Binding ReminderDoneCommand}" Style="{StaticResource Pill}"
+                        Visibility="{Binding AlertAction, Converter={StaticResource EmptyToCollapsed}}" />
             </StackPanel>
 
             <!-- ============ Archivo cerca: se abre como imán con sus bolsillos ============ -->
@@ -279,6 +286,31 @@
                 <v:KrokoMark Width="26" Height="20" VerticalAlignment="Center" EyeBrush="#8E8E93" LightBrush="#5A5A5A" />
                 <TextBlock Text="Sin cerebro · modo local" Style="{StaticResource Strong}" FontWeight="Normal" Margin="10,0,4,0" />
                 <Button Content="Reintentar" Command="{Binding RetryCommand}" Style="{StaticResource Pill}" Margin="8,0,0,0" />
+            </StackPanel>
+
+            <!-- ============ Dictado en cualquier app ============ -->
+            <StackPanel Width="380" Margin="4,10,4,12" Visibility="{Binding State, Converter={StaticResource StateIs}, ConverterParameter=dictando}">
+                <DockPanel>
+                    <Border Width="26" Height="26" CornerRadius="13" Background="{StaticResource Kroko.Accent}" VerticalAlignment="Center">
+                        <TextBlock Text="&#xE720;" FontFamily="{StaticResource Kroko.Icons}" FontSize="12" Foreground="#000000" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                    </Border>
+                    <StackPanel Margin="10,0,0,0" VerticalAlignment="Center">
+                        <TextBlock FontWeight="Bold" FontSize="13"><Run Text="Dictando en " /><Run Text="{Binding DictationApp, Mode=OneWay}" /></TextBlock>
+                        <TextBlock Text="Ctrl+Shift+D o una pausa para terminar · di «borra eso» para corregir" Style="{StaticResource Muted}" FontSize="11" />
+                    </StackPanel>
+                </DockPanel>
+                <Border CornerRadius="10" Background="#111113" Padding="10,8" Margin="0,10,0,0"
+                        Visibility="{Binding DictationText, Converter={StaticResource EmptyToCollapsed}}">
+                    <TextBlock Text="{Binding DictationText}" TextWrapping="Wrap" FontSize="12.5" MaxHeight="60" TextTrimming="CharacterEllipsis" />
+                </Border>
+            </StackPanel>
+
+            <!-- ============ Modo reunión: grabando y transcribiendo ============ -->
+            <StackPanel Orientation="Horizontal" Height="38" Visibility="{Binding State, Converter={StaticResource StateIs}, ConverterParameter=reunion}">
+                <Ellipse Width="9" Height="9" Fill="#FF5C6C" VerticalAlignment="Center" Margin="6,0,10,0" />
+                <TextBlock Style="{StaticResource Strong}"><Run Text="Reunión · " /><Run Text="{Binding MeetingClock, Mode=OneWay}" /></TextBlock>
+                <TextBlock Text="{Binding MeetingNote}" Style="{StaticResource Muted}" Margin="8,0,0,0" MaxWidth="220" TextTrimming="CharacterEllipsis" />
+                <Button Content="Terminar" Command="{Binding EndMeetingCommand}" Style="{StaticResource PillLime}" Margin="10,0,0,0" />
             </StackPanel>
 
             <!-- ============ Trabajando: «Convirtiendo 2 de 3» con barra ============ -->

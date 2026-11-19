@@ -1,0 +1,38 @@
+<Window x:Class="Kroko.App.Views.SelectionBar"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:v="clr-namespace:Kroko.App.Views"
+        Title="Kroko — Texto seleccionado"
+        SizeToContent="WidthAndHeight" MaxWidth="460"
+        WindowStyle="None" AllowsTransparency="True" Background="Transparent"
+        ResizeMode="NoResize" Topmost="True" ShowInTaskbar="False"
+        WindowStartupLocation="Manual"
+        Foreground="{StaticResource Kroko.Text}"
+        FontFamily="{StaticResource Kroko.Font}" FontSize="13">
+    <Window.Resources>
+        <Style x:Key="Pill" TargetType="Button" BasedOn="{StaticResource Kroko.Button}">
+            <Setter Property="MinHeight" Value="30" />
+            <Setter Property="MinWidth" Value="0" />
+            <Setter Property="Padding" Value="12,0" />
+            <Setter Property="Margin" Value="0,0,6,0" />
+            <Setter Property="FontSize" Value="12.5" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="BorderBrush" Value="Transparent" />
+        </Style>
+    </Window.Resources>
+    <Border Background="#0B0B0C" CornerRadius="16" BorderThickness="1" BorderBrush="#2A2A2E" Margin="12,6,12,16" Padding="12,10">
+        <Border.Effect>
+            <DropShadowEffect BlurRadius="24" ShadowDepth="6" Direction="270" Opacity="0.5" Color="Black" />
+        </Border.Effect>
+        <StackPanel>
+            <TextBlock x:Name="Preview" FontSize="12" Foreground="{StaticResource Kroko.TextMuted}" TextTrimming="CharacterEllipsis" MaxWidth="420" Margin="2,0,0,8" />
+            <StackPanel Orientation="Horizontal">
+                <v:KrokoMark Width="24" Height="19" VerticalAlignment="Center" Margin="0,0,10,0" />
+                <Button Content="Traducir" Style="{StaticResource Pill}" Tag="traducir" Click="Action_Click" Background="{StaticResource Kroko.Accent}" Foreground="#000000" />
+                <Button Content="Explicar" Style="{StaticResource Pill}" Tag="explicar" Click="Action_Click" />
+                <Button Content="Corregir" Style="{StaticResource Pill}" Tag="corregir" Click="Action_Click" />
+                <Button Content="Responder" Style="{StaticResource Pill}" Tag="responder" Click="Action_Click" />
+            </StackPanel>
+        </StackPanel>
+    </Border>
+</Window>
