@@ -13,6 +13,10 @@ y controla tu PC, tus tareas, tu correo, tu calendario y tus apps. El cerebro vi
 |---|---|
 | ![Soltar archivos](docs/soltar-archivos.png) | ![Reproductor](docs/musica.png) |
 
+| Barra de comandos (Ctrl+Shift+Espacio) | Portapapeles (Ctrl+Shift+V) |
+|---|---|
+| ![Comandos](docs/comandos.png) | ![Portapapeles](docs/portapapeles.png) |
+
 ![Sus caras](docs/expresiones.png)
 
 ## Qué hace
@@ -27,6 +31,13 @@ y controla tu PC, tus tareas, tu correo, tu calendario y tus apps. El cerebro vi
 - **Asistente proactivo:** hasta 3 avisos útiles al día por Telegram (resumen, pendientes, sugerencias).
 - **IA mixta:** lo simple lo piensa tu PC (Qwen 3 4B con llama.cpp, opcional) y lo difícil Gemini.
 - **Vive donde quieras:** en la isla de arriba (se esconde sola), en la esquina o libre por el escritorio.
+- **La isla de 10 estados:** hora al pasar el ratón, lo que entiende mientras escuchas, qué herramienta usa, «Deshacer» 8 s,
+  enfoque, música (rueda = volumen), recordatorios con «+10 min», bolsillos al arrastrar un archivo, portapapeles y modo sin cerebro.
+- **Lo que hizo Kroko y la Bandeja:** todo lo de hoy con Deshacer, Abrir o Ver; archivos estacionados que arrastras a cualquier app.
+- **Atajos:** barra de comandos `Ctrl+Shift+Espacio`, portapapeles `Ctrl+Shift+V`, dictado en cualquier app `Ctrl+Shift+D`
+  y burbuja del texto seleccionado `Ctrl+Shift+K` (traducir, explicar, corregir, responder).
+- **Más ayuda:** modo reunión (transcribe y anota las tareas), recordatorios al abrir una app o conectar audífonos, salud de
+  la PC, resumen al prender y tu PC desde Telegram (lo irreversible pide un código).
 
 ## Descargar Kroko (Windows 10/11)
 
